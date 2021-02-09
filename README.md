@@ -1,5 +1,12 @@
 # TIB-AV-A Backend
 
+## TODOs
+
+- [x] Face Detection with DLib
+- [ ] Face Detection with *RetinaFace* ([Repo](https://github.com/deepinsight/insightface/tree/master/detection/RetinaFace))
+- [ ] Shot Boundary Detection with *TransNet v2* ([Repo](https://github.com/soCzech/TransNetV2)) 
+- [ ] Shot Type Classification
+
 ## Installation
 
 To install and start the backend run:
