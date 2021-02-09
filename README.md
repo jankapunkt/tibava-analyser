@@ -2,7 +2,7 @@
 
 ## Installation
 
-To install run:
+To install and start the backend run:
 
 ```bash
 docker-compose -f "docker-compose.yml" up -d --build
