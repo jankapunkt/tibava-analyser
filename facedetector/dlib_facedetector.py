@@ -19,8 +19,7 @@ class DLIBFaceDetector():
             y = max(0, rect.top())
             w = rect.right() - x
             h = rect.bottom() - y
-
-            faces.append((x, y, w, h))
+            faces.append({"bbox_xywh": (x, y, w, h), "bbox_area": (w * h) / (img.shape[0] * img.shape[1])})
 
         return faces
 
