@@ -20,13 +20,42 @@ For reference you can check `test_backend.py`. Functions were tested using a loc
 
 ### Sanity Check
 
+```
+URL: <base_url>/ping
+```
+
+#### `GET`
+
 Sanity check with: `<base_url>/ping` should return `pong!`
 
 ### Face Detection
 
-`GET`: Get precalculated face detection results of a video with a specified `video_id` with: `<base_url>/detect_faces/video_id`
+```
+URL: <base_url>/detect_faces/<int:video_id>
+Parameters
+----------
+video_id : int
+    The identifier of the video
+```
 
-`PUT`: Run and store face detection of a video with a `video_id`, `title`, and `path` using a `PUT` request with: `<base_url>/detect_faces/<int:video_id>` and `params={title: <str:title>, path: <str:path>}`.
+#### `GET` (not implemented yet)
+
+Get precalculated face detection results of a video with a specified `video_id` with: `<base_url>/detect_faces/<int:video_id>`
+
+#### `PUT`
+
+```
+Parameters
+----------
+title : str
+    The title of the video
+path : str
+    The path to the video file
+max_frames : int, optional
+    The maximum number of video frames to process (do not specify if the whole video should be processed)
+```
+
+Run and store face detection of a video with a `video_id`, `title`, and `path` with: `<base_url>/detect_faces/<int:video_id>` and `params={title: <str:title>, path: <str:path>}`.
 
 Optionally you can limit the number of video frames to process using:
 `params={title: <str:title>, path: <str:path>, max_frames: <int:max_frames>}`
