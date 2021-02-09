@@ -9,9 +9,9 @@ response = requests.get(base_url + "detect_faces/1")
 response = requests.put(
     base_url + "detect_faces/1",
     {
-        "title": "title",
+        "title": "Crash_Course_Engineering_Preview_-_English",
         "path": "media/Crash_Course_Engineering_Preview_-_English.mp4",
-        "max_frames": 100  # omit param for whole video
+        "max_frames": 100  # omit parameter to process whole video
     })
 
 print(response)
