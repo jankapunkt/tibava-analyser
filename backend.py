@@ -6,11 +6,16 @@ import logging
 import numpy as np
 import os
 import sys
+import pickle 
+
+from flask_cors import CORS
 
 from facedetector.dlib_facedetector import DLIBFaceDetector
 
 # instantiate the app
 app = Flask(__name__)
+
+CORS(app)
 app.config.from_object(__name__)
 api = Api(app)
 
@@ -19,9 +24,8 @@ logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", datefmt="%Y-
 
 # init face detector
 FaceDetector = DLIBFaceDetector()
-
-videos = {}
-
+video_analysis_filename = "video_analysis_dict_main.pkl"
+videos = pickle.load(open(video_analysis_filename,"rb"))
 
 # sanity check route
 class Ping(Resource):
@@ -48,10 +52,14 @@ class FaceDetection(Resource):
         return jsonify(video_id)
 
     # calculates and stores face detection results
+#    @cross_origin(origin='*',headers=['Content-Type','Authorization'])
     def put(self, video_id):
         args = vidargs.parse_args()
-        faces = _detect_faces(video_path=args["path"], max_frames=args["max_frames"])
-        videos[video_id] = {"id": video_id, "title": args["title"], "path": args["path"], "face_detection": faces}
+        if(video_id in videos):
+            return videos[video_id]
+        faces, fps, max_n_faces = _detect_faces(video_path=args["path"], max_frames=args["max_frames"])
+        videos[video_id] = {"id": video_id, "title": args["title"], "path": args["path"], "face_detection": faces, "fps": fps, "max_n_faces":max_n_faces}
+        pickle.dump(videos,open(video_analysis_filename,"wb"))
         return videos[video_id]
 
 
@@ -60,16 +68,20 @@ def _detect_faces(video_path, max_frames):
 
     # loop through video frames and get faces
     vid_reader = imageio.get_reader(video_path)
+    fps = vid_reader.get_meta_data()['fps']
+    max_n_faces = 0
     for frame_idx, frame_img in enumerate(vid_reader):
         faces[frame_idx] = FaceDetector.detect_faces(frame_img)
-
+        n_faces = len(faces[frame_idx])
+        if(n_faces > max_n_faces):
+            max_n_faces = n_faces
         if max_frames and frame_idx >= (max_frames - 1):
             break
 
-    return faces
+    return faces, fps, max_n_faces
 
 
 api.add_resource(FaceDetection, "/detect_faces/<int:video_id>")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
