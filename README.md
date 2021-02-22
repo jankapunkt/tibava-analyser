@@ -9,6 +9,13 @@
 
 ## Installation
 
+Clone the project with all services using
+
+```bash
+git clone git@git.tib.eu:tib-av-a/backend.git --recursive
+```
+
+
 To install and start the backend run:
 
 ```bash

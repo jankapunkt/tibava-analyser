@@ -1,10 +1,33 @@
 version: "3.4"
 
+networks:
+  tibava:
+    name: tibava_network
+
 services:
   tibava:
     image: tibava
+    networks:
+      - tibava
     build:
       context: .
       dockerfile: ./Dockerfile
     ports:
       - 5000:5000
+    volumes:
+      - type: bind
+        source: ./media
+        target: /app/media
+  facedetection:
+    image: facedetection
+    networks:
+      - tibava
+    build:
+      context: facedetection
+      dockerfile: ./Dockerfile
+    ports:
+      - 5002:5002
+    volumes:
+      - type: bind
+        source: ./media
+        target: /app/media

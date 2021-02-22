@@ -1,0 +1,3 @@
+[submodule "facedetection"]
+	path = facedetection
+	url = git@git.tib.eu:tib-av-a/facedetection-dlib.git
