@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse, abort
+import json
 import logging
+import os
 import requests
 
 # instantiate the app
@@ -35,11 +37,22 @@ class FaceDetection(Resource):
     # calculates and stores face detection results
     def put(self, video_id):
         args = vidargs.parse_args()
-        print(args)
-        # TODO load result from database if video already processed
+
+        # TODO load result from database
+        # TODO assign unique ids to videos
+        if os.path.exists(os.path.join("media", str(video_id) + ".json")):
+            with open(os.path.join("media", str(video_id) + ".json"), "r") as jsonfile:
+                results = json.load(jsonfile)
+                return jsonify(results)
 
         # get results from submodule
-        return requests.put(f"http://facedetection:5002/detect_faces/{video_id}", args)
+        response = requests.put(f"http://facedetection:5002/detect_faces/{video_id}", args)
+        results = response.json()
+
+        with open(os.path.join("media", str(video_id) + ".json"), "w") as jsonfile:
+            json.dump(results, jsonfile)
+
+        return jsonify(results)
 
 
 api.add_resource(FaceDetection, "/detect_faces/<int:video_id>")
