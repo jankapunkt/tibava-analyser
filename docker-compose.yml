@@ -18,6 +18,19 @@ services:
       - type: bind
         source: ./media
         target: /app/media
+  shotdetection:
+    image: shotdetection
+    networks:
+      - tibava
+    build:
+      context: shotdetection
+      dockerfile: ./Dockerfile
+    ports:
+      - 5001:5001
+    volumes:
+      - type: bind
+        source: ./media
+        target: /app/media
   facedetection:
     image: facedetection
     networks:
