@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse, abort
+import imageio
 import json
 import logging
 import os
@@ -30,6 +31,19 @@ class Ping(Resource):
 
 
 api.add_resource(Ping, "/ping")
+
+
+class MetaReader(Resource):
+
+    # calculates and stores face detection results
+    def get(self, video_id):
+        args = vidargs.parse_args()
+        vid_reader = imageio.get_reader(args["path"])
+        metadata = vid_reader.get_meta_data()
+        return jsonify({"id": video_id, "title": args["title"], "path": args["path"], "metadata": metadata})
+
+
+api.add_resource(MetaReader, "/read_meta/<int:video_id>")
 
 
 # route to run shot detection on videos

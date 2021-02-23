@@ -16,6 +16,13 @@ print("Ping face detection")
 response = requests.get(face_detection_url + "ping")
 print(response.json())
 
+print("Get meta information")
+response = requests.get(backend_url + "/read_meta/1", {
+    "title": "Crash_Course_Engineering_Preview_-_English",
+    "path": "media/Crash_Course_Engineering_Preview_-_English.mp4"
+})
+print(response.json())
+
 print("Test shot detection")
 response = requests.put(backend_url + "detect_shots/1", {
     "title": "Crash_Course_Engineering_Preview_-_English",
