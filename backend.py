@@ -1,18 +1,56 @@
+from celery import Celery
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse, abort
+import grpc
 import imageio
 import json
 import logging
 import os
+import redis
 import requests
+import sys
+import traceback
+import yaml
+
+# own imports
+_CUR_PATH = os.path.dirname(__file__)
+sys.path.append(os.path.join(_CUR_PATH, "shotdetection"))
+from utils import export_to_shoebox
+import shotdetection_pb2, shotdetection_pb2_grpc
+
+
+# read config
+with open(os.path.join(_CUR_PATH, "config.yml")) as f:
+    _CFG = yaml.load(f, Loader=yaml.FullLoader)
 
 # instantiate the app
 app = Flask(__name__)
-
-CORS(app)
 app.config.from_object(__name__)
+app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 api = Api(app)
+
+
+def make_celery(app):
+    celery = Celery(
+        app.import_name, backend=app.config["CELERY_RESULT_BACKEND"], broker=app.config["CELERY_BROKER_URL"]
+    )
+    celery.conf.update(app.config)
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
+
+
+celery = make_celery(app)
+
+# enable CORS
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # init logging
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
@@ -22,6 +60,12 @@ vidargs = reqparse.RequestParser()
 vidargs.add_argument("title", type=str, required=True, help="title of the video")
 vidargs.add_argument("path", type=str, required=True, help="path to video file")
 vidargs.add_argument("max_frames", type=int, required=False, help="maximum number of video frames to process")
+
+# arguments for data conversion
+converterargs = reqparse.RequestParser()
+converterargs.add_argument("input", type=dict, required=True, help="input dictionary")
+converterargs.add_argument("dictkey", type=str, required=True, help="dictkey providing the data")
+converterargs.add_argument("format", type=str, required=True, choices=["shoebox"], help="format to convert to")
 
 
 # sanity check route
@@ -46,32 +90,103 @@ class MetaReader(Resource):
 api.add_resource(MetaReader, "/read_meta/<int:video_id>")
 
 
+class DataConverter(Resource):
+    def get(self, video_id):
+        args = converterargs.parse_args()
+
+        output_file = None
+        if args.format == "shoebox":
+            output_file = export_to_shoebox(video_id=video_id, input_dict=args.input, dictkey=args.dictkey)
+
+        if output_file is not None and os.path.exists(output_file):
+            return jsonify({"status": "SUCCESS", "output_file": output_file})
+        else:
+            return jsonify({"status": "ERROR", "output_file": None})
+
+
+api.add_resource(DataConverter, "/export_data/<int:video_id>")
+
+
 # route to run shot detection on videos
 class ShotDetection(Resource):
 
     # calculates and stores face detection results
-    def put(self, video_id):
+    def post(self, video_id):
         args = vidargs.parse_args()
-        outfile = os.path.join("media", str(video_id) + "_shots.json")
 
-        # TODO load result from proper database
-        # TODO assign unique ids to videos
-        if os.path.exists(outfile):
-            with open(outfile, "r") as jsonfile:
-                results = json.load(jsonfile)
-                return jsonify(results)
+        # assign task
+        task = shot_detection_task.apply_async((args,))
+        return jsonify({"status": "PENDING", "job_id": task.id})
 
-        # get results from submodule
-        response = requests.put(f"http://shotdetection:5001/detect_shots/{video_id}", args)
-        results = response.json()
+    def get(self, job_id):
+        try:
+            task = shot_detection_task.AsyncResult(job_id)
+        except Exception as e:
+            logging.warning(e)
+            logging.warning(traceback.format_exc())
+            return jsonify({"status": "ERROR", "msg": "job is unknown"})
 
-        with open(outfile, "w") as jsonfile:
-            json.dump(results, jsonfile)
+        if task.info is None:
+            return jsonify({"status": "PENDING"})
 
-        return jsonify(results)
+        if task.state == "SUCCESS":
+            status = task.info.get("status")
+            video_id = task.info.get("video_id")
+            shots = task.info.get("shots")
+
+            # TODO convert shots to python dict
+            logging.info(shots)
+            return jsonify({"status": status, "video_id": video_id, "shots": shots})
+
+        elif task.state == "PENDING":
+            return jsonify({"status": "PENDING", "msg": task.info.get("msg"), "code": task.info.get("code")})
+
+        return jsonify(
+            {
+                "status": "ERROR",
+                "msg": "job crashed",
+            }
+        )
 
 
-api.add_resource(ShotDetection, "/detect_shots/<int:video_id>")
+@celery.task(bind=True)
+def shot_detection_task(self, args):
+    channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
+    stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
+
+    def generateRequests(file_object, chunk_size=1024):
+        """Lazy function (generator) to read a file piece by piece.
+        Default chunk size: 1k"""
+        with open(file_object, "rb") as videobytestream:
+            while True:
+                data = videobytestream.read(chunk_size)
+                if not data:
+                    break
+                yield shotdetection_pb2.VideoRequest(video_encoded=data)
+
+    self.update_state(
+        state="PENDING",
+        meta={"msg": "Copy video to shotdetection server ..."},
+    )
+
+    response = stub.copy_video(generateRequests(args["path"]))
+    video_id = response.video_id
+
+    self.update_state(
+        state="PENDING",
+        meta={"msg": "Detect cuts in video ..."},
+    )
+
+    response = stub.get_shots(shotdetection_pb2.ShotRequest(video_id=video_id))
+
+    shots = []
+    for shot in response.shots:
+        shots.append({"shot_id": shot.shot_id, "start_frame": shot.start_frame, "end_frame": shot.end_frame})
+
+    return {"status": "SUCCESS", "shots": shots, "video_id": video_id}
+
+
+api.add_resource(ShotDetection, "/detect_shots/<int:video_id>", "/detect_shots/<string:job_id>")
 
 
 # route to run face detection on videos

@@ -1,5 +1,8 @@
-media/
-resources/
+# media/
+# resources/
+# ignore everything
+** 
+!requirements.txt
 
 **/__pycache__
 **/.classpath

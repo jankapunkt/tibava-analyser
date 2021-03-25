@@ -1,0 +1,9 @@
+webserver:
+  host: localhost
+  port: 8080
+shotdetection:
+  host: localhost
+  port: 50051
+facedetection:
+  host: localhost
+  port: 50052
