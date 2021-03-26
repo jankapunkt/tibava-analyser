@@ -29,6 +29,11 @@ You can manually start the backend with:
 python backend.py
 ```
 
+Redis is used as cache. To delete the cache please run:
+```bash
+docker exec -it backend_redis_1 redis-cli FLUSHALL
+```
+
 ## REST API
 
 For reference you can check `test_backend.py`. Functions were tested using a local server with `<base_url> = http://128.0.0.1:5000/`
