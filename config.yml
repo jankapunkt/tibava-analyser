@@ -1,3 +1,4 @@
+media_folder: media
 webserver:
   host: localhost
   port: 8080
