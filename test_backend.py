@@ -14,7 +14,6 @@ def parse_args():
     parser.add_argument("-vv", "--debug", action="store_true", help="debug output")
 
     parser.add_argument("--video_path", type=str, required=True, help="path to video file")
-    parser.add_argument("--video_id", type=int, default=1, required=False, help="video id")
 
     parser.add_argument("--test_face", action="store_true", help="test face detection module")
     parser.add_argument("--test_shot", action="store_true", help="test shot detection module")
@@ -39,37 +38,53 @@ def main():
     logging.info("Ping backend")
     logging.info(requests.get(_BACKEND_URL + "ping").json())
 
+    # get meta information and corresponding video_id for redis cache
     logging.info("Get meta information")
-    logging.info(
-        requests.get(
-            _BACKEND_URL + "/read_meta/" + str(args.video_id), {"title": title, "path": args.video_path}
-        ).json()
-    )
+    response = requests.get(_BACKEND_URL + "read_meta", {"title": title, "path": args.video_path}).json()
+    video_id = response["video_id"]
+    logging.info(response)
 
+    # test shot detection service
     if args.test_shot:
-        response = requests.post(
-            _BACKEND_URL + "detect_shots/" + str(args.video_id), {"title": title, "path": args.video_path}
-        )
-        print(response)
+        response = requests.post(_BACKEND_URL + "detect_shots", {"video_id": video_id, "path": args.video_path})
+        logging.info(response)
         response = response.json()
-        print(response)
         job_id = response["job_id"]
 
+        shots = []
+        logging.info("Detect shots in video ...")
         while True:
-            print(_BACKEND_URL + "detect_shots/" + str(job_id))
-            response = requests.get(_BACKEND_URL + "detect_shots/" + str(job_id))
-            print(response)
+            response = requests.get(_BACKEND_URL + "detect_shots", {"job_id": job_id})
             response = response.json()
-            print(response)
+            logging.debug(response)
 
             if "status" in response and response["status"] == "SUCCESS":
                 logging.info("JOB DONE!")
+                shots = response["shots"]
                 break
             elif "status" in response and response["status"] == "PENDING":
                 sleep(0.5)
             else:
                 logging.error("Something went wrong")
                 break
+
+        logging.info(shots)
+
+        # convert shots to shoebox format
+        logging.info("Converting shots to shoebox format")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": shots,
+                "format": "shoebox",
+                "ELANType_key": "CUTS",
+                "ELANBegin_key": "start_frame",
+                "ELANEnd_key": "end_frame",
+            },
+        )
+
+        logging.info(response.json())
 
     if args.test_face:
         logging.info("Ping face detection")
