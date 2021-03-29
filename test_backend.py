@@ -42,6 +42,7 @@ def main():
     logging.info("Get meta information")
     response = requests.get(_BACKEND_URL + "read_meta", {"title": title, "path": args.video_path}).json()
     video_id = response["video_id"]
+    fps = response["metadata"]["fps"]
     logging.info(response)
 
     # test shot detection service
@@ -54,7 +55,7 @@ def main():
         shots = []
         logging.info("Detect shots in video ...")
         while True:
-            response = requests.get(_BACKEND_URL + "detect_shots", {"job_id": job_id})
+            response = requests.get(_BACKEND_URL + "detect_shots", {"job_id": job_id, "fps": fps})
             response = response.json()
             logging.debug(response)
 
@@ -70,6 +71,35 @@ def main():
 
         logging.info(shots)
 
+        # convert shots to csv format
+        logging.info("Converting shots to csv format")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": shots,
+                "format": "csv",
+                "task": "CUTS",
+                "keys_to_store": ["shot_id", "start_frame", "end_frame"],
+            },
+        )
+
+        logging.info(response.json())
+
+        # convert shots to jsonl format
+        logging.info("Converting shots to jsonl format")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": shots,
+                "format": "jsonl",
+                "task": "CUTS",
+            },
+        )
+
+        logging.info(response.json())
+
         # convert shots to shoebox format
         logging.info("Converting shots to shoebox format")
         response = requests.post(
@@ -78,9 +108,9 @@ def main():
                 "video_id": video_id,
                 "input_data": shots,
                 "format": "shoebox",
-                "ELANType_key": "CUTS",
-                "ELANBegin_key": "start_frame",
-                "ELANEnd_key": "end_frame",
+                "task": "CUTS",
+                "ELANBegin_key": "start_time",
+                "ELANEnd_key": "end_time",
             },
         )
 

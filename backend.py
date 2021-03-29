@@ -1,4 +1,5 @@
 from celery import Celery
+import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse, abort
@@ -18,7 +19,7 @@ import yaml
 # own imports
 _CUR_PATH = os.path.dirname(__file__)
 sys.path.append(os.path.join(_CUR_PATH, "shotdetection"))
-from utils import export_to_shoebox
+from utils import export_to_csv, export_to_jsonl, export_to_shoebox
 import shotdetection_pb2, shotdetection_pb2_grpc
 
 
@@ -72,15 +73,20 @@ videoargs.add_argument("max_frames", type=int, required=False, help="maximum num
 # arguments for jobs
 jobargs = reqparse.RequestParser()
 jobargs.add_argument("job_id", type=str, required=True, help="id of the celery job")
+jobargs.add_argument("fps", type=float, required=False, help="fps for time conversion")
 
 # arguments for data conversion
 converterargs = reqparse.RequestParser()
 converterargs.add_argument("video_id", type=str, required=True, help="video id")
 converterargs.add_argument("input_data", type=list, required=True, location="json", help="input data")
-converterargs.add_argument("ELANType_key", type=str, required=True, help="dictkey providing the data")
-converterargs.add_argument("ELANBegin_key", type=str, required=True, help="dictkey providing the data")
-converterargs.add_argument("ELANEnd_key", type=str, required=True, help="dictkey providing the data")
-converterargs.add_argument("format", type=str, required=True, choices=["shoebox"], help="format to convert to")
+converterargs.add_argument("task", type=str, required=True, help="name of the task")
+converterargs.add_argument(
+    "format", type=str, required=True, choices=["csv", "jsonl", "shoebox"], help="format to convert to"
+)
+
+converterargs.add_argument("keys_to_store", type=list, required=False, location="json", help="keys to store")
+converterargs.add_argument("ELANBegin_key", type=str, required=False, help="ELANBegin key for shoebox")
+converterargs.add_argument("ELANEnd_key", type=str, required=False, help="ELANEnd key for shoebox")
 
 
 # sanity check route
@@ -119,15 +125,53 @@ class DataConverter(Resource):
         args = converterargs.parse_args()
         output_file = None
 
-        if args.format == "shoebox":
-            output_file = export_to_shoebox(
+        if len(args.input_data) < 1:
+            fname = f"{args.video_id}_{args.task}.{args.format}"
+            with open(os.path.join(_CFG["media_folder"], fname), "w") as f:
+                f.write("")
+            return jsonify({"status": "SUCCESS", "output_file": os.path.join(_CFG["media_folder"], fname)})
+
+        input_entry = args.input_data[0]
+        if not isinstance(input_entry, dict):
+            logging.error("First entry in input data is not of type dict!")
+            return jsonify({"status": "ERROR", "output_file": None})
+
+        input_keys = input_entry.keys()
+
+        if args.format == "csv":
+            output_file = export_to_csv(
                 video_id=args.video_id,
                 input_data=args.input_data,
                 media_folder=_CFG["media_folder"],
-                ELANType_key=args.ELANType_key,
-                ELANBegin_key=args.ELANBegin_key,
-                ELANEnd_key=args.ELANEnd_key,
+                task=args.task,
+                keys=args.keys_to_store,
             )
+
+        elif args.format == "jsonl":
+            output_file = export_to_jsonl(
+                video_id=args.video_id,
+                input_data=args.input_data,
+                media_folder=_CFG["media_folder"],
+                task=args.task,
+            )
+
+        elif args.format == "shoebox":
+
+            if args.ELANBegin_key in input_keys and args.ELANEnd_key in input_keys:
+                output_file = export_to_shoebox(
+                    video_id=args.video_id,
+                    input_data=args.input_data,
+                    media_folder=_CFG["media_folder"],
+                    task=args.task,
+                    ELANBegin_key=args.ELANBegin_key,
+                    ELANEnd_key=args.ELANEnd_key,
+                )
+            else:
+                logging.error("Key(s) for ELANBegin or ELANEnd not provided or not in input")
+                return jsonify({"status": "ERROR", "output_file": None})
+        else:
+            logging.error("Unknown conversion format!")
+            return jsonify({"status": "ERROR", "output_file": None})
 
         if output_file is not None and os.path.exists(output_file):
             return jsonify({"status": "SUCCESS", "output_file": output_file})
@@ -165,6 +209,22 @@ class ShotDetection(Resource):
             status = task.info.get("status")
             video_id = task.info.get("video_id")
             shots = task.info.get("shots")
+
+            if args.fps:
+                for shot in shots:
+
+                    shot["start_time"] = (
+                        (datetime.datetime.min + datetime.timedelta(seconds=shot["start_frame"] / args.fps))
+                        .time()
+                        .isoformat()
+                    )
+
+                    shot["end_time"] = (
+                        (datetime.datetime.min + datetime.timedelta(seconds=shot["end_frame"] / args.fps))
+                        .time()
+                        .isoformat()
+                    )
+
             return jsonify({"status": status, "video_id": video_id, "shots": shots})
 
         elif task.state == "PENDING":
