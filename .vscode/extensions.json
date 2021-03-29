@@ -1,0 +1,30 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
+	// Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
+
+	// List of extensions which should be recommended for users of this workspace.
+	"recommendations": [
+		"bierner.markdown-checkbox",
+		"CoenraadS.bracket-pair-colorizer",
+		"esbenp.prettier-vscode",
+		"formulahendry.docker-explorer",
+		"kiteco.kite",
+		"mohsen1.prettify-json",
+		"ms-azuretools.vscode-docker",
+		"ms-python.python",
+		"ms-toolsai.jupyter",
+		"ms-vscode-remote.remote-containers",
+		"ms-vscode-remote.remote-ssh",
+		"ms-vscode-remote.remote-ssh-edit",
+		"octref.vetur",
+		"PKief.material-icon-theme",
+		"RandomFractalsInc.vscode-data-preview",
+		"yzhang.markdown-all-in-one",
+		"zhuangtongfa.material-theme",
+		"zxh404.vscode-proto3"
+	],
+	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
+	"unwantedRecommendations": [
+		
+	]
+}
