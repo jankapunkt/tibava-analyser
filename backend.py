@@ -100,7 +100,7 @@ api.add_resource(Ping, "/ping")
 
 class MetaReader(Resource):
 
-    # calculates and stores face detection results
+    # extracts metainformation (fps, codec, etc) from video
     def get(self):
         args = metaargs.parse_args()
         vid_reader = imageio.get_reader(args["path"])
@@ -121,6 +121,8 @@ api.add_resource(MetaReader, "/read_meta")
 
 
 class DataConverter(Resource):
+
+    # converts data list (entries are dicts) to specified file format
     def post(self):
         args = converterargs.parse_args()
         output_file = None
@@ -182,10 +184,9 @@ class DataConverter(Resource):
 api.add_resource(DataConverter, "/export_data")
 
 
-# route to run shot detection on videos
 class ShotDetection(Resource):
 
-    # calculates and stores face detection results
+    # posts job to detect cuts/shots in videos
     def post(self):
         args = videoargs.parse_args()
 
@@ -193,6 +194,7 @@ class ShotDetection(Resource):
         task = shot_detection_task.apply_async((args,))
         return jsonify({"status": "PENDING", "job_id": task.id})
 
+    # gets result from posted jobs for cut/shot detection
     def get(self):
         args = jobargs.parse_args()
         try:
@@ -216,13 +218,13 @@ class ShotDetection(Resource):
                     shot["start_time"] = (
                         (datetime.datetime.min + datetime.timedelta(seconds=shot["start_frame"] / args.fps))
                         .time()
-                        .isoformat()
+                        .isoformat(timespec="milliseconds")
                     )
 
                     shot["end_time"] = (
                         (datetime.datetime.min + datetime.timedelta(seconds=shot["end_frame"] / args.fps))
                         .time()
-                        .isoformat()
+                        .isoformat(timespec="milliseconds")
                     )
 
             return jsonify({"status": status, "video_id": video_id, "shots": shots})
@@ -240,6 +242,7 @@ class ShotDetection(Resource):
 
 @celery.task(bind=True)
 def shot_detection_task(self, args):
+    # celery job for shot detection
     channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 

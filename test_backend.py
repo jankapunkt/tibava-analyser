@@ -79,7 +79,7 @@ def main():
                 "video_id": video_id,
                 "input_data": shots,
                 "format": "csv",
-                "task": "CUTS",
+                "task": "Cuts",
                 "keys_to_store": ["shot_id", "start_frame", "end_frame"],
             },
         )
@@ -94,7 +94,7 @@ def main():
                 "video_id": video_id,
                 "input_data": shots,
                 "format": "jsonl",
-                "task": "CUTS",
+                "task": "Cuts",
             },
         )
 
@@ -108,7 +108,7 @@ def main():
                 "video_id": video_id,
                 "input_data": shots,
                 "format": "shoebox",
-                "task": "CUTS",
+                "task": "Cuts",
                 "ELANBegin_key": "start_time",
                 "ELANEnd_key": "end_time",
             },
