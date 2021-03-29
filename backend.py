@@ -318,28 +318,28 @@ api.add_resource(ShotDetection, "/detect_shots")
 
 
 # route to run face detection on videos
-# class FaceDetection(Resource):
+class FaceDetection(Resource):
 
-#     # calculates and stores face detection results
-#     def put(self, video_id):
-#         args = vidargs.parse_args()
-#         outfile = os.path.join("media", str(video_id) + "_faces.json")
+    # calculates and stores face detection results
+    def put(self, video_id):
+        args = vidargs.parse_args()
+        outfile = os.path.join("media", str(video_id) + "_faces.json")
 
-#         # TODO load result from proper database
-#         # TODO assign unique ids to videos
-#         if os.path.exists(outfile):
-#             with open(outfile, "r") as jsonfile:
-#                 results = json.load(jsonfile)
-#                 return jsonify(results)
+        # TODO load result from proper database
+        # TODO assign unique ids to videos
+        if os.path.exists(outfile):
+            with open(outfile, "r") as jsonfile:
+                results = json.load(jsonfile)
+                return jsonify(results)
 
-#         # get results from submodule
-#         response = requests.put(f"http://facedetection:5002/detect_faces/{video_id}", args)
-#         results = response.json()
+        # get results from submodule
+        response = requests.put(f"http://facedetection:5002/detect_faces/{video_id}", args)
+        results = response.json()
 
-#         with open(outfile, "w") as jsonfile:
-#             json.dump(results, jsonfile)
+        with open(outfile, "w") as jsonfile:
+            json.dump(results, jsonfile)
 
-#         return jsonify(results)
+        return jsonify(results)
 
 
 # api.add_resource(FaceDetection, "/detect_faces/<int:video_id>")
