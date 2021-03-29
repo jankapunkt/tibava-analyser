@@ -52,8 +52,9 @@ def export_to_shoebox(video_id, input_data, media_folder, task, ELANBegin_key, E
 
         for cnt, entry in enumerate(input_data):
             f.write("\n")
-            # TODO proper formatting
-            f.write(f"\\block {(cnt + 1):04d}" + "\n")
+            # f.write(f"\\block {(cnt + 1):06d}" + "\n")
+            f.write(f"\\block {(cnt + 1)}" + "\n")
+
             f.write(f"\\{task}" + "\n")
             f.write(f"\\ELANBegin {entry[ELANBegin_key]}" + "\n")
             f.write(f"\\ELANEnd {entry[ELANEnd_key]}" + "\n")
