@@ -6,7 +6,6 @@ import sys
 from time import sleep
 
 _BACKEND_URL = "http://127.0.0.1:5000/"
-_FACE_DETECTION_URL = "http://127.0.0.1:5002/"
 
 
 def parse_args():
@@ -117,17 +116,28 @@ def main():
         logging.info(response.json())
 
     if args.test_face:
-        logging.info("Ping face detection")
-        logging.info(requests.get(_FACE_DETECTION_URL + "ping").json())
-
-        logging.info("Test face detection")
-        response = requests.put(
-            _BACKEND_URL + "detect_faces/" + str(args.video_id),
-            {"title": title, "path": args.video_path, "max_frames": 100},
-        )
-
+        response = requests.post(_BACKEND_URL + "detect_faces", {"video_id": video_id, "path": args.video_path})
         logging.info(response)
-        logging.info(response.json())
+        response = response.json()
+        job_id = response["job_id"]
+
+        shots = []
+        logging.info("Detect faces in video ...")
+
+        while True:
+            response = requests.get(_BACKEND_URL + "detect_faces", {"job_id": job_id})
+            response = response.json()
+            logging.debug(response)
+
+            if "status" in response and response["status"] == "SUCCESS":
+                logging.info("JOB DONE!")
+                shots = response["shots"]
+                break
+            elif "status" in response and response["status"] == "PENDING":
+                sleep(0.5)
+            else:
+                logging.error("Something went wrong")
+                break
 
     return 0
 
