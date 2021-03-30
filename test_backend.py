@@ -121,7 +121,7 @@ def main():
         response = response.json()
         job_id = response["job_id"]
 
-        shots = []
+        faces = []
         logging.info("Detect faces in video ...")
 
         while True:
@@ -131,13 +131,17 @@ def main():
 
             if "status" in response and response["status"] == "SUCCESS":
                 logging.info("JOB DONE!")
-                shots = response["shots"]
+                faces = response["faces"]
+                max_num_faces = response["max_num_faces"]
                 break
             elif "status" in response and response["status"] == "PENDING":
                 sleep(0.5)
             else:
                 logging.error("Something went wrong")
                 break
+
+        logging.info(faces)
+        logging.info(max_num_faces)
 
     return 0
 

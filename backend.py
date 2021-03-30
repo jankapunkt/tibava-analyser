@@ -18,8 +18,11 @@ import yaml
 
 # own imports
 _CUR_PATH = os.path.dirname(__file__)
+sys.path.append(os.path.join(_CUR_PATH, "facedetection"))
 sys.path.append(os.path.join(_CUR_PATH, "shotdetection"))
 from utils import export_to_csv, export_to_jsonl, export_to_shoebox
+
+import facedetection_pb2, facedetection_pb2_grpc
 import shotdetection_pb2, shotdetection_pb2_grpc
 
 
@@ -242,42 +245,21 @@ class ShotDetection(Resource):
 
 @celery.task(bind=True)
 def shot_detection_task(self, args):
-    # celery job for shot detection
+    """
+    Celery task for shot detection in videos
+    """
+
+    # copy video to server
+    copy_status = copy_video_to_grpc_server(video_id=args["video_id"], video_path=args["path"])
+    if not copy_status:
+        return {"status": "ERROR", "shots": []}
+
+    # open grpc channel
     channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 
-    # check if video already exists on target server
-    r = redis.Redis()
-    cache_result = r.get(f"videofile_{args['video_id']}")
-
-    def generateRequests(video_id, file_object, chunk_size=1024):
-        """Lazy function (generator) to read a file piece by piece.
-        Default chunk size: 1k"""
-        with open(file_object, "rb") as videobytestream:
-            while True:
-                data = videobytestream.read(chunk_size)
-                if not data:
-                    break
-                yield shotdetection_pb2.VideoRequest(video_id=video_id, video_encoded=data)
-
-    if not cache_result:
-        logging.info(f"Transferring video with id {args['video_id']} to shotdetection server ...")
-        self.update_state(
-            state="PENDING",
-            meta={"msg": "Copy video to shotdetection server ..."},
-        )
-        response = stub.copy_video(generateRequests(args["video_id"], args["path"]))
-
-        if response.success:
-            r.set(f"videofile_{args['video_id']}", msgpack.packb({"stored": True}))
-        else:
-            logging.error("Error while copying video ...")
-            return {"status": "ERROR", "shots": []}
-
-    else:
-        logging.info(f"Video with id {args['video_id']} already stored ...")
-
     # check if shots are already extracted
+    r = redis.Redis()
     cache_result = r.get(f"shots_{args['video_id']}")
 
     if cache_result:  # load results from cache and return
@@ -314,35 +296,150 @@ def shot_detection_task(self, args):
         return {"status": "ERROR", "shots": []}
 
 
+def copy_video_to_grpc_server(video_id, video_path):
+    channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
+    stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
+
+    # check if video already exists on target server
+    r = redis.Redis()
+    cache_result = r.get(f"videofile_{video_id}")
+
+    def generateRequests(video_id, file_object, chunk_size=1024):
+        """Lazy function (generator) to read a file piece by piece.
+        Default chunk size: 1k"""
+        with open(file_object, "rb") as videobytestream:
+            while True:
+                data = videobytestream.read(chunk_size)
+                if not data:
+                    break
+                yield shotdetection_pb2.VideoRequest(video_id=video_id, video_encoded=data)
+
+    if cache_result:
+        logging.info(f"Video with id {video_id} already stored ...")
+        return True
+    else:
+        logging.info(f"Transferring video with id {video_id} to shotdetection server ...")
+        response = stub.copy_video(generateRequests(video_id, video_path))
+
+        if response.success:
+            r.set(f"videofile_{video_id}", msgpack.packb({"stored": True}))
+            return True
+
+        logging.error("Error while copying video ...")
+        return False
+
+
 api.add_resource(ShotDetection, "/detect_shots")
 
 
 # route to run face detection on videos
 class FaceDetection(Resource):
 
-    # calculates and stores face detection results
-    def put(self, video_id):
-        args = vidargs.parse_args()
-        outfile = os.path.join("media", str(video_id) + "_faces.json")
+    # posts job to detect faces in videos
+    def post(self):
+        args = videoargs.parse_args()
 
-        # TODO load result from proper database
-        # TODO assign unique ids to videos
-        if os.path.exists(outfile):
-            with open(outfile, "r") as jsonfile:
-                results = json.load(jsonfile)
-                return jsonify(results)
+        # assign task
+        task = face_detection_task.apply_async((args,))
+        return jsonify({"status": "PENDING", "job_id": task.id})
 
-        # get results from submodule
-        response = requests.put(f"http://facedetection:5002/detect_faces/{video_id}", args)
-        results = response.json()
+    # gets result from posted jobs for face detection
+    def get(self):
+        args = jobargs.parse_args()
+        try:
+            task = face_detection_task.AsyncResult(args.job_id)
+        except Exception as e:
+            logging.warning(e)
+            logging.warning(traceback.format_exc())
+            return jsonify({"status": "ERROR", "msg": "job is unknown"})
 
-        with open(outfile, "w") as jsonfile:
-            json.dump(results, jsonfile)
+        if task.info is None:
+            return jsonify({"status": "PENDING"})
 
-        return jsonify(results)
+        if task.state == "SUCCESS":
+            return jsonify(
+                {
+                    "status": task.info.get("status"),
+                    "video_id": task.info.get("video_id"),
+                    "faces": task.info.get("faces"),
+                    "max_num_faces": task.info.get("max_num_faces"),
+                }
+            )
+
+        elif task.state == "PENDING":
+            return jsonify({"status": "PENDING", "msg": task.info.get("msg"), "code": task.info.get("code")})
+
+        return jsonify(
+            {
+                "status": "ERROR",
+                "msg": "job crashed",
+            }
+        )
 
 
-# api.add_resource(FaceDetection, "/detect_faces/<int:video_id>")
+@celery.task(bind=True)
+def face_detection_task(self, args):
+    """
+    Celery task for face detection in videos
+    """
+
+    # copy video to server
+    copy_status = copy_video_to_grpc_server(video_id=args["video_id"], video_path=args["path"])
+    if not copy_status:
+        return {"status": "ERROR", "faces": []}
+
+    # open grpc channel
+    channel = grpc.insecure_channel(f"[::]:{_CFG['facedetection']['port']}")
+    stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
+
+    # check if faces are already extracted
+    r = redis.Redis()
+    cache_result = r.get(f"faces_{args['video_id']}")
+
+    if cache_result:  # load results from cache and return
+        logging.info(f"Loading face detection results for {args['video_id']} from cache ...")
+        cache_unpacked = msgpack.unpackb(cache_result)
+        return {"status": "SUCCESS", "faces": cache_unpacked["faces"], "max_num_faces": cache_unpacked["max_num_faces"]}
+
+    # calculate face detection results if no cached result
+    logging.info(f"Calculate face detection results for {args['video_id']} ...")
+    self.update_state(
+        state="PENDING",
+        meta={"msg": "Detect faces in video ..."},
+    )
+    try:
+        response = stub.detect_faces(facedetection_pb2.FaceRequest(video_id=args["video_id"]))
+
+        if not response.success:
+            logging.error(f"Error while detecting faces ...")
+            return {"status": "ERROR", "faces": []}
+
+        # convert faces to list
+        faces = []
+        for face in response.faces:
+            faces.append(
+                {
+                    "frame_idx": face.frame_idx,
+                    "bbox_xywh": (face.bbox_x, face.bbox_y, face.bbox_w, face.bbox_h),
+                    "bbox_area": face.bbox_area,
+                }
+            )
+
+        # write to cache and return
+        logging.info(f"Store face detection results for {args['video_id']} in cache ...")
+        r.set(f"faces_{args['video_id']}", msgpack.packb({"faces": faces, "max_num_faces": response.max_num_faces}))
+
+        return {"status": "SUCCESS", "faces": faces, "max_num_faces": response.max_num_faces}
+
+    except Exception as e:
+        logging.error(f"Error while detecting faces: {repr(e)}")
+        logging.error(traceback.format_exc())
+        return {"status": "ERROR", "faces": []}
+
+    # TODO
+
+
+api.add_resource(FaceDetection, "/detect_faces")
 
 if __name__ == "__main__":
     app.run(debug=False)
