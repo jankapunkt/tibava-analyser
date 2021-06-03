@@ -29,13 +29,16 @@ def export_to_csv(video_id, input_data, media_folder, task, keys=None):
     return os.path.join(media_folder, fname)
 
 
-def export_to_jsonl(video_id, input_data, media_folder, task):
+def export_to_jsonl(video_id, input_data, media_folder, task, keys=None):
 
     fname = f"{video_id}_{task}.jsonl"
     with open(os.path.join(media_folder, fname), "w") as f:
 
         for entry in input_data:
-            f.write(json.dumps(entry) + "\n")
+            if keys:
+                f.write(json.dumps({key: entry[key] for key in keys}) + "\n")
+            else:
+                f.write(json.dumps(entry) + "\n")
 
     return os.path.join(media_folder, fname)
 

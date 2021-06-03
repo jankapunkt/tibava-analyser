@@ -1,17 +1,21 @@
+import base64
 from celery import Celery
 import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify  # , request
 from flask_cors import CORS
-from flask_restful import Api, Resource, reqparse, abort
+from flask_restful import Api, Resource, reqparse  # , abort
 import grpc
 import hashlib
 import imageio
-import json
+
+# import json
 import logging
+import numpy as np
 import msgpack
 import os
 import redis
-import requests
+
+# import requests
 import sys
 import traceback
 import yaml
@@ -158,6 +162,7 @@ class DataConverter(Resource):
                 input_data=args.input_data,
                 media_folder=_CFG["media_folder"],
                 task=args.task,
+                keys=args.keys_to_store,
             )
 
         elif args.format == "shoebox":
@@ -282,7 +287,14 @@ def shot_detection_task(self, args):
 
         shots = []
         for shot in response.shots:
-            shots.append({"shot_id": shot.shot_id, "start_frame": shot.start_frame, "end_frame": shot.end_frame})
+            shots.append(
+                {
+                    "shot_id": shot.shot_id,
+                    "start_frame": shot.start_frame,
+                    "end_frame": shot.end_frame,
+                    "keyframes": list(shot.keyframes),
+                }
+            )
 
         # write to cache and return
         logging.info(f"Store shot detection results for {args['video_id']} in cache ...")

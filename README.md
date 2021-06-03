@@ -2,11 +2,18 @@
 
 ## TODOs
 
-- [ ] Route to get meta information of videos (frame rate, resolution, path, ...)
+- [x] Route to get meta information of videos (frame rate, resolution, path, ...)
 - [x] Face Detection with DLib
 - [ ] Face Detection with *RetinaFace* ([Repo](https://github.com/deepinsight/insightface/tree/master/detection/RetinaFace))
+- [ ] Face Tracking
+- [ ] Face Identification (Clustering) using *ArcFace* ([Repo](https://github.com/deepinsight/insightface/tree/master/detection/RetinaFace))
 - [x] Shot Boundary Detection with *TransNet v2* ([Repo](https://github.com/soCzech/TransNetV2)) 
+- [ ] Keyframes for Shots
+  - [ ] First, Middle, and Last Frame
+  - [ ] Keyframe Detection
 - [ ] Shot Type Classification
+- [ ] Scene Classification (Clustering)
+- [ ] Geolocation Estimation (Clustering)
 
 ## Installation
 

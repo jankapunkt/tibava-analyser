@@ -68,7 +68,21 @@ def main():
                 logging.error("Something went wrong")
                 break
 
-        logging.info(shots)
+        # create html for shot keyframes
+        with open(os.path.join(os.path.dirname(args.video_path), str(video_id) + "_keyframes.html"), "w") as html_file:
+            for shot in response["shots"]:
+                for keyframe in shot["keyframes"]:
+                    html_file.write(
+                        f"""
+<div>
+    <p>Shot {shot["shot_id"]}</p>
+    <img src="data:image/jpg;base64,{keyframe}">
+</div>
+
+"""
+                    )
+
+        # logging.info(shots)
 
         # convert shots to csv format
         logging.info("Converting shots to csv format")
@@ -94,6 +108,7 @@ def main():
                 "input_data": shots,
                 "format": "jsonl",
                 "task": "Cuts",
+                # "keys_to_store": ["shot_id", "start_frame", "end_frame", "start_time", "end_time"],
             },
         )
 
