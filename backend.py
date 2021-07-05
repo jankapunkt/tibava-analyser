@@ -431,9 +431,11 @@ def face_detection_task(self, args):
         for face in response.faces:
             faces.append(
                 {
+                    "face_id": face.face_id,
                     "frame_idx": face.frame_idx,
                     "bbox_xywh": (face.bbox_x, face.bbox_y, face.bbox_w, face.bbox_h),
                     "bbox_area": face.bbox_area,
+                    # "embedding": face.embedding,
                 }
             )
 

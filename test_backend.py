@@ -158,6 +158,35 @@ def main():
         logging.info(faces)
         logging.info(max_num_faces)
 
+        # convert shots to csv format
+        logging.info("Converting faces to csv format")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": faces,
+                "format": "csv",
+                "task": "Faces",
+                "keys_to_store": ["face_id", "frame_idx", "bbox_xywh", "bbox_area"],
+            },
+        )
+
+        logging.info(response.json())
+
+        # convert shots to jsonl format
+        logging.info("Converting faces to jsonl format")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": faces,
+                "format": "jsonl",
+                "task": "Faces",
+            },
+        )
+
+        logging.info(response.json())
+
     return 0
 
 
