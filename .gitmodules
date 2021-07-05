@@ -1,6 +1,3 @@
-[submodule "facedetection"]
-	path = facedetection
-	url = git@git.tib.eu:tib-av-a/facedetection-dlib.git
 [submodule "shotdetection"]
 	path = shotdetection
 	url = git@git.tib.eu:tib-av-a/shotdetection-transnetv2.git
