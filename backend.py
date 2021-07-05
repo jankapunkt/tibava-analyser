@@ -248,6 +248,9 @@ class ShotDetection(Resource):
         )
 
 
+api.add_resource(ShotDetection, "/detect_shots")
+
+
 @celery.task(bind=True)
 def shot_detection_task(self, args):
     """
@@ -341,9 +344,6 @@ def copy_video_to_grpc_server(video_id, video_path):
         return False
 
 
-api.add_resource(ShotDetection, "/detect_shots")
-
-
 # route to run face detection on videos
 class FaceDetection(Resource):
 
@@ -374,7 +374,6 @@ class FaceDetection(Resource):
                     "status": task.info.get("status"),
                     "video_id": task.info.get("video_id"),
                     "faces": task.info.get("faces"),
-                    "max_num_faces": task.info.get("max_num_faces"),
                 }
             )
 
@@ -387,6 +386,9 @@ class FaceDetection(Resource):
                 "msg": "job crashed",
             }
         )
+
+
+api.add_resource(FaceDetection, "/detect_faces")
 
 
 @celery.task(bind=True)
@@ -411,7 +413,7 @@ def face_detection_task(self, args):
     if cache_result:  # load results from cache and return
         logging.info(f"Loading face detection results for {args['video_id']} from cache ...")
         cache_unpacked = msgpack.unpackb(cache_result)
-        return {"status": "SUCCESS", "faces": cache_unpacked["faces"], "max_num_faces": cache_unpacked["max_num_faces"]}
+        return {"status": "SUCCESS", "faces": cache_unpacked["faces"]}
 
     # calculate face detection results if no cached result
     logging.info(f"Calculate face detection results for {args['video_id']} ...")
@@ -435,25 +437,145 @@ def face_detection_task(self, args):
                     "frame_idx": face.frame_idx,
                     "bbox_xywh": (face.bbox_x, face.bbox_y, face.bbox_w, face.bbox_h),
                     "bbox_area": face.bbox_area,
-                    # "embedding": face.embedding,
+                    "embedding": list(face.embedding),
                 }
             )
 
         # write to cache and return
         logging.info(f"Store face detection results for {args['video_id']} in cache ...")
-        r.set(f"faces_{args['video_id']}", msgpack.packb({"faces": faces, "max_num_faces": response.max_num_faces}))
+        r.set(f"faces_{args['video_id']}", msgpack.packb({"faces": faces}))
 
-        return {"status": "SUCCESS", "faces": faces, "max_num_faces": response.max_num_faces}
+        return {"status": "SUCCESS", "faces": faces}
 
     except Exception as e:
         logging.error(f"Error while detecting faces: {repr(e)}")
         logging.error(traceback.format_exc())
         return {"status": "ERROR", "faces": []}
 
-    # TODO
+
+# route to run face clustering on detected faces in a video
+class FaceClustering(Resource):
+
+    # posts job to cluster faces
+    def post(self):
+        args = videoargs.parse_args()
+
+        # assign task
+        task = face_clustering_task.apply_async((args,))
+        return jsonify({"status": "PENDING", "job_id": task.id})
+
+    # gets result from posted jobs for face detection
+    def get(self):
+        args = jobargs.parse_args()
+        try:
+            task = face_clustering_task.AsyncResult(args.job_id)
+        except Exception as e:
+            logging.warning(e)
+            logging.warning(traceback.format_exc())
+            return jsonify({"status": "ERROR", "msg": "job is unknown"})
+
+        if task.info is None:
+            return jsonify({"status": "PENDING"})
+
+        if task.state == "SUCCESS":
+            return jsonify(
+                {
+                    "status": task.info.get("status"),
+                    "video_id": task.info.get("video_id"),
+                    "face_clusters": task.info.get("face_clusters"),
+                }
+            )
+
+        elif task.state == "PENDING":
+            return jsonify({"status": "PENDING", "msg": task.info.get("msg"), "code": task.info.get("code")})
+
+        return jsonify(
+            {
+                "status": "ERROR",
+                "msg": "job crashed",
+            }
+        )
 
 
-api.add_resource(FaceDetection, "/detect_faces")
+api.add_resource(FaceClustering, "/cluster_faces")
+
+
+@celery.task(bind=True)
+def face_clustering_task(self, args):
+    """
+    Celery task for face clustering on detected faces in a video
+    """
+
+    # open grpc channel
+    channel = grpc.insecure_channel(f"[::]:{_CFG['facedetection']['port']}")
+    stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
+
+    # check if faces are already extracted
+    r = redis.Redis()
+    cache_result = r.get(f"faceclusters_{args['video_id']}")
+
+    if cache_result:  # load results from cache and return
+        logging.info(f"Loading face detection results for {args['video_id']} from cache ...")
+        cache_unpacked = msgpack.unpackb(cache_result)
+        return {"status": "SUCCESS", "face_clusters": cache_unpacked["face_clusters"]}
+
+    # load face detection results of the video
+    cache_result = r.get(f"faces_{args['video_id']}")
+    if not cache_result:
+        logging.info(f"No face detection results for {args['video_id']} found ...")
+        return {"status": "SUCCESS", "face_clusters": []}
+
+    faces = []
+    cache_unpacked = msgpack.unpackb(cache_result)
+    for face in cache_unpacked["faces"]:
+        faces.append(
+            facedetection_pb2.Face(
+                face_id=face["face_id"],
+                frame_idx=face["frame_idx"],
+                bbox_x=face["bbox_xywh"][0],
+                bbox_y=face["bbox_xywh"][1],
+                bbox_w=face["bbox_xywh"][2],
+                bbox_h=face["bbox_xywh"][3],
+                bbox_area=face["bbox_area"],
+                embedding=face["embedding"],
+            )
+        )
+
+    # calculate face detection results if no cached result
+    logging.info(f"Calculate face clustering results for {args['video_id']} ...")
+    self.update_state(
+        state="PENDING",
+        meta={"msg": f"Cluster faces in video {args['video_id']} ..."},
+    )
+
+    try:
+        response = stub.cluster_faces(facedetection_pb2.ClusterRequest(faces=faces))
+
+        if not response.success:
+            logging.error(f"Error while detecting faces ...")
+            return {"status": "ERROR", "face_clusters": []}
+
+        # convert faces to list
+        face_clusters = []
+        for cluster in response.clusters:
+            faces.append(
+                {
+                    "cluster_id": cluster.cluster_id,
+                    "face_ids": list(cluster.face_ids),
+                }
+            )
+
+        # write to cache and return
+        logging.info(f"Store face clustering results for {args['video_id']} in cache ...")
+        r.set(f"faceclusters_{args['video_id']}", msgpack.packb({"face_clusters": face_clusters}))
+
+        return {"status": "SUCCESS", "face_clusters": face_clusters}
+
+    except Exception as e:
+        logging.error(f"Error while clustering faces: {repr(e)}")
+        logging.error(traceback.format_exc())
+        return {"status": "ERROR", "face_clusters": []}
+
 
 if __name__ == "__main__":
     app.run(debug=False)

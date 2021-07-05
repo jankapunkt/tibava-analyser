@@ -147,16 +147,12 @@ def main():
             if "status" in response and response["status"] == "SUCCESS":
                 logging.info("JOB DONE!")
                 faces = response["faces"]
-                max_num_faces = response["max_num_faces"]
                 break
             elif "status" in response and response["status"] == "PENDING":
                 sleep(0.5)
             else:
                 logging.error("Something went wrong")
                 break
-
-        logging.info(faces)
-        logging.info(max_num_faces)
 
         # convert shots to csv format
         logging.info("Converting faces to csv format")
@@ -186,6 +182,30 @@ def main():
         )
 
         logging.info(response.json())
+
+        logging.info("Perform face clustering ...")
+        face_clusters = []
+        response = requests.post(_BACKEND_URL + "cluster_faces", {"video_id": video_id, "path": args.video_path})
+        logging.info(response)
+        response = response.json()
+        job_id = response["job_id"]
+
+        while True:
+            response = requests.get(_BACKEND_URL + "cluster_faces", {"job_id": job_id})
+            response = response.json()
+            logging.debug(response)
+
+            if "status" in response and response["status"] == "SUCCESS":
+                logging.info("JOB DONE!")
+                face_clusters = response["face_clusters"]
+                break
+            elif "status" in response and response["status"] == "PENDING":
+                sleep(0.5)
+            else:
+                logging.error("Something went wrong")
+                break
+
+        logging.info(face_clusters)
 
     return 0
 
