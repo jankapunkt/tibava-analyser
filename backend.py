@@ -558,9 +558,10 @@ def face_clustering_task(self, args):
         # convert faces to list
         face_clusters = []
         for cluster in response.clusters:
-            faces.append(
+            face_clusters.append(
                 {
                     "cluster_id": cluster.cluster_id,
+                    "occurrences": cluster.occurrences,
                     "face_ids": list(cluster.face_ids),
                 }
             )
