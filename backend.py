@@ -303,7 +303,6 @@ def shot_detection_task(self, args):
                     "shot_id": shot.shot_id,
                     "start_frame": shot.start_frame,
                     "end_frame": shot.end_frame,
-                    "keyframes": list(shot.keyframes),
                 }
             )
 
@@ -645,7 +644,7 @@ def thumbnail_task(self, args):
             reader.set_image_index(frame["idx"])
             thumbnail = reader.get_next_data()
 
-            if "bbox_xywh" in frame:
+            if "bbox_xywh" in frame and frame["bbox_xywh"] is not None:
                 x1 = frame["bbox_xywh"][0]
                 x2 = frame["bbox_xywh"][0] + frame["bbox_xywh"][2]
                 y1 = frame["bbox_xywh"][1]

@@ -22,6 +22,46 @@ def parse_args():
     return args
 
 
+def post_job(route, args):
+    response = requests.post(_BACKEND_URL + route, json=args)
+    logging.info(response)
+    response = response.json()
+    return response["job_id"]
+
+
+def get_response(route, args):
+    while True:
+        response = requests.get(_BACKEND_URL + route, args)
+        response = response.json()
+        logging.debug(response)
+
+        if "status" in response and response["status"] == "SUCCESS":
+            logging.info("JOB DONE!")
+            return response
+        elif "status" in response and response["status"] == "PENDING":
+            sleep(0.5)
+        else:
+            logging.error("Something went wrong")
+            break
+
+    return None
+
+
+def generate_thumbnails(output_file, data):
+    with open(output_file, "w") as html_file:
+        for entry in data:
+            html_file.write(
+                f"""
+<div>
+    <p>Facecluster {entry["id"]}</p>
+    <img src="data:image/jpg;base64,{entry["img"]}">
+</div>
+
+"""
+            )
+    return
+
+
 def main():
     # load arguments
     args = parse_args()
@@ -35,11 +75,11 @@ def main():
 
     title = os.path.splitext(os.path.basename(args.video_path))[0]
 
-    logging.info("Ping backend")
+    logging.info("Ping backend ...")
     logging.info(requests.get(_BACKEND_URL + "ping").json())
 
     # get meta information and corresponding video_id for redis cache
-    logging.info("Get meta information")
+    logging.info("Get meta information ...")
     response = requests.get(_BACKEND_URL + "read_meta", {"title": title, "path": args.video_path}).json()
     video_id = response["video_id"]
     fps = response["metadata"]["fps"]
@@ -47,44 +87,16 @@ def main():
 
     # test shot detection service
     if args.test_shot:
-        response = requests.post(_BACKEND_URL + "detect_shots", {"video_id": video_id, "path": args.video_path})
-        logging.info(response)
-        response = response.json()
-        job_id = response["job_id"]
+        logging.info("Detect shots in video ...")
+        job_id = post_job(route="detect_shots", args={"video_id": video_id, "path": args.video_path})
+        response = get_response(route="detect_shots", args={"job_id": job_id, "fps": fps})
 
         shots = []
-        logging.info("Detect shots in video ...")
-        while True:
-            response = requests.get(_BACKEND_URL + "detect_shots", {"job_id": job_id, "fps": fps})
-            response = response.json()
-            logging.debug(response)
-
-            if "status" in response and response["status"] == "SUCCESS":
-                logging.info("JOB DONE!")
-                shots = response["shots"]
-                break
-            elif "status" in response and response["status"] == "PENDING":
-                sleep(0.5)
-            else:
-                logging.error("Something went wrong")
-                break
-
-        # create html for shot keyframes
-        with open(os.path.join(os.path.dirname(args.video_path), str(video_id) + "_keyframes.html"), "w") as html_file:
-            for shot in response["shots"]:
-                for keyframe in shot["keyframes"]:
-                    html_file.write(
-                        f"""
-<div>
-    <p>Shot {shot["shot_id"]}</p>
-    <img src="data:image/jpg;base64,{keyframe}">
-</div>
-
-"""
-                    )
+        if response:
+            shots = response["shots"]
 
         # convert shots to csv format
-        logging.info("Converting shots to csv format")
+        logging.info("Converting shots to csv format ...")
         response = requests.post(
             _BACKEND_URL + "export_data",
             json={
@@ -95,11 +107,10 @@ def main():
                 "keys_to_store": ["shot_id", "start_frame", "end_frame"],
             },
         )
-
         logging.info(response.json())
 
         # convert shots to jsonl format
-        logging.info("Converting shots to jsonl format")
+        logging.info("Converting shots to jsonl format ...")
         response = requests.post(
             _BACKEND_URL + "export_data",
             json={
@@ -110,11 +121,10 @@ def main():
                 # "keys_to_store": ["shot_id", "start_frame", "end_frame", "start_time", "end_time"],
             },
         )
-
         logging.info(response.json())
 
         # convert shots to shoebox format
-        logging.info("Converting shots to shoebox format")
+        logging.info("Converting shots to shoebox format ...")
         response = requests.post(
             _BACKEND_URL + "export_data",
             json={
@@ -126,87 +136,78 @@ def main():
                 "ELANEnd_key": "end_time",
             },
         )
-
         logging.info(response.json())
+
+        # generate thumbnails
+        logging.info("Generating thumbnails for shots ...")
+        thumbnail_frames = []
+        for shot in shots:
+            middle_frame = shot["start_frame"] + (shot["end_frame"] - shot["start_frame"]) // 2
+
+            for frame in [shot["start_frame"], middle_frame, shot["end_frame"]]:
+                thumbnail_frames.append(
+                    {
+                        "id": shot["shot_id"],
+                        "idx": frame,
+                        "bbox_xywh": None,
+                    }
+                )
+
+        job_id = post_job(
+            route="get_thumbnails", args={"video_id": video_id, "path": args.video_path, "frames": thumbnail_frames}
+        )
+        response = get_response(route="get_thumbnails", args={"job_id": job_id})
+
+        if response:
+            output_file = os.path.join(os.path.dirname(args.video_path), str(video_id) + "_Cuts.html")
+            generate_thumbnails(output_file=output_file, data=response["thumbnails"])
 
     if args.test_face:
-        response = requests.post(_BACKEND_URL + "detect_faces", {"video_id": video_id, "path": args.video_path})
-        logging.info(response)
-        response = response.json()
-        job_id = response["job_id"]
+        # FACE DETECTION
+        logging.info("Detect faces in video ...")
+        job_id = post_job(route="detect_faces", args={"video_id": video_id, "path": args.video_path})
+        response = get_response(route="detect_faces", args={"job_id": job_id})
 
         faces = []
-        logging.info("Detect faces in video ...")
-
-        while True:
-            response = requests.get(_BACKEND_URL + "detect_faces", {"job_id": job_id})
-            response = response.json()
-            logging.debug(response)
-
-            if "status" in response and response["status"] == "SUCCESS":
-                logging.info("JOB DONE!")
-                faces = response["faces"]
-                break
-            elif "status" in response and response["status"] == "PENDING":
-                sleep(0.5)
-            else:
-                logging.error("Something went wrong")
-                break
-
-        # convert shots to csv format
-        logging.info("Converting faces to csv format")
-        response = requests.post(
-            _BACKEND_URL + "export_data",
-            json={
-                "video_id": video_id,
-                "input_data": faces,
-                "format": "csv",
-                "task": "Faces",
-                "keys_to_store": ["face_id", "frame_idx", "bbox_xywh", "bbox_area"],
-            },
-        )
-
-        logging.info(response.json())
+        if response:
+            faces = response["faces"]
 
         # convert shots to jsonl format
-        logging.info("Converting faces to jsonl format")
+        logging.info("Converting faces to jsonl format ...")
         response = requests.post(
             _BACKEND_URL + "export_data",
             json={
                 "video_id": video_id,
                 "input_data": faces,
                 "format": "jsonl",
-                "task": "Faces",
+                "task": "FaceDetection",
             },
         )
-
         logging.info(response.json())
 
+        # FACE CLUSTERING
         logging.info("Perform face clustering ...")
+        job_id = post_job(route="cluster_faces", args={"video_id": video_id, "path": args.video_path})
+        response = get_response(route="cluster_faces", args={"job_id": job_id})
+
         face_clusters = []
-        response = requests.post(_BACKEND_URL + "cluster_faces", {"video_id": video_id, "path": args.video_path})
-        logging.info(response)
-        response = response.json()
-        job_id = response["job_id"]
+        if response:
+            face_clusters = response["face_clusters"]
 
-        while True:
-            response = requests.get(_BACKEND_URL + "cluster_faces", {"job_id": job_id})
-            response = response.json()
-            logging.debug(response)
-
-            if "status" in response and response["status"] == "SUCCESS":
-                logging.info("JOB DONE!")
-                face_clusters = response["face_clusters"]
-                break
-            elif "status" in response and response["status"] == "PENDING":
-                sleep(0.5)
-            else:
-                logging.error("Something went wrong")
-                break
-
-        logging.info(face_clusters)
+        logging.info("Converting face clusters to jsonl format ...")
+        response = requests.post(
+            _BACKEND_URL + "export_data",
+            json={
+                "video_id": video_id,
+                "input_data": face_clusters,
+                "format": "jsonl",
+                "task": "FaceClustering",
+            },
+        )
+        logging.info(response.json())
 
         # create thumbnails for face clusters
+        logging.info("Generating thumbnails for face clusters ...")
         thumbnail_frames = []
         face_dict = {}
         for face in faces:
@@ -229,48 +230,15 @@ def main():
                         "bbox_xywh": face_dict[face_id]["bbox_xywh"],
                     }
                 )
+        logging.debug(thumbnail_frames)
 
-        logging.info(thumbnail_frames)
-
-        response = requests.post(
-            _BACKEND_URL + "get_thumbnails",
-            json={"video_id": video_id, "path": args.video_path, "frames": thumbnail_frames},
+        job_id = post_job(
+            route="get_thumbnails", args={"video_id": video_id, "path": args.video_path, "frames": thumbnail_frames}
         )
-        logging.info(response)
-        response = response.json()
-        job_id = response["job_id"]
-
-        thumbnails = []
-
-        while True:
-            response = requests.get(_BACKEND_URL + "get_thumbnails", {"job_id": job_id})
-            response = response.json()
-            logging.debug(response)
-
-            if "status" in response and response["status"] == "SUCCESS":
-                logging.info("JOB DONE!")
-                thumbnails = response["thumbnails"]
-                break
-            elif "status" in response and response["status"] == "PENDING":
-                sleep(0.5)
-            else:
-                logging.error("Something went wrong")
-                break
-
-                # create html for shot keyframes
-        with open(
-            os.path.join(os.path.dirname(args.video_path), str(video_id) + "_faceclusters.html"), "w"
-        ) as html_file:
-            for thumbnail in thumbnails:
-                html_file.write(
-                    f"""
-<div>
-    <p>Facecluster {thumbnail["id"]}</p>
-    <img src="data:image/jpg;base64,{thumbnail["img"]}">
-</div>
-
-"""
-                )
+        response = get_response(route="get_thumbnails", args={"job_id": job_id})
+        if response:
+            output_file = os.path.join(os.path.dirname(args.video_path), str(video_id) + "_FaceClustering.html")
+            generate_thumbnails(output_file=output_file, data=response["thumbnails"])
 
     return 0
 
