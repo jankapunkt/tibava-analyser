@@ -29,11 +29,11 @@ services:
       - type: bind
         source: ./
         target: /app
-  redis-web:
+  redis-webserver:
     image: redis:6.2.1
     network_mode: host
     command: --port 6379
-  redis-backend:
+  redis-services:
     image: redis:6.2.1
     network_mode: host
     command: --port 6380

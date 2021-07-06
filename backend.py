@@ -38,8 +38,8 @@ with open(os.path.join(_CUR_PATH, "config.yml")) as f:
 # instantiate the appmsgpack 1.0.2
 app = Flask(__name__)
 app.config.from_object(__name__)
-app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
-app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+app.config["CELERY_BROKER_URL"] = "redis://localhost:" + str(_CFG["webserver"]["redis_port"]) + "/0"
+app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:" + str(_CFG["webserver"]["redis_port"]) + "/0"
 api = Api(app)
 
 
@@ -275,7 +275,7 @@ def shot_detection_task(self, args):
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 
     # check if shots are already extracted
-    r = redis.Redis()
+    r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
     cache_result = r.get(f"shots_{args['video_id']}")
 
     if cache_result:  # load results from cache and return
@@ -323,7 +323,7 @@ def copy_video_to_grpc_server(video_id, video_path):
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 
     # check if video already exists on target server
-    r = redis.Redis()
+    r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
     cache_result = r.get(f"videofile_{video_id}")
 
     def generateRequests(video_id, file_object, chunk_size=1024):
@@ -414,7 +414,7 @@ def face_detection_task(self, args):
     stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
 
     # check if faces are already extracted
-    r = redis.Redis()
+    r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
     cache_result = r.get(f"faces_{args['video_id']}")
 
     if cache_result:  # load results from cache and return
@@ -444,7 +444,6 @@ def face_detection_task(self, args):
                     "frame_idx": face.frame_idx,
                     "bbox_xywh": (face.bbox_x, face.bbox_y, face.bbox_w, face.bbox_h),
                     "bbox_area": face.bbox_area,
-                    "embedding": list(face.embedding),
                 }
             )
 
@@ -518,35 +517,13 @@ def face_clustering_task(self, args):
     stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
 
     # check if faces are already extracted
-    r = redis.Redis()
+    r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
     cache_result = r.get(f"faceclusters_{args['video_id']}")
 
     if cache_result:  # load results from cache and return
         logging.info(f"Loading face detection results for {args['video_id']} from cache ...")
         cache_unpacked = msgpack.unpackb(cache_result)
         return {"status": "SUCCESS", "face_clusters": cache_unpacked["face_clusters"]}
-
-    # load face detection results of the video
-    cache_result = r.get(f"faces_{args['video_id']}")
-    if not cache_result:
-        logging.info(f"No face detection results for {args['video_id']} found ...")
-        return {"status": "SUCCESS", "face_clusters": []}
-
-    faces = []
-    cache_unpacked = msgpack.unpackb(cache_result)
-    for face in cache_unpacked["faces"]:
-        faces.append(
-            facedetection_pb2.Face(
-                face_id=face["face_id"],
-                frame_idx=face["frame_idx"],
-                bbox_x=face["bbox_xywh"][0],
-                bbox_y=face["bbox_xywh"][1],
-                bbox_w=face["bbox_xywh"][2],
-                bbox_h=face["bbox_xywh"][3],
-                bbox_area=face["bbox_area"],
-                embedding=face["embedding"],
-            )
-        )
 
     # calculate face detection results if no cached result
     logging.info(f"Calculate face clustering results for {args['video_id']} ...")
@@ -556,10 +533,10 @@ def face_clustering_task(self, args):
     )
 
     try:
-        response = stub.cluster_faces(facedetection_pb2.ClusterRequest(faces=faces))
+        response = stub.cluster_faces(facedetection_pb2.FaceRequest(video_id=args["video_id"]))
 
         if not response.success:
-            logging.error(f"Error while detecting faces ...")
+            logging.error(f"Error while clustering faces ...")
             return {"status": "ERROR", "face_clusters": []}
 
         # convert faces to list
