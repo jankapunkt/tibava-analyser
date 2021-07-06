@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 import requests
@@ -81,8 +82,6 @@ def main():
 
 """
                     )
-
-        # logging.info(shots)
 
         # convert shots to csv format
         logging.info("Converting shots to csv format")
@@ -206,6 +205,72 @@ def main():
                 break
 
         logging.info(face_clusters)
+
+        # create thumbnails for face clusters
+        thumbnail_frames = []
+        face_dict = {}
+        for face in faces:
+            face_dict[face["face_id"]] = face
+
+        for cluster in face_clusters:
+            logging.info(cluster)
+
+            face_ids = [
+                cluster["face_ids"][0],
+                cluster["face_ids"][cluster["occurrences"] // 2],
+                cluster["face_ids"][-1],
+            ]
+
+            for face_id in face_ids:
+                thumbnail_frames.append(
+                    {
+                        "id": cluster["cluster_id"],
+                        "idx": face_dict[face_id]["frame_idx"],
+                        "bbox_xywh": face_dict[face_id]["bbox_xywh"],
+                    }
+                )
+
+        logging.info(thumbnail_frames)
+
+        response = requests.post(
+            _BACKEND_URL + "get_thumbnails",
+            json={"video_id": video_id, "path": args.video_path, "frames": thumbnail_frames},
+        )
+        logging.info(response)
+        response = response.json()
+        job_id = response["job_id"]
+
+        thumbnails = []
+
+        while True:
+            response = requests.get(_BACKEND_URL + "get_thumbnails", {"job_id": job_id})
+            response = response.json()
+            logging.debug(response)
+
+            if "status" in response and response["status"] == "SUCCESS":
+                logging.info("JOB DONE!")
+                thumbnails = response["thumbnails"]
+                break
+            elif "status" in response and response["status"] == "PENDING":
+                sleep(0.5)
+            else:
+                logging.error("Something went wrong")
+                break
+
+                # create html for shot keyframes
+        with open(
+            os.path.join(os.path.dirname(args.video_path), str(video_id) + "_faceclusters.html"), "w"
+        ) as html_file:
+            for thumbnail in thumbnails:
+                html_file.write(
+                    f"""
+<div>
+    <p>Facecluster {thumbnail["id"]}</p>
+    <img src="data:image/jpg;base64,{thumbnail["img"]}">
+</div>
+
+"""
+                )
 
     return 0
 

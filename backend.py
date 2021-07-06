@@ -16,6 +16,7 @@ import os
 import redis
 
 # import requests
+from skimage.transform import resize
 import sys
 import traceback
 import yaml
@@ -76,6 +77,13 @@ videoargs = reqparse.RequestParser()
 videoargs.add_argument("video_id", type=str, required=True, help="id of the video")
 videoargs.add_argument("path", type=str, required=True, help="path to the video")
 videoargs.add_argument("max_frames", type=int, required=False, help="maximum number of video frames to process")
+
+# arguments for thumbnails
+thumbargs = reqparse.RequestParser()
+thumbargs.add_argument("video_id", type=str, required=True, help="id of the video")
+thumbargs.add_argument("path", type=str, required=True, help="path to the video")
+thumbargs.add_argument("frames", type=list, required=True, location="json", help="frames to extract from the video")
+thumbargs.add_argument("thumbnail_size", type=int, required=False, default=224, help="thumbnail size")
 
 # arguments for jobs
 jobargs = reqparse.RequestParser()
@@ -576,6 +584,91 @@ def face_clustering_task(self, args):
         logging.error(f"Error while clustering faces: {repr(e)}")
         logging.error(traceback.format_exc())
         return {"status": "ERROR", "face_clusters": []}
+
+
+class ThumbnailGenerator(Resource):
+    # posts job to detect faces in videos
+    def post(self):
+        args = thumbargs.parse_args()
+
+        # assign task
+        task = thumbnail_task.apply_async((args,))
+        return jsonify({"status": "PENDING", "job_id": task.id})
+
+    # gets result from posted jobs for face detection
+    def get(self):
+        args = jobargs.parse_args()
+        try:
+            task = thumbnail_task.AsyncResult(args.job_id)
+        except Exception as e:
+            logging.warning(e)
+            logging.warning(traceback.format_exc())
+            return jsonify({"status": "ERROR", "msg": "job is unknown"})
+
+        if task.info is None:
+            return jsonify({"status": "PENDING"})
+
+        if task.state == "SUCCESS":
+            return jsonify(
+                {
+                    "status": task.info.get("status"),
+                    "video_id": task.info.get("video_id"),
+                    "thumbnails": task.info.get("thumbnails"),
+                }
+            )
+
+        elif task.state == "PENDING":
+            return jsonify({"status": "PENDING", "msg": task.info.get("msg"), "code": task.info.get("code")})
+
+        return jsonify(
+            {
+                "status": "ERROR",
+                "msg": "job crashed",
+            }
+        )
+
+
+api.add_resource(ThumbnailGenerator, "/get_thumbnails")
+
+
+@celery.task(bind=True)
+def thumbnail_task(self, args):
+    logging.info(f"Generating thumbnails for video with id {args['video_id']}...")
+
+    try:
+        reader = imageio.get_reader(args["path"])
+        thumbnails = []
+
+        for frame in args["frames"]:
+            logging.info(frame)
+
+            reader.set_image_index(frame["idx"])
+            thumbnail = reader.get_next_data()
+
+            if "bbox_xywh" in frame:
+                x1 = frame["bbox_xywh"][0]
+                x2 = frame["bbox_xywh"][0] + frame["bbox_xywh"][2]
+                y1 = frame["bbox_xywh"][1]
+                y2 = frame["bbox_xywh"][1] + frame["bbox_xywh"][3]
+                thumbnail = thumbnail[y1:y2, x1:x2, :]
+
+            scale = args["thumbnail_size"] / max(thumbnail.shape[0:2])
+            thumbnail = resize(thumbnail, (int(thumbnail.shape[0] * scale), int(thumbnail.shape[1] * scale)))
+            thumbnail_encoded = base64.b64encode(imageio.imwrite(imageio.RETURN_BYTES, thumbnail, format="jpg"))
+
+            thumbnails.append(
+                {
+                    "id": frame["id"],
+                    "img": thumbnail_encoded.decode("ascii"),
+                }
+            )
+
+        return {"status": "SUCCESS", "video_id": args["video_id"], "thumbnails": thumbnails}
+
+    except Exception as e:
+        logging.error(f"thumbnail_task: {repr(e)}")
+        logging.error(traceback.format_exc())
+        return {"status": "ERROR", "thumbnails": []}
 
 
 if __name__ == "__main__":
