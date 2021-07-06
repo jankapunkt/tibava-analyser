@@ -214,6 +214,9 @@ def main():
             face_dict[face["face_id"]] = face
 
         for cluster in face_clusters:
+            if cluster["occurrences"] < 25:  # roughly equals 1 sec
+                continue
+
             logging.info(cluster)
 
             face_ids = [
