@@ -547,6 +547,7 @@ def face_clustering_task(self, args):
                     "cluster_id": cluster.cluster_id,
                     "occurrences": cluster.occurrences,
                     "face_ids": list(cluster.face_ids),
+                    "frame_ids": list(cluster.frame_ids),
                 }
             )
 

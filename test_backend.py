@@ -18,6 +18,14 @@ def parse_args():
     parser.add_argument("--test_face", action="store_true", help="test face detection module")
     parser.add_argument("--test_shot", action="store_true", help="test shot detection module")
 
+    parser.add_argument(
+        "--min_facecluster_occurences",
+        type=int,
+        required=False,
+        default=25,
+        help="min amount of frames a facecluster is visible",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -214,7 +222,7 @@ def main():
             face_dict[face["face_id"]] = face
 
         for cluster in face_clusters:
-            if cluster["occurrences"] < 25:  # roughly equals 1 sec
+            if cluster["occurrences"] < args.min_facecluster_occurences:
                 continue
 
             logging.info(cluster)
