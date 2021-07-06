@@ -29,9 +29,14 @@ services:
       - type: bind
         source: ./
         target: /app
-  redis:
+  redis-web:
     image: redis:6.2.1
     network_mode: host
+    command: --port 6379
+  redis-backend:
+    image: redis:6.2.1
+    network_mode: host
+    command: --port 6380
   shotdetection:
     image: shotdetection
     # networks:
