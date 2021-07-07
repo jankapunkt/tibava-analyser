@@ -517,13 +517,13 @@ def face_clustering_task(self, args):
     stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
 
     # check if faces are already extracted
-    # r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
-    # cache_result = r.get(f"faceclusters_{args['video_id']}")
+    r = redis.Redis(host=_CFG["webserver"]["redis_host"], port=_CFG["webserver"]["redis_port"])
+    cache_result = r.get(f"faceclusters_{args['video_id']}")
 
-    # if cache_result:  # load results from cache and return
-    #     logging.info(f"Loading face detection results for {args['video_id']} from cache ...")
-    #     cache_unpacked = msgpack.unpackb(cache_result)
-    #     return {"status": "SUCCESS", "face_clusters": cache_unpacked["face_clusters"]}
+    if cache_result:  # load results from cache and return
+        logging.info(f"Loading face clustering results for {args['video_id']} from cache ...")
+        cache_unpacked = msgpack.unpackb(cache_result)
+        return {"status": "SUCCESS", "face_clusters": cache_unpacked["face_clusters"]}
 
     # calculate face detection results if no cached result
     logging.info(f"Calculate face clustering results for {args['video_id']} ...")
@@ -553,7 +553,7 @@ def face_clustering_task(self, args):
 
         # write to cache and return
         logging.info(f"Store face clustering results for {args['video_id']} in cache ...")
-        # r.set(f"faceclusters_{args['video_id']}", msgpack.packb({"face_clusters": face_clusters}))
+        r.set(f"faceclusters_{args['video_id']}", msgpack.packb({"face_clusters": face_clusters}))
 
         return {"status": "SUCCESS", "face_clusters": face_clusters}
 
