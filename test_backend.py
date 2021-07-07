@@ -1,10 +1,11 @@
 import argparse
-import json
 import logging
 import os
 import requests
 import sys
 from time import sleep
+
+from facedetection.facedetection_utils import render_video
 
 _BACKEND_URL = "http://127.0.0.1:5000/"
 
@@ -15,8 +16,9 @@ def parse_args():
 
     parser.add_argument("--video_path", type=str, required=True, help="path to video file")
 
-    parser.add_argument("--test_face", action="store_true", help="test face detection module")
     parser.add_argument("--test_shot", action="store_true", help="test shot detection module")
+    parser.add_argument("--test_face", action="store_true", help="test face detection module")
+    parser.add_argument("--facecluster_video", action="store_true", help="write output video with cluster information")
 
     parser.add_argument(
         "--min_facecluster_occurences",
@@ -225,8 +227,6 @@ def main():
             if cluster["occurrences"] < args.min_facecluster_occurences:
                 continue
 
-            logging.info(cluster)
-
             face_ids = [
                 cluster["face_ids"][0],
                 cluster["face_ids"][cluster["occurrences"] // 2],
@@ -250,6 +250,11 @@ def main():
         if response:
             output_file = os.path.join(os.path.dirname(args.video_path), str(video_id) + "_FaceClustering.html")
             generate_thumbnails(output_file=output_file, data=response["thumbnails"])
+
+        # generate output video with cluster information
+        if args.facecluster_video:
+            logging.info("Generate output video with cluster information ...")
+            render_video(video_file=args.video_path, faces=faces, clusters=face_clusters)
 
     return 0
 
