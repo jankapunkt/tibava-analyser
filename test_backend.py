@@ -21,11 +21,11 @@ def parse_args():
     parser.add_argument("--facecluster_video", action="store_true", help="write output video with cluster information")
 
     parser.add_argument(
-        "--min_facecluster_occurences",
+        "--min_facecluster_size",
         type=int,
         required=False,
         default=25,
-        help="min amount of frames a facecluster is visible",
+        help="min size of a cluster",
     )
 
     args = parser.parse_args()
@@ -224,7 +224,7 @@ def main():
             face_dict[face["face_id"]] = face
 
         for cluster in face_clusters:
-            if cluster["occurrences"] < args.min_facecluster_occurences:
+            if cluster["occurrences"] < args.min_facecluster_size:
                 continue
 
             face_ids = [
