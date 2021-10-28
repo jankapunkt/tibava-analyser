@@ -4,10 +4,16 @@ import os
 import requests
 import sys
 from time import sleep
+import yaml
 
 from facedetection.facedetection_utils import render_video
 
-_BACKEND_URL = "http://127.0.0.1:5000/"
+# read config
+_CUR_PATH = os.path.dirname(__file__)
+with open(os.path.join(_CUR_PATH, "config.yml")) as f:
+    _CFG = yaml.load(f, Loader=yaml.FullLoader)
+
+_BACKEND_URL = f"http://{_CFG['webserver']['host']}:{_CFG['webserver']['port']}/" # http://127.0.0.1:5000/"
 
 
 def parse_args():
