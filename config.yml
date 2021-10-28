@@ -1,7 +1,7 @@
 media_folder: media
 webserver:
   host: localhost
-  port: 8080
+  port: 5000
   redis_host: localhost
   redis_port: 6379
 shotdetection:
