@@ -1,12 +1,11 @@
-media_folder: media
+media_folder: /srv/media
 webserver:
-  host: localhost
-  port: 5000
+  url: localhost/backend
   redis_host: localhost
   redis_port: 6379
 shotdetection:
-  host: localhost
-  port: 50051
+  host: devbox2.research.tib.eu
+  port: 52051
 facedetection:
-  host: localhost
-  port: 50052
+  host: devbox2.research.tib.eu
+  port: 52052

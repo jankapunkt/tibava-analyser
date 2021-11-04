@@ -271,7 +271,7 @@ def shot_detection_task(self, args):
         return {"status": "ERROR", "shots": []}
 
     # open grpc channel
-    channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
+    channel = grpc.insecure_channel(f"{_CFG['shotdetection']['host']}:{_CFG['shotdetection']['port']}")
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 
     # check if shots are already extracted
@@ -319,7 +319,8 @@ def shot_detection_task(self, args):
 
 
 def copy_video_to_grpc_server(video_id, video_path):
-    channel = grpc.insecure_channel(f"[::]:{_CFG['shotdetection']['port']}")
+    channel = grpc.insecure_channel(f"{_CFG['shotdetection']['host']}:{_CFG['shotdetection']['port']}")
+    print(f"{_CFG['shotdetection']['host']}:{_CFG['shotdetection']['port']}", flush=True)
     stub = shotdetection_pb2_grpc.ShotDetectorStub(channel)
 
     # check if video already exists on target server
@@ -410,7 +411,7 @@ def face_detection_task(self, args):
         return {"status": "ERROR", "faces": []}
 
     # open grpc channel
-    channel = grpc.insecure_channel(f"[::]:{_CFG['facedetection']['port']}")
+    channel = grpc.insecure_channel(f"{_CFG['facedetection']['host']}:{_CFG['facedetection']['port']}")
     stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
 
     # check if faces are already extracted
@@ -513,7 +514,7 @@ def face_clustering_task(self, args):
     """
 
     # open grpc channel
-    channel = grpc.insecure_channel(f"[::]:{_CFG['facedetection']['port']}")
+    channel = grpc.insecure_channel(f"{_CFG['facedetection']['host']}:{_CFG['facedetection']['port']}")
     stub = facedetection_pb2_grpc.FaceDetectorStub(channel)
 
     # check if faces are already extracted
