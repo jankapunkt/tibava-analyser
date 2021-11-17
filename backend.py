@@ -206,6 +206,20 @@ class ShotDetection(Resource):
     def post(self):
         args = videoargs.parse_args()
 
+        if not os.path.exists(args["path"]):
+            jsonify({"status": "ERROR", "message": f"{args['path']} does not exist"})
+
+        if not os.path.isfile(args["path"]):
+            jsonify({"status": "ERROR", "message": f"{args['path']} is not a file"})
+
+        if os.path.splitext(args["path"])[-1].lower() not in ["mp4", "mpeg", "avi", "mkv", "webm", "okv"]:
+            jsonify(
+                {
+                    "status": "ERROR",
+                    "message": f"{args['path']} is not a valid file [mp4, mpeg, avi, mkv, webm, okv]",
+                }
+            )
+
         # assign task
         task = shot_detection_task.apply_async((args,))
         return jsonify({"status": "PENDING", "job_id": task.id})
