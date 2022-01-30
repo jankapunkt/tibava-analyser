@@ -22,4 +22,4 @@ USER appuser
 # CMD ["gunicorn", "--bind", "0.0.0.0:5000", "backend:app", "--log-level debug"]
 # CMD ["python", "backend.py"]
 
-CMD ["celery", "-A", "backend.celery", "worker", "-l", "INFO"]
+CMD ["celery", "-A", "analyser.celery", "worker", "-l", "INFO"]
