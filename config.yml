@@ -4,8 +4,8 @@ webserver:
   redis_host: localhost
   redis_port: 6379
 shotdetection:
-  host: devbox2.research.tib.eu
-  port: 52051
+  host: localhost
+  port: 50051
 facedetection:
-  host: devbox2.research.tib.eu
-  port: 52052
+  host: localhost
+  port: 50052
