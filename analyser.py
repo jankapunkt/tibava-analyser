@@ -257,6 +257,10 @@ class ShotDetection(Resource):
                         .isoformat(timespec="milliseconds")
                     )
 
+                    shot["start_time_sec"] = shot["start_frame"] / args.fps
+
+                    shot["end_time_sec"] = shot["end_frame"] / args.fps
+
             return jsonify({"status": status, "video_id": video_id, "shots": shots})
 
         elif task.state == "PENDING":
