@@ -1,0 +1,28 @@
+syntax = "proto3";
+option java_multiple_files = true;
+
+// python -m grpc_tools.protoc -I../web --python_out=. --grpc_python_out=.
+// ../web/tunnel.proto python -m grpc_tools.protoc -I../backend --python_out=.
+// --grpc_python_out=. ../backend/tunnel.proto create json stringds
+
+package tibava.analyser;
+
+service Analyser {
+  rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply) {}
+}
+
+message PluginConfig {
+  string name = 1;
+  string default = 2;
+  string type = 3;
+  string state = 4;
+}
+
+message PluginInfo {
+  string name = 1;
+  string type = 2;
+  repeated PluginConfig settings = 3;
+}
+
+message ListPluginsRequest {}
+message ListPluginsReply { repeated PluginInfo plugins = 1; }
