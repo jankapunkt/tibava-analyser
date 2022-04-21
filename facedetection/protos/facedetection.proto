@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+
+service FaceDetector {
+    rpc detect_faces(FaceRequest) returns (FaceResponse);
+}
+
+message FaceRequest {
+    string video_id = 1;
+}
+
+message FaceResponse {
+    bool success = 1;
+    repeated Face faces = 2;
+    int32 max_num_faces = 3;
+}
+
+message Face {
+    int32 frame_idx = 1;
+    int32 bbox_x = 2;
+    int32 bbox_y = 3;
+    int32 bbox_w = 4;
+    int32 bbox_h = 5;
+    float bbox_area = 6;
+}
+// EOF
