@@ -1,5 +1,8 @@
 import re
 
+from .video_decoder import *
+
+
 def read_chunk(iterator, chunksize=64):
     chunk = []
     for x in range(chunksize):

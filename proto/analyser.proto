@@ -1,9 +1,8 @@
 syntax = "proto3";
 option java_multiple_files = true;
 
-// python -m grpc_tools.protoc -I../web --python_out=. --grpc_python_out=.
-// ../web/tunnel.proto python -m grpc_tools.protoc -I../backend --python_out=.
-// --grpc_python_out=. ../backend/tunnel.proto create json stringds
+// python -m grpc_tools.protoc -I=proto --python_out=. --grpc_python_out=.
+// proto/analyser.proto
 
 package tibava.analyser;
 
@@ -11,17 +10,36 @@ service Analyser {
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply) {}
 }
 
-message PluginConfig {
+enum DataType {
+  UNKOWN_TYPE = 0;
+  STRING_TYPE = 1;
+  INT_TYPE = 2;
+  FLOAT_TYPE = 3;
+}
+
+message PluginParameter {
   string name = 1;
   string default = 2;
-  string type = 3;
-  string state = 4;
+  DataType type = 3;
+}
+
+enum PluginDataType {
+  UNKOWN_DATA = 0;
+  VIDEO_DATA = 1;
+  IMAGE_DATA = 2;
+}
+
+message PluginData {
+  string name = 1;
+  PluginDataType type = 3;
 }
 
 message PluginInfo {
   string name = 1;
-  string type = 2;
-  repeated PluginConfig settings = 3;
+  string version = 2;
+  repeated PluginParameter parameters = 3;
+  repeated PluginData requires = 4;
+  repeated PluginData provides = 5;
 }
 
 message ListPluginsRequest {}

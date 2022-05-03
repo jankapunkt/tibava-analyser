@@ -13,13 +13,14 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
-WORKDIR /app
-COPY . /app
+WORKDIR /app/analyser/
+COPY . /app/analyser/
 
 # Switching to a non-root user, please refer to https://aka.ms/vscode-docker-python-user-rights
-RUN useradd appuser && chown -R appuser /app
+RUN useradd appuser && chown -R appuser /app/analyser/
 USER appuser
 
+ENV PYTHONPATH="/app/analyser/"
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "analyser:app", "--log-level debug"]
+CMD ["python3", "/app/analyser/server.py"]
 # CMD ["python", "backend.py"]
