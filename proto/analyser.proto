@@ -7,6 +7,7 @@ option java_multiple_files = true;
 package tibava.analyser;
 
 service Analyser {
+  rpc copy_data(stream DataRequest) returns (DataResponse);
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply) {}
 }
 
@@ -31,7 +32,7 @@ enum PluginDataType {
 
 message PluginData {
   string name = 1;
-  PluginDataType type = 3;
+  PluginDataType type = 2;
 }
 
 message PluginInfo {
@@ -44,3 +45,12 @@ message PluginInfo {
 
 message ListPluginsRequest {}
 message ListPluginsReply { repeated PluginInfo plugins = 1; }
+
+message DataRequest {
+  bytes data_encoded = 1;
+  PluginDataType type = 2;
+}
+
+message DataResponse {
+  string id = 1;
+}

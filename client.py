@@ -37,6 +37,34 @@ class AnalyserClient:
 
         return result
 
+    def copy_data_to_grpc_server(self, data_type, path):
+        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
+
+        def generateRequests(video_id, file_object, chunk_size=1024):
+            """Lazy function (generator) to read a file piece by piece.
+            Default chunk size: 1k"""
+            with open(file_object, "rb") as videobytestream:
+                while True:
+                    data = videobytestream.read(chunk_size)
+                    if not data:
+                        break
+                    yield analyser_pb2.DataRequest(type=data_type, data_encoded=data)
+
+        if cache_result:
+            logging.info(f"Video with id {video_id} already stored ...")
+            return True
+        else:
+            logging.info(f"Transferring video with id {video_id} to shotdetection server ...")
+            response = stub.copy_video(generateRequests(video_id, video_path))
+
+            if response.success:
+                r.set(f"videofile_{video_id}", msgpack.packb({"stored": True}))
+                return True
+
+            logging.error("Error while copying video ...")
+            return False
+
 
 def main():
     args = parse_args()

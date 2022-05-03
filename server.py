@@ -50,6 +50,28 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
         return reply
 
+    def copy_data(self, request_iterator, context):
+        try:
+            # save data from request input stream
+            datastream = iter(request_iterator)
+            firstpkg = next(datastream)
+            type = firstpkg.type
+
+            with open(os.path.join(self.config.get("data_folder"), video_id + ".mp4"), "wb") as videofile:
+                videofile.write(firstpkg.video_encoded)  # write first package
+                for data in datastream:
+                    videofile.write(data.video_encoded)
+
+            return shotdetection_pb2.VideoResponse(success=True)
+
+        except Exception as e:
+            logging.error(f"copy_video: {repr(e)}")
+            logging.error(traceback.format_exc())
+            # context.set_code(grpc.StatusCode.UNAVAILABLE)
+            # context.set_details(f"Error transferring video with id {req.video_id}")
+
+        return shotdetection_pb2.VideoResponse(success=False)
+
 
 class Server:
     def __init__(self, config):
