@@ -16,6 +16,21 @@ import grpc
 from analyser.plugins.manager import AnalyserPluginManager
 
 
+class PluginRun:
+    def __init__(self, config=None):
+        if config is not None:
+            self.init_worker(config)
+
+    @classmethod
+    def init(cls, config):
+        print("[PluginRun] init")
+
+        manager = AnalyserPluginManager(configs=config.get("image_text", []))
+        manager.find()
+
+        setattr(cls, "manager", manager)
+
+
 def init_plugins(config):
     data_dict = {}
 
@@ -35,11 +50,10 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def __init__(self, config):
         self.config = config
         self.managers = init_plugins(config)
-        print(self.managers["manager"].plugins())
         self.process_pool = futures.ProcessPoolExecutor(max_workers=1, initializer=init_process, initargs=(config,))
-        # self.indexing_process_pool = futures.ProcessPoolExecutor(
-        #     max_workers=8, initializer=IndexingJob().init_worker, initargs=(config,)
-        # )
+        self.plugin_process_pool = futures.ProcessPoolExecutor(
+            max_workers=8, initializer=PluginRun.init, initargs=(config,)
+        )
         self.futures = []
 
         # self.max_results = config.get("indexer", {}).get("max_results", 100)
@@ -81,16 +95,18 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 class Server:
     def __init__(self, config):
         self.config = config
+
         self.commune = Commune(config)
 
+        pool = futures.ThreadPoolExecutor(max_workers=10)
+
         self.server = grpc.server(
-            futures.ThreadPoolExecutor(max_workers=10),
+            pool,
             options=[
                 ("grpc.max_send_message_length", 50 * 1024 * 1024),
                 ("grpc.max_receive_message_length", 50 * 1024 * 1024),
             ],
         )
-
         analyser_pb2_grpc.add_AnalyserServicer_to_server(
             self.commune,
             self.server,
@@ -101,14 +117,14 @@ class Server:
         self.server.add_insecure_port(f"[::]:{port}")
 
     def run(self):
+        print("[Server] starting")
         self.server.start()
-        logging.info("[Server] Ready")
+        print("[Server] ready")
 
         try:
             while True:
                 num_jobs = len(self.commune.futures)
                 num_jobs_done = len([x for x in self.commune.futures if x["future"].done()])
-
                 time.sleep(10)
         except KeyboardInterrupt:
             self.server.stop(0)
@@ -116,7 +132,7 @@ class Server:
 
 def read_config(path):
     with open(path, "r") as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
     return {}
 
 
@@ -145,7 +161,6 @@ def main():
         config = read_config(args.config)
     else:
         config = {}
-
     server = Server(config)
     server.run()
     return 0

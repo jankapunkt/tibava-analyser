@@ -25,12 +25,10 @@ class ThumbnailGenerator(
         super().__init__(config, name)
 
     def call(self, inputs):
-        
+
         video = None
         for key, data in inputs.items():
-
-
-
+            print(key)
 
         video = ffmpeg.input(video_file)
         audio = video.audio

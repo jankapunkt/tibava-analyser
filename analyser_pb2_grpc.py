@@ -14,20 +14,31 @@ class AnalyserStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.copy_data = channel.stream_unary(
-                '/tibava.analyser.Analyser/copy_data',
-                request_serializer=analyser__pb2.DataRequest.SerializeToString,
-                response_deserializer=analyser__pb2.DataResponse.FromString,
-                )
         self.list_plugins = channel.unary_unary(
                 '/tibava.analyser.Analyser/list_plugins',
                 request_serializer=analyser__pb2.ListPluginsRequest.SerializeToString,
                 response_deserializer=analyser__pb2.ListPluginsReply.FromString,
                 )
+        self.copy_data = channel.stream_unary(
+                '/tibava.analyser.Analyser/copy_data',
+                request_serializer=analyser__pb2.DataRequest.SerializeToString,
+                response_deserializer=analyser__pb2.DataResponse.FromString,
+                )
+        self.run = channel.stream_unary(
+                '/tibava.analyser.Analyser/run',
+                request_serializer=analyser__pb2.RunRequest.SerializeToString,
+                response_deserializer=analyser__pb2.RunResponse.FromString,
+                )
 
 
 class AnalyserServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def list_plugins(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def copy_data(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
@@ -35,7 +46,7 @@ class AnalyserServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def list_plugins(self, request, context):
+    def run(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -44,15 +55,20 @@ class AnalyserServicer(object):
 
 def add_AnalyserServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'list_plugins': grpc.unary_unary_rpc_method_handler(
+                    servicer.list_plugins,
+                    request_deserializer=analyser__pb2.ListPluginsRequest.FromString,
+                    response_serializer=analyser__pb2.ListPluginsReply.SerializeToString,
+            ),
             'copy_data': grpc.stream_unary_rpc_method_handler(
                     servicer.copy_data,
                     request_deserializer=analyser__pb2.DataRequest.FromString,
                     response_serializer=analyser__pb2.DataResponse.SerializeToString,
             ),
-            'list_plugins': grpc.unary_unary_rpc_method_handler(
-                    servicer.list_plugins,
-                    request_deserializer=analyser__pb2.ListPluginsRequest.FromString,
-                    response_serializer=analyser__pb2.ListPluginsReply.SerializeToString,
+            'run': grpc.stream_unary_rpc_method_handler(
+                    servicer.run,
+                    request_deserializer=analyser__pb2.RunRequest.FromString,
+                    response_serializer=analyser__pb2.RunResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -63,6 +79,23 @@ def add_AnalyserServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class Analyser(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def list_plugins(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/list_plugins',
+            analyser__pb2.ListPluginsRequest.SerializeToString,
+            analyser__pb2.ListPluginsReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def copy_data(request_iterator,
@@ -82,7 +115,7 @@ class Analyser(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def list_plugins(request,
+    def run(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -92,8 +125,8 @@ class Analyser(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/list_plugins',
-            analyser__pb2.ListPluginsRequest.SerializeToString,
-            analyser__pb2.ListPluginsReply.FromString,
+        return grpc.experimental.stream_unary(request_iterator, target, '/tibava.analyser.Analyser/run',
+            analyser__pb2.RunRequest.SerializeToString,
+            analyser__pb2.RunResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
