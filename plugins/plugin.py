@@ -9,8 +9,9 @@ from analyser.utils import convert_name
 from analyser import analyser_pb2
 
 
+@dataclass
 class PluginData:
-    pass
+    id: str
 
 
 @dataclass
@@ -33,6 +34,11 @@ class Shot:
 @dataclass
 class ShotsData(PluginData):
     shots: List[Shot]
+
+
+@dataclass
+class AudioData(PluginData):
+    path: str
 
 
 @dataclass

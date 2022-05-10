@@ -1,8 +1,4 @@
-media_folder: /srv/media
-webserver:
-  url: localhost/backend
-  redis_host: localhost
-  redis_port: 6379
+data_dir: /data
 shotdetection:
   host: localhost
   port: 50051

@@ -4,7 +4,10 @@ import sys
 import re
 import argparse
 import time
+import uuid
 import json
+import yaml
+import traceback
 from concurrent import futures
 
 import analyser_pb2, analyser_pb2_grpc
@@ -57,12 +60,14 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             firstpkg = next(datastream)
             type = firstpkg.type
 
-            with open(os.path.join(self.config.get("data_folder"), video_id + ".mp4"), "wb") as videofile:
-                videofile.write(firstpkg.video_encoded)  # write first package
-                for data in datastream:
-                    videofile.write(data.video_encoded)
+            hash_id = uuid.uuid4().hex
 
-            return shotdetection_pb2.VideoResponse(success=True)
+            with open(os.path.join(self.config.get("data_dir"), hash_id), "wb") as f:
+                f.write(firstpkg.data_encoded)  # write first package
+                for data in datastream:
+                    f.write(data.data_encoded)
+
+            return analyser_pb2.DataResponse(success=True, id=hash_id)
 
         except Exception as e:
             logging.error(f"copy_video: {repr(e)}")
@@ -70,7 +75,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             # context.set_code(grpc.StatusCode.UNAVAILABLE)
             # context.set_details(f"Error transferring video with id {req.video_id}")
 
-        return shotdetection_pb2.VideoResponse(success=False)
+        return analyser_pb2.DataResponse(success=False)
 
 
 class Server:
@@ -111,7 +116,7 @@ class Server:
 
 def read_config(path):
     with open(path, "r") as f:
-        return json.load(f)
+        return yaml.load(f)
     return {}
 
 
