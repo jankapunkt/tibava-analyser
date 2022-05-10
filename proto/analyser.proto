@@ -8,8 +8,9 @@ package tibava.analyser;
 
 service Analyser {
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply);
-  rpc copy_data(stream DataRequest) returns (DataResponse);
-  rpc run(stream RunRequest) returns (RunResponse);
+  rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
+  rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
+  rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
 }
 
 enum DataType {
@@ -19,7 +20,7 @@ enum DataType {
   FLOAT_TYPE = 3;
 }
 
-message PluginParameter {
+message PluginInfoParameter {
   string name = 1;
   string default = 2;
   DataType type = 3;
@@ -32,39 +33,61 @@ enum PluginDataType {
   ROI_DATA = 3;
 }
 
-message PluginData {
+message PluginInfoData {
   string name = 1;
   PluginDataType type = 2;
-  string id = 3;
+}
+
+message RunPluginData {
+  string name = 1;
+  string id = 2;
 }
 
 message PluginInfo {
   string name = 1;
   string version = 2;
-  repeated PluginParameter parameters = 3;
-  repeated PluginData requires = 4;
-  repeated PluginData provides = 5;
+  repeated PluginInfoParameter parameters = 3;
+  repeated PluginInfoData requires = 4;
+  repeated PluginInfoData provides = 5;
 }
 
 message ListPluginsRequest {}
 message ListPluginsReply { repeated PluginInfo plugins = 1; }
 
-message DataRequest {
+message UploadDataRequest {
   bytes data_encoded = 1;
   PluginDataType type = 2;
+  string ext = 3;
 }
 
-message DataResponse {
+message UploadDataResponse {
   string id = 1;
   bool success = 2;
 }
 
-message RunRequest{
-  string plugin = 1;
-  repeated PluginData inputs = 2;
+message DownloadDataRequest {
+  string id = 1;
 }
 
-message RunResponse{
+message DownloadDataResponse {
+  bytes data_encoded = 1;
+  PluginDataType type = 2;
+  bool success = 3;
+}
+
+message PluginParameter {
+  string name = 1;
+  string value = 2;
+  DataType type = 3;
+}
+
+message RunPluginRequest{
+  string plugin = 1;
+  repeated RunPluginData inputs = 2;
+  repeated PluginParameter parameters = 3;
+}
+
+message RunPluginResponse{
   string id = 1;
   bool success = 2;
 }

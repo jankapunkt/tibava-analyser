@@ -6,51 +6,8 @@ from numpy import require
 import numpy.typing as npt
 
 from analyser.utils import convert_name
+from analyser.data import PluginData
 from analyser import analyser_pb2
-
-
-@dataclass
-class PluginData:
-    id: str
-
-
-@dataclass
-class VideoData(PluginData):
-    path: str
-
-
-@dataclass
-class ImageData(PluginData):
-    path: str
-    time: float = None
-
-
-@dataclass
-class Shot:
-    start: float
-    end: float
-
-
-@dataclass
-class ShotsData(PluginData):
-    shots: List[Shot]
-
-
-@dataclass
-class AudioData(PluginData):
-    path: str
-
-
-@dataclass
-class ScalarData(PluginData):
-    x: npt.NDArray
-    time: List[float]
-
-
-@dataclass
-class HistData(PluginData):
-    x: npt.NDArray
-    time: List[float]
 
 
 class Plugin:
@@ -146,5 +103,5 @@ class Plugin:
 
         return result
 
-    def __call__(self, input: Dict[str, PluginData]) -> Dict[str, PluginData]:
-        pass
+    def __call__(self, inputs: Dict[str, PluginData]) -> Dict[str, PluginData]:
+        self.call(inputs)

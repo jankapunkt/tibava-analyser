@@ -1,6 +1,7 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.plugins import Plugin, ImageData, VideoData, ShotsData
+from analyser.data import ImageData, VideoData, ShotsData
+from analyser.plugins import Plugin
 
 default_config = {
     "host": "localhost",

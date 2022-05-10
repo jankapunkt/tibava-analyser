@@ -49,7 +49,7 @@ class PluginManager:
 
 
 class AnalyserPluginManager(PluginManager):
-    _feature_plugins = {}
+    _plugins = {}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,13 +59,13 @@ class AnalyserPluginManager(PluginManager):
     @classmethod
     def export(cls, name):
         def export_helper(plugin):
-            cls._feature_plugins[name] = plugin
+            cls._plugins[name] = plugin
             return plugin
 
         return export_helper
 
     def plugins(self):
-        return self._feature_plugins
+        return self._plugins
 
     def find(self, path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "analyser")):
         file_re = re.compile(r"(.+?)\.py$")
@@ -78,51 +78,16 @@ class AnalyserPluginManager(PluginManager):
                 if "register" in function_dir:
                     a.register(self)
 
-    def run(self, images, filter_plugins=None, plugins=None, configs=None, batchsize=128):
+    def __call__(self, plugin, inputs, parameters=None):
+        print(f"start", flush=True)
+        if plugin not in self._plugins:
+            return None
 
-        if plugins is None and configs is None:
-            plugin_list = self.plugin_list
-
-        # print(f"PLUGINS: {plugin_list}")
-        if filter_plugins is None:
-            filter_plugins = [[]] * len(images)
-        # TODO use batch size
-        # print(f"LEN1 {len(images)} ")
-        # print(f"LEN2 {len(filter_plugins)} ")
-        # print(f"{filter_plugins}")
-        for (image, filters) in zip(images, filter_plugins):
-            # print("IMAGE")
-            plugin_result_list = {"image": image, "plugins": []}
-            for plugin in plugin_list:
-                # print(f"PLUGIN: {plugin}")
-                # logging.info(dir(plugin_class["plugin"]))
-                plugin = plugin["plugin"]
-                plugin_version = version.parse(str(plugin.version))
-
-                founded = False
-                for f in filters:
-                    f_version = version.parse(str(f["version"]))
-                    if f["plugin"] == plugin.name and f_version >= plugin_version:
-                        founded = True
-
-                if founded:
-                    continue
-
-                logging.info(f"Plugin start {plugin.name}:{plugin.version}")
-
-                # exit()
-                plugin_results = plugin([image])
-                plugin_result_list["plugins"].append(plugin_results)
-
-                # plugin_result_list["plugins"]plugin_results._plugin
-                # # # TODO entries_processed also contains the entries zip will be
-
-                # logging.info(f"Plugin done {plugin.name}:{plugin.version}")
-                # for entry, annotations in zip(plugin_results._entries, plugin_results._annotations):
-                #     if entry.id not in plugin_result_list:
-                #         plugin_result_list[entry.id] = {"image": entry, "results": []}
-                #     plugin_result_list["results"].extend(annotations)
-            yield plugin_result_list
+        print(self._plugins[plugin], flush=True)
+        plugin = self._plugins[plugin](None)
+        results = plugin(inputs)
+        print(f"results {results}", flush=True)
+        return results
 
 
 class VideoPlugin(Plugin):

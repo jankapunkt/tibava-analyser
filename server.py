@@ -7,28 +7,53 @@ import time
 import uuid
 import json
 import yaml
+import copy
 import traceback
 from concurrent import futures
+
+from google.protobuf.json_format import MessageToJson
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
 
 from analyser.plugins.manager import AnalyserPluginManager
+from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 
-class PluginRun:
-    def __init__(self, config=None):
-        if config is not None:
-            self.init_worker(config)
+# class RunPlugin:
+#     def __init__(self, config=None):
+#         if config is not None:
+#             self.init_worker(config)
 
-    @classmethod
-    def init(cls, config):
-        print("[PluginRun] init")
+#     @classmethod
+#     def init(cls, config):
+#         print("[RunPlugin] init")
 
-        manager = AnalyserPluginManager(configs=config.get("image_text", []))
-        manager.find()
+#         manager = AnalyserPluginManager(configs=config.get("image_text", []))
+#         manager.find()
 
-        setattr(cls, "manager", manager)
+#         setattr(cls, "manager", manager)
+
+
+def plugin_run(args):
+
+    try:
+        manager = globals().get("manager")
+        params = args.get("params")
+        manager(plugin=params.get("plugin"), inputs=params.get("inputs"))
+        print(manager)
+        print(args)
+    except Exception as e:
+        logging.error(f"Indexer: {repr(e)}")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+
+        traceback.print_exception(
+            exc_type,
+            exc_value,
+            exc_traceback,
+            limit=2,
+            file=sys.stdout,
+        )
 
 
 def init_plugins(config):
@@ -38,7 +63,6 @@ def init_plugins(config):
     manager.find()
 
     data_dict["manager"] = manager
-
     return data_dict
 
 
@@ -51,9 +75,6 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
         self.config = config
         self.managers = init_plugins(config)
         self.process_pool = futures.ProcessPoolExecutor(max_workers=1, initializer=init_process, initargs=(config,))
-        self.plugin_process_pool = futures.ProcessPoolExecutor(
-            max_workers=8, initializer=PluginRun.init, initargs=(config,)
-        )
         self.futures = []
 
         # self.max_results = config.get("indexer", {}).get("max_results", 100)
@@ -67,7 +88,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
         return reply
 
-    def copy_data(self, request_iterator, context):
+    def upload_data(self, request_iterator, context):
         try:
             # save data from request input stream
             datastream = iter(request_iterator)
@@ -81,7 +102,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
                 for data in datastream:
                     f.write(data.data_encoded)
 
-            return analyser_pb2.DataResponse(success=True, id=hash_id)
+            return analyser_pb2.UploadDataResponse(success=True, id=hash_id)
 
         except Exception as e:
             logging.error(f"copy_video: {repr(e)}")
@@ -89,7 +110,31 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             # context.set_code(grpc.StatusCode.UNAVAILABLE)
             # context.set_details(f"Error transferring video with id {req.video_id}")
 
-        return analyser_pb2.DataResponse(success=False)
+        return analyser_pb2.UploadDataResponse(success=False)
+
+    def run_plugin(self, request, context):
+
+        logging.info("[Commune] run")
+        reply = analyser_pb2.RunPluginResponse()
+        if request.plugin not in self.managers["manager"].plugins():
+            return reply
+
+        job_id = uuid.uuid4().hex
+        variable = {
+            "params": MessageToDict(request),
+            "config": self.config,
+            "future": None,
+            "id": job_id,
+        }
+
+        future = self.process_pool.submit(plugin_run, copy.deepcopy(variable))
+        variable["future"] = future
+        self.futures.append(variable)
+
+        print(self.managers["manager"].plugins())
+        logging.info(MessageToJson(request))
+
+        return reply
 
 
 class Server:
@@ -117,14 +162,16 @@ class Server:
         self.server.add_insecure_port(f"[::]:{port}")
 
     def run(self):
-        print("[Server] starting")
+        logging.info("[Server] starting")
         self.server.start()
-        print("[Server] ready")
+        logging.info("[Server] ready")
 
         try:
             while True:
                 num_jobs = len(self.commune.futures)
                 num_jobs_done = len([x for x in self.commune.futures if x["future"].done()])
+                print(num_jobs)
+                print(num_jobs_done)
                 time.sleep(10)
         except KeyboardInterrupt:
             self.server.stop(0)
