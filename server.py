@@ -6,12 +6,14 @@ import argparse
 import time
 import uuid
 import json
+from more_itertools import first
 import yaml
 import copy
 import traceback
 from concurrent import futures
 
 from google.protobuf.json_format import MessageToJson
+from zmq import has
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
@@ -19,6 +21,7 @@ import grpc
 from analyser.plugins.manager import AnalyserPluginManager
 from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
+from analyser.data import data_from_proto
 
 # class RunPlugin:
 #     def __init__(self, config=None):
@@ -93,14 +96,11 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             # save data from request input stream
             datastream = iter(request_iterator)
             firstpkg = next(datastream)
-            type = firstpkg.type
+            data = data_from_proto(firstpkg, data_dir=self.config)
 
-            hash_id = uuid.uuid4().hex
-
-            with open(os.path.join(self.config.get("data_dir"), hash_id), "wb") as f:
-                f.write(firstpkg.data_encoded)  # write first package
-                for data in datastream:
-                    f.write(data.data_encoded)
+            data.add_data_from_proto(firstpkg)
+            for x in datastream:
+                data.add_data_from_proto(data)
 
             return analyser_pb2.UploadDataResponse(success=True, id=hash_id)
 
