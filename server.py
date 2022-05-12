@@ -21,7 +21,7 @@ import grpc
 from analyser.plugins.manager import AnalyserPluginManager
 from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
-from analyser.data import data_from_proto
+from analyser.data import DataManager
 
 # class RunPlugin:
 #     def __init__(self, config=None):
@@ -64,8 +64,11 @@ def init_plugins(config):
 
     manager = AnalyserPluginManager(configs=config.get("image_text", []))
     manager.find()
+    data_dict["plugin_manager"] = manager
 
-    data_dict["manager"] = manager
+    data_manager = DataManager(configs=config.get("data_dir", ""))
+
+    data_dict["data_manager"] = data_manager
     return data_dict
 
 
@@ -93,16 +96,19 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def upload_data(self, request_iterator, context):
         try:
+            data = self.self.managers["data_manager"](request_iterator)
+            print(data)
             # save data from request input stream
-            datastream = iter(request_iterator)
-            firstpkg = next(datastream)
-            data = data_from_proto(firstpkg, data_dir=self.config)
+            # datastream = iter(request_iterator)
+            # firstpkg = next(datastream)
+            # data = data_from_proto(firstpkg, data_dir=self.config)
+            # data.load_from_stream(datastream)
 
-            data.add_data_from_proto(firstpkg)
-            for x in datastream:
-                data.add_data_from_proto(data)
+            # data.add_data_from_proto(firstpkg)
+            # for x in datastream:
+            # data.add_data_from_proto(data)
 
-            return analyser_pb2.UploadDataResponse(success=True, id=hash_id)
+            return analyser_pb2.UploadDataResponse(success=True, id=data.id)
 
         except Exception as e:
             logging.error(f"copy_video: {repr(e)}")
