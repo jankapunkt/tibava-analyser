@@ -85,6 +85,7 @@ class AnalyserPluginManager(PluginManager):
 
         print(self._plugins[plugin], flush=True)
         plugin = self._plugins[plugin](None)
+        print(inputs)
         results = plugin(inputs)
         print(f"results {results}", flush=True)
         return results

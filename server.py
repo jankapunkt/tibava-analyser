@@ -13,7 +13,6 @@ import traceback
 from concurrent import futures
 
 from google.protobuf.json_format import MessageToJson
-from zmq import has
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
@@ -41,10 +40,16 @@ from analyser.data import DataManager
 def plugin_run(args):
 
     try:
-        manager = globals().get("manager")
+        plugin_manager = globals().get("plugin_manager")
+        data_manager = globals().get("data_manager")
         params = args.get("params")
-        manager(plugin=params.get("plugin"), inputs=params.get("inputs"))
-        print(manager)
+        plugin_inputs = []
+        for data_in in params.get("inputs"):
+            data = data_manager.load(data_in.get('id'))
+            print(data)
+        return
+        plugin_manager(plugin=params.get("plugin"), inputs=params.get("inputs"))
+        print(plugin_manager)
         print(args)
     except Exception as e:
         logging.error(f"Indexer: {repr(e)}")
@@ -66,8 +71,7 @@ def init_plugins(config):
     manager.find()
     data_dict["plugin_manager"] = manager
 
-    data_manager = DataManager(configs=config.get("data_dir", ""))
-
+    data_manager = DataManager(data_dir=config.get("data_dir", ""))
     data_dict["data_manager"] = data_manager
     return data_dict
 
@@ -88,7 +92,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def list_plugins(self, request, context):
         reply = analyser_pb2.ListPluginsReply()
 
-        for _, plugin_class in self.managers["manager"].plugins().items():
+        for _, plugin_class in self.managers["plugin_manager"].plugins().items():
             print(plugin_class.serialize_class())
             reply.plugins.extend([plugin_class.serialize_class()])
 
@@ -96,7 +100,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def upload_data(self, request_iterator, context):
         try:
-            data = self.self.managers["data_manager"](request_iterator)
+            data = self.managers["data_manager"].load_from_stream(request_iterator)
             print(data)
             # save data from request input stream
             # datastream = iter(request_iterator)
@@ -122,7 +126,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
         logging.info("[Commune] run")
         reply = analyser_pb2.RunPluginResponse()
-        if request.plugin not in self.managers["manager"].plugins():
+        if request.plugin not in self.managers["plugin_manager"].plugins():
             return reply
 
         job_id = uuid.uuid4().hex
@@ -137,7 +141,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
         variable["future"] = future
         self.futures.append(variable)
 
-        print(self.managers["manager"].plugins())
+        print(self.managers["plugin_manager"].plugins())
         logging.info(MessageToJson(request))
 
         return reply

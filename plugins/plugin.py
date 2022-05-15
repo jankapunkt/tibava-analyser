@@ -6,7 +6,7 @@ from numpy import require
 import numpy.typing as npt
 
 from analyser.utils import convert_name
-from analyser.data import PluginData
+from analyser.data import PluginData, VideoData, AudioData, ImageData
 from analyser import analyser_pb2
 
 
