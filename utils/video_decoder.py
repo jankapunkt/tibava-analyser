@@ -9,27 +9,20 @@ class VideoDecoder:
         reader = imageio.get_reader(path)
 
         self.meta = reader.get_meta_data()
-        self.frame_count = reader.count_frames()
-        print(self.meta)
-        print(self.frame_count)
+        self.size = self.meta.get("size")
+
+        if self.fps is None:
+            self.fps = self.meta.get("fps")
 
     def __iter__(self):
 
-        fps = self.config.get("fps", 1)
-
-        max_resolution = config.get("max_resolution")
-        if max_resolution is not None:
-            res = max(video.get("height"), video.get("width"))
-            scale = min(max_resolution / res, 1)
-            res = (round(video.get("width") * scale), round(video.get("height") * scale))
-            video_reader = imageio.get_reader(video_file, fps=fps, size=res)
+        if self.max_dimension is not None:
+            res = max(self.size[1], self.size[0])
+            scale = min(self.max_dimension / res, 1)
+            res = (round(self.size[0] * scale), round(self.size[1] * scale))
+            video_reader = imageio.get_reader(self.path, fps=self.fps, size=res)
         else:
-            video_reader = imageio.get_reader(video_file, fps=fps)
+            video_reader = imageio.get_reader(self.path, fps=self.fps)
 
-        os.makedirs(os.path.join(config.get("output_path"), hash_id), exist_ok=True)
-        results = []
         for i, frame in enumerate(video_reader):
-            thumbnail_output = os.path.join(config.get("output_path"), hash_id, f"{i}.jpg")
-            imageio.imwrite(thumbnail_output, frame)
-            results.append({"time": i / fps, "path": f"{i}.jpg"})
-        pass
+            yield {"time": i / self.fps, "index": i, "frame": frame}

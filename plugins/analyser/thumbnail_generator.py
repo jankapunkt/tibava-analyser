@@ -4,12 +4,13 @@ from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
 from analyser.data import ImageData, VideoData, ShotsData
 from analyser.plugins import Plugin
+from analyser.utils import VideoDecoder
 
 
 default_config = {"data_dir": "/data"}
 
 
-default_parameters = {"fps": 1.0, "max_resolution": 128}
+default_parameters = {"fps": 1.0, "max_dimension": 128}
 
 requires = {
     "video": VideoData,
@@ -31,6 +32,13 @@ class ThumbnailGenerator(
         print(parameters)
 
         output_data = ImageData(ext="mp3")
+
+        video_decoder = VideoDecoder(
+            path=inputs["video"].path, fps=parameters.get("fps"), max_dimension=parameters.get("max_dimension")
+        )
+
+        for frame in video_decoder:
+            print(frame.get("frame").shape)
 
         output_data.path = os.path.join(self.config.get("data_dir"), f"{output_data.id}.mp3")
 
