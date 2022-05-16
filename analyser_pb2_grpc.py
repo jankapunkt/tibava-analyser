@@ -34,6 +34,11 @@ class AnalyserStub(object):
                 request_serializer=analyser__pb2.RunPluginRequest.SerializeToString,
                 response_deserializer=analyser__pb2.RunPluginResponse.FromString,
                 )
+        self.get_plugin_status = channel.unary_unary(
+                '/tibava.analyser.Analyser/get_plugin_status',
+                request_serializer=analyser__pb2.GetPluginStatusRequest.SerializeToString,
+                response_deserializer=analyser__pb2.GetPluginStatusResponse.FromString,
+                )
 
 
 class AnalyserServicer(object):
@@ -63,6 +68,12 @@ class AnalyserServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def get_plugin_status(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AnalyserServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -85,6 +96,11 @@ def add_AnalyserServicer_to_server(servicer, server):
                     servicer.run_plugin,
                     request_deserializer=analyser__pb2.RunPluginRequest.FromString,
                     response_serializer=analyser__pb2.RunPluginResponse.SerializeToString,
+            ),
+            'get_plugin_status': grpc.unary_unary_rpc_method_handler(
+                    servicer.get_plugin_status,
+                    request_deserializer=analyser__pb2.GetPluginStatusRequest.FromString,
+                    response_serializer=analyser__pb2.GetPluginStatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -161,5 +177,22 @@ class Analyser(object):
         return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/run_plugin',
             analyser__pb2.RunPluginRequest.SerializeToString,
             analyser__pb2.RunPluginResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def get_plugin_status(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/get_plugin_status',
+            analyser__pb2.GetPluginStatusRequest.SerializeToString,
+            analyser__pb2.GetPluginStatusResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

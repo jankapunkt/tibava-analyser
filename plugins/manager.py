@@ -34,11 +34,11 @@ class PluginManager:
         for plugin_name, plugin_class in self.plugins().items():
             if plugin_name.lower() not in plugin_name_list:
                 continue
-
+            print(plugin_name)
             plugin_has_config = False
             plugin_config = {"params": {}}
             for x in configs:
-                if x["type"].lower() == plugin_name.lower():
+                if x["plugin"].lower() == plugin_name.lower():
                     plugin_config.update(x)
                     plugin_has_config = True
             if not plugin_has_config:

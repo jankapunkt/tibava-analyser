@@ -4,12 +4,45 @@ import re
 import argparse
 import logging
 import mimetypes
+from typing import Iterator, Any
 
 import grpc
 import json
 import analyser_pb2, analyser_pb2_grpc
 
 from google.protobuf.json_format import MessageToJson
+
+
+def load_from_stream(output_name, data_dir: str, data: Iterator[Any]):
+
+    datastream = iter(data)
+    firstpkg = next(datastream)
+    data = None
+    path = None
+    if firstpkg.type == analyser_pb2.VIDEO_DATA:
+        ext = "mp4"
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+
+        path = os.path.join(data_dir, f"{output_name}.{ext}")
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)  # write first package
+            for x in datastream:
+                f.write(x.data_encoded)
+
+    if firstpkg.type == analyser_pb2.AUDIO_DATA:
+        ext = "mp3"
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+
+        path = os.path.join(data_dir, f"{output_name}.{ext}")
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)  # write first package
+            for x in datastream:
+                f.write(x.data_encoded)
+    return path
 
 
 def parse_args():
@@ -19,10 +52,13 @@ def parse_args():
     parser.add_argument("-d", "--debug", action="store_true", help="debug output")
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", default=50051, type=int)
-    parser.add_argument("-t", "--task", choices=["list_plugins", "upload_data", "run_plugin", "download_data"])
+    parser.add_argument(
+        "-t", "--task", choices=["list_plugins", "upload_data", "run_plugin", "download_data", "get_plugin_status"]
+    )
     parser.add_argument("--path")
     parser.add_argument("--plugin")
     parser.add_argument("--inputs")
+    parser.add_argument("--id")
     args = parser.parse_args()
     return args
 
@@ -91,6 +127,29 @@ class AnalyserClient:
         logging.error("Error while run plugin ...")
         return None
 
+    def get_plugin_status(self, plugin_id):
+
+        get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=plugin_id)
+
+        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
+
+        response = stub.get_plugin_status(get_plugin_request)
+
+        return response
+
+    def download_data(self, data_id, output_path):
+
+        download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
+
+        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
+
+        response = stub.download_data(download_data_request)
+        path = load_from_stream(data_id, output_path, response)
+        print(path)
+        return path
+
 
 def main():
     args = parse_args()
@@ -115,6 +174,15 @@ def main():
     if args.task == "run_plugin":
         result = client.run_plugin(args.plugin, json.loads(args.inputs))
         print(result)
+
+    if args.task == "get_plugin_status":
+        result = client.get_plugin_status(args.id)
+        print(result)
+
+    if args.task == "download_data":
+        result = client.download_data(args.id, args.path)
+        print(result)
+
     return 0
 
 

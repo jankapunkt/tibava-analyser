@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x61nalyser.proto\x12\x0ftibava.analyser\"]\n\x13PluginInfoParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\t\x12\'\n\x04type\x18\x03 \x01(\x0e\x32\x19.tibava.analyser.DataType\"M\n\x0ePluginInfoData\x12\x0c\n\x04name\x18\x01 \x01(\t\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\")\n\rRunPluginData\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\"\xcb\x01\n\nPluginInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x38\n\nparameters\x18\x03 \x03(\x0b\x32$.tibava.analyser.PluginInfoParameter\x12\x31\n\x08requires\x18\x04 \x03(\x0b\x32\x1f.tibava.analyser.PluginInfoData\x12\x31\n\x08provides\x18\x05 \x03(\x0b\x32\x1f.tibava.analyser.PluginInfoData\"\x14\n\x12ListPluginsRequest\"@\n\x10ListPluginsReply\x12,\n\x07plugins\x18\x01 \x03(\x0b\x32\x1b.tibava.analyser.PluginInfo\"e\n\x11UploadDataRequest\x12\x14\n\x0c\x64\x61ta_encoded\x18\x01 \x01(\x0c\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\x12\x0b\n\x03\x65xt\x18\x03 \x01(\t\"1\n\x12UploadDataResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\"!\n\x13\x44ownloadDataRequest\x12\n\n\x02id\x18\x01 \x01(\t\"l\n\x14\x44ownloadDataResponse\x12\x14\n\x0c\x64\x61ta_encoded\x18\x01 \x01(\x0c\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\x12\x0f\n\x07success\x18\x03 \x01(\x08\"W\n\x0fPluginParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x12\'\n\x04type\x18\x03 \x01(\x0e\x32\x19.tibava.analyser.DataType\"\x88\x01\n\x10RunPluginRequest\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12.\n\x06inputs\x18\x02 \x03(\x0b\x32\x1e.tibava.analyser.RunPluginData\x12\x34\n\nparameters\x18\x03 \x03(\x0b\x32 .tibava.analyser.PluginParameter\"0\n\x11RunPluginResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08*J\n\x08\x44\x61taType\x12\x0f\n\x0bUNKOWN_TYPE\x10\x00\x12\x0f\n\x0bSTRING_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0e\n\nFLOAT_TYPE\x10\x03*O\n\x0ePluginDataType\x12\x0f\n\x0bUNKOWN_DATA\x10\x00\x12\x0e\n\nVIDEO_DATA\x10\x01\x12\x0e\n\nIMAGE_DATA\x10\x02\x12\x0c\n\x08ROI_DATA\x10\x03\x32\xf1\x02\n\x08\x41nalyser\x12V\n\x0clist_plugins\x12#.tibava.analyser.ListPluginsRequest\x1a!.tibava.analyser.ListPluginsReply\x12X\n\x0bupload_data\x12\".tibava.analyser.UploadDataRequest\x1a#.tibava.analyser.UploadDataResponse(\x01\x12^\n\rdownload_data\x12$.tibava.analyser.DownloadDataRequest\x1a%.tibava.analyser.DownloadDataResponse0\x01\x12S\n\nrun_plugin\x12!.tibava.analyser.RunPluginRequest\x1a\".tibava.analyser.RunPluginResponseB\x02P\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x61nalyser.proto\x12\x0ftibava.analyser\"]\n\x13PluginInfoParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\t\x12\'\n\x04type\x18\x03 \x01(\x0e\x32\x19.tibava.analyser.DataType\"M\n\x0ePluginInfoData\x12\x0c\n\x04name\x18\x01 \x01(\t\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\")\n\rRunPluginData\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\"\xcb\x01\n\nPluginInfo\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x38\n\nparameters\x18\x03 \x03(\x0b\x32$.tibava.analyser.PluginInfoParameter\x12\x31\n\x08requires\x18\x04 \x03(\x0b\x32\x1f.tibava.analyser.PluginInfoData\x12\x31\n\x08provides\x18\x05 \x03(\x0b\x32\x1f.tibava.analyser.PluginInfoData\"\x14\n\x12ListPluginsRequest\"@\n\x10ListPluginsReply\x12,\n\x07plugins\x18\x01 \x03(\x0b\x32\x1b.tibava.analyser.PluginInfo\"e\n\x11UploadDataRequest\x12\x14\n\x0c\x64\x61ta_encoded\x18\x01 \x01(\x0c\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\x12\x0b\n\x03\x65xt\x18\x03 \x01(\t\"1\n\x12UploadDataResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\"!\n\x13\x44ownloadDataRequest\x12\n\n\x02id\x18\x01 \x01(\t\"[\n\x14\x44ownloadDataResponse\x12\x14\n\x0c\x64\x61ta_encoded\x18\x01 \x01(\x0c\x12-\n\x04type\x18\x02 \x01(\x0e\x32\x1f.tibava.analyser.PluginDataType\"W\n\x0fPluginParameter\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x12\'\n\x04type\x18\x03 \x01(\x0e\x32\x19.tibava.analyser.DataType\"\x88\x01\n\x10RunPluginRequest\x12\x0e\n\x06plugin\x18\x01 \x01(\t\x12.\n\x06inputs\x18\x02 \x03(\x0b\x32\x1e.tibava.analyser.RunPluginData\x12\x34\n\nparameters\x18\x03 \x03(\x0b\x32 .tibava.analyser.PluginParameter\"0\n\x11RunPluginResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\"$\n\x16GetPluginStatusRequest\x12\n\n\x02id\x18\x01 \x01(\t\"[\n\x17GetPluginStatusResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12/\n\x07outputs\x18\x02 \x03(\x0b\x32\x1e.tibava.analyser.RunPluginData*J\n\x08\x44\x61taType\x12\x0f\n\x0bUNKOWN_TYPE\x10\x00\x12\x0f\n\x0bSTRING_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0e\n\nFLOAT_TYPE\x10\x03*_\n\x0ePluginDataType\x12\x0f\n\x0bUNKOWN_DATA\x10\x00\x12\x0e\n\nVIDEO_DATA\x10\x01\x12\x0e\n\nIMAGE_DATA\x10\x02\x12\x0c\n\x08ROI_DATA\x10\x03\x12\x0e\n\nAUDIO_DATA\x10\x04\x32\xd9\x03\n\x08\x41nalyser\x12V\n\x0clist_plugins\x12#.tibava.analyser.ListPluginsRequest\x1a!.tibava.analyser.ListPluginsReply\x12X\n\x0bupload_data\x12\".tibava.analyser.UploadDataRequest\x1a#.tibava.analyser.UploadDataResponse(\x01\x12^\n\rdownload_data\x12$.tibava.analyser.DownloadDataRequest\x1a%.tibava.analyser.DownloadDataResponse0\x01\x12S\n\nrun_plugin\x12!.tibava.analyser.RunPluginRequest\x1a\".tibava.analyser.RunPluginResponse\x12\x66\n\x11get_plugin_status\x12\'.tibava.analyser.GetPluginStatusRequest\x1a(.tibava.analyser.GetPluginStatusResponseB\x02P\x01\x62\x06proto3')
 
 _DATATYPE = DESCRIPTOR.enum_types_by_name['DataType']
 DataType = enum_type_wrapper.EnumTypeWrapper(_DATATYPE)
@@ -29,6 +29,7 @@ UNKOWN_DATA = 0
 VIDEO_DATA = 1
 IMAGE_DATA = 2
 ROI_DATA = 3
+AUDIO_DATA = 4
 
 
 _PLUGININFOPARAMETER = DESCRIPTOR.message_types_by_name['PluginInfoParameter']
@@ -44,6 +45,8 @@ _DOWNLOADDATARESPONSE = DESCRIPTOR.message_types_by_name['DownloadDataResponse']
 _PLUGINPARAMETER = DESCRIPTOR.message_types_by_name['PluginParameter']
 _RUNPLUGINREQUEST = DESCRIPTOR.message_types_by_name['RunPluginRequest']
 _RUNPLUGINRESPONSE = DESCRIPTOR.message_types_by_name['RunPluginResponse']
+_GETPLUGINSTATUSREQUEST = DESCRIPTOR.message_types_by_name['GetPluginStatusRequest']
+_GETPLUGINSTATUSRESPONSE = DESCRIPTOR.message_types_by_name['GetPluginStatusResponse']
 PluginInfoParameter = _reflection.GeneratedProtocolMessageType('PluginInfoParameter', (_message.Message,), {
   'DESCRIPTOR' : _PLUGININFOPARAMETER,
   '__module__' : 'analyser_pb2'
@@ -135,15 +138,29 @@ RunPluginResponse = _reflection.GeneratedProtocolMessageType('RunPluginResponse'
   })
 _sym_db.RegisterMessage(RunPluginResponse)
 
+GetPluginStatusRequest = _reflection.GeneratedProtocolMessageType('GetPluginStatusRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETPLUGINSTATUSREQUEST,
+  '__module__' : 'analyser_pb2'
+  # @@protoc_insertion_point(class_scope:tibava.analyser.GetPluginStatusRequest)
+  })
+_sym_db.RegisterMessage(GetPluginStatusRequest)
+
+GetPluginStatusResponse = _reflection.GeneratedProtocolMessageType('GetPluginStatusResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETPLUGINSTATUSRESPONSE,
+  '__module__' : 'analyser_pb2'
+  # @@protoc_insertion_point(class_scope:tibava.analyser.GetPluginStatusResponse)
+  })
+_sym_db.RegisterMessage(GetPluginStatusResponse)
+
 _ANALYSER = DESCRIPTOR.services_by_name['Analyser']
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'P\001'
-  _DATATYPE._serialized_start=1123
-  _DATATYPE._serialized_end=1197
-  _PLUGINDATATYPE._serialized_start=1199
-  _PLUGINDATATYPE._serialized_end=1278
+  _DATATYPE._serialized_start=1237
+  _DATATYPE._serialized_end=1311
+  _PLUGINDATATYPE._serialized_start=1313
+  _PLUGINDATATYPE._serialized_end=1408
   _PLUGININFOPARAMETER._serialized_start=35
   _PLUGININFOPARAMETER._serialized_end=128
   _PLUGININFODATA._serialized_start=130
@@ -163,13 +180,17 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _DOWNLOADDATAREQUEST._serialized_start=700
   _DOWNLOADDATAREQUEST._serialized_end=733
   _DOWNLOADDATARESPONSE._serialized_start=735
-  _DOWNLOADDATARESPONSE._serialized_end=843
-  _PLUGINPARAMETER._serialized_start=845
-  _PLUGINPARAMETER._serialized_end=932
-  _RUNPLUGINREQUEST._serialized_start=935
-  _RUNPLUGINREQUEST._serialized_end=1071
-  _RUNPLUGINRESPONSE._serialized_start=1073
-  _RUNPLUGINRESPONSE._serialized_end=1121
-  _ANALYSER._serialized_start=1281
-  _ANALYSER._serialized_end=1650
+  _DOWNLOADDATARESPONSE._serialized_end=826
+  _PLUGINPARAMETER._serialized_start=828
+  _PLUGINPARAMETER._serialized_end=915
+  _RUNPLUGINREQUEST._serialized_start=918
+  _RUNPLUGINREQUEST._serialized_end=1054
+  _RUNPLUGINRESPONSE._serialized_start=1056
+  _RUNPLUGINRESPONSE._serialized_end=1104
+  _GETPLUGINSTATUSREQUEST._serialized_start=1106
+  _GETPLUGINSTATUSREQUEST._serialized_end=1142
+  _GETPLUGINSTATUSRESPONSE._serialized_start=1144
+  _GETPLUGINSTATUSRESPONSE._serialized_end=1235
+  _ANALYSER._serialized_start=1411
+  _ANALYSER._serialized_end=1884
 # @@protoc_insertion_point(module_scope)

@@ -11,6 +11,7 @@ service Analyser {
   rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
+  rpc get_plugin_status(GetPluginStatusRequest) returns (GetPluginStatusResponse);
 }
 
 enum DataType {
@@ -31,6 +32,7 @@ enum PluginDataType {
   VIDEO_DATA = 1;
   IMAGE_DATA = 2;
   ROI_DATA = 3;
+  AUDIO_DATA = 4;
 }
 
 message PluginInfoData {
@@ -72,7 +74,6 @@ message DownloadDataRequest {
 message DownloadDataResponse {
   bytes data_encoded = 1;
   PluginDataType type = 2;
-  bool success = 3;
 }
 
 message PluginParameter {
@@ -90,4 +91,13 @@ message RunPluginRequest{
 message RunPluginResponse{
   string id = 1;
   bool success = 2;
+}
+
+message GetPluginStatusRequest{
+  string id = 1;
+}
+
+message GetPluginStatusResponse{
+  bool success = 1;
+  repeated RunPluginData outputs = 2;
 }

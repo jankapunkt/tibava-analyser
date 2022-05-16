@@ -104,4 +104,4 @@ class Plugin:
         return result
 
     def __call__(self, inputs: Dict[str, PluginData]) -> Dict[str, PluginData]:
-        self.call(inputs)
+        return self.call(inputs)

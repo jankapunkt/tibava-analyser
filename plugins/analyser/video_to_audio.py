@@ -3,8 +3,9 @@ from analyser.utils import VideoDecoder
 from analyser.data import AudioData, VideoData
 from analyser.plugins import Plugin
 import ffmpeg
+import os
 
-default_config = {}
+default_config = {"data_dir": "/data/"}
 
 
 default_parameters = {}
@@ -24,18 +25,15 @@ class VideoToAudio(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        print("AA")
 
     def call(self, inputs):
 
-        print("BB")
-        video = None
-        for key, data in inputs.items():
-            print(key)
+        output_data = AudioData(ext="mp3")
+        output_data.path = os.path.join(self.config.get("data_dir"), f"{output_data.id}.mp3")
 
-        video = ffmpeg.input(video_file)
+        video = ffmpeg.input(inputs["video"].path)
         audio = video.audio
-        stream = ffmpeg.output(audio, audio_file)
+        stream = ffmpeg.output(audio, output_data.path)
         ffmpeg.run(stream)
 
-        pass
+        return {"audio": output_data}

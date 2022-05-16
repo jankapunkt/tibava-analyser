@@ -1,7 +1,5 @@
 data_dir: /data
-shotdetection:
-  host: localhost
-  port: 50051
-facedetection:
-  host: localhost
-  port: 50052
+plugins:
+  - plugin: video_to_audio
+    params:
+      data_dir: /data
