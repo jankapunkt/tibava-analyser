@@ -103,5 +103,8 @@ class Plugin:
 
         return result
 
-    def __call__(self, inputs: Dict[str, PluginData]) -> Dict[str, PluginData]:
-        return self.call(inputs)
+    def __call__(self, inputs: Dict[str, PluginData], parameters: Dict[str, Any] = None) -> Dict[str, PluginData]:
+        input_parameters = self._parameters
+        if parameters is not None:
+            input_parameters.update(parameters)
+        return self.call(inputs, input_parameters)

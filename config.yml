@@ -3,3 +3,6 @@ plugins:
   - plugin: video_to_audio
     params:
       data_dir: /data
+  - plugin: thumbnail_generator
+    params:
+      data_dir: /data

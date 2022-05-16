@@ -26,7 +26,7 @@ class VideoToAudio(
     def __init__(self, config=None):
         super().__init__(config)
 
-    def call(self, inputs):
+    def call(self, inputs, parameters):
 
         output_data = AudioData(ext="mp3")
         output_data.path = os.path.join(self.config.get("data_dir"), f"{output_data.id}.mp3")

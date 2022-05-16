@@ -58,6 +58,7 @@ def parse_args():
     parser.add_argument("--path")
     parser.add_argument("--plugin")
     parser.add_argument("--inputs")
+    parser.add_argument("--parameters")
     parser.add_argument("--id")
     args = parser.parse_args()
     return args
@@ -106,7 +107,7 @@ class AnalyserClient:
         logging.error("Error while copying data ...")
         return None
 
-    def run_plugin(self, plugin, inputs):
+    def run_plugin(self, plugin, inputs, parameters):
 
         run_request = analyser_pb2.RunPluginRequest()
         print(inputs)
@@ -115,6 +116,17 @@ class AnalyserClient:
             x = run_request.inputs.add()
             x.name = i.get("name")
             x.id = i.get("id")
+
+        for i in parameters:
+            x = run_request.parameters.add()
+            x.name = i.get("name")
+            x.value = str(i.get("value"))
+            if isinstance(i.get("value"), float):
+                x.type = analyser_pb2.FLOAT_TYPE
+            if isinstance(i.get("value"), int):
+                x.type = analyser_pb2.INT_TYPE
+            if isinstance(i.get("value"), str):
+                x.type = analyser_pb2.STRING_TYPE
 
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         stub = analyser_pb2_grpc.AnalyserStub(channel)
@@ -172,7 +184,7 @@ def main():
         print(result)
 
     if args.task == "run_plugin":
-        result = client.run_plugin(args.plugin, json.loads(args.inputs))
+        result = client.run_plugin(args.plugin, json.loads(args.inputs), json.loads(args.parameters))
         print(result)
 
     if args.task == "get_plugin_status":

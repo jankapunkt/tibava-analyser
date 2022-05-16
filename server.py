@@ -6,13 +6,14 @@ import argparse
 import time
 import uuid
 import json
-from more_itertools import first
+
 import yaml
 import copy
 import traceback
 from concurrent import futures
 
 from google.protobuf.json_format import MessageToJson
+from analyser.plugins import plugin
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
@@ -43,13 +44,25 @@ def run_plugin(args):
         plugin_manager = globals().get("plugin_manager")
         data_manager = globals().get("data_manager")
         params = args.get("params")
+
         plugin_inputs = {}
         for data_in in params.get("inputs"):
             data = data_manager.load(data_in.get("id"))
-            # print(data)
             plugin_inputs[data_in.get("name")] = data
-        # return
-        results = plugin_manager(plugin=params.get("plugin"), inputs=plugin_inputs)
+
+        plugin_parameters = {}
+        for parameter in params.get("parameters"):
+            print(parameter)
+            if parameter.get("type") == "FLOAT_TYPE":
+                plugin_parameters[parameter.get("name")] = float(parameter.get("value"))
+            if parameter.get("type") == "INT_TYPE":
+                plugin_parameters[parameter.get("name")] = int(parameter.get("value"))
+            if parameter.get("type") == "STRING_TYPE":
+                plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
+            # data = data_manager.load(data_in.get("name"))
+            # plugin_inputs[data_in.get("name")] = data
+        print(plugin_parameters)
+        results = plugin_manager(plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters)
 
         result_map = []
         for key, data in results.items():

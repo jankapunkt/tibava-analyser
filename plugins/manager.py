@@ -34,7 +34,6 @@ class PluginManager:
         for plugin_name, plugin_class in self.plugins().items():
             if plugin_name.lower() not in plugin_name_list:
                 continue
-            print(plugin_name)
             plugin_has_config = False
             plugin_config = {"params": {}}
             for x in configs:
@@ -84,9 +83,17 @@ class AnalyserPluginManager(PluginManager):
             return None
 
         print(self._plugins[plugin], flush=True)
-        plugin = self._plugins[plugin](None)
+        plugin_to_run = None
+        for plugin_candidate in self.plugin_list:
+
+            print(f"p {plugin} {plugin_candidate.get('plugin').name }")
+            if plugin_candidate.get("plugin").name == plugin:
+                plugin_to_run = plugin_candidate["plugin"]
+        if plugin_to_run is None:
+            return None
+        print(f"# {plugin_to_run}")
         print(inputs)
-        results = plugin(inputs)
+        results = plugin_to_run(inputs, parameters)
         print(f"results {results}", flush=True)
         return results
 
