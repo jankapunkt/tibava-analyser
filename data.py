@@ -13,18 +13,26 @@ from analyser import analyser_pb2
 from datetime import datetime
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PluginData:
-    id: str = field(default_factory=lambda: uuid.uuid4().hex)
-    last_access: datetime = field(default_factory=lambda: datetime.now())
+    id: str = field(default_factory=lambda: uuid.uuid4().hex, init=False)
+    last_access: datetime = field(default_factory=lambda: datetime.now(), init=False)
     type: str = field(default="PluginData", init=False)
 
-    def dump(self):
+    def dumps(self):
         return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type}
 
-    def load(self, data):
+    def loads(self, data):
         self.id = data.get("id")
         self.last_access = datetime.fromtimestamp(data.get("last_access"))
+
+    def save(self, data_dir):
+        pass
+
+    
+    def load(self, data_dir, id):
+        pass
+
 
 
 @dataclass
@@ -51,14 +59,19 @@ class ImageData(PluginData):
 
 
 @dataclass
-class Shot:
+class ImagesData(PluginData):
+    images: List[ImageData] = field(default_factory=list)
+
+
+@dataclass
+class ShotData(PluginData):
     start: float
     end: float
 
 
 @dataclass
 class ShotsData(PluginData):
-    shots: List[Shot] = field(default_factory=list)
+    shots: List[ShotData] = field(default_factory=list)
 
 
 @dataclass
@@ -79,13 +92,26 @@ class AudioData(PluginData):
 
 @dataclass
 class ScalarData(PluginData):
-    x: npt.NDArray = field(default_factory=np.ndarray)
+    y: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
+
+    def dump(self):
+        dump = super().dump()
+        return {**dump, "path": self.path, "ext": self.ext, "type": self.type}
+
+    def load(self, data):
+        super().load(data)
+
+    def save_blob(self, path):
+        pass
+
+    def load_blob(self, path):
+        pass
 
 
 @dataclass
 class HistData(PluginData):
-    x: npt.NDArray = field(default_factory=np.ndarray)
+    y: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
 
 
