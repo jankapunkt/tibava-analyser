@@ -46,21 +46,23 @@ def run_plugin(args):
         params = args.get("params")
 
         plugin_inputs = {}
-        for data_in in params.get("inputs"):
-            data = data_manager.load(data_in.get("id"))
-            plugin_inputs[data_in.get("name")] = data
+        if "inputs" in params:
+            for data_in in params.get("inputs"):
+                data = data_manager.load(data_in.get("id"))
+                plugin_inputs[data_in.get("name")] = data
 
         plugin_parameters = {}
-        for parameter in params.get("parameters"):
-            print(parameter)
-            if parameter.get("type") == "FLOAT_TYPE":
-                plugin_parameters[parameter.get("name")] = float(parameter.get("value"))
-            if parameter.get("type") == "INT_TYPE":
-                plugin_parameters[parameter.get("name")] = int(parameter.get("value"))
-            if parameter.get("type") == "STRING_TYPE":
-                plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
-            # data = data_manager.load(data_in.get("name"))
-            # plugin_inputs[data_in.get("name")] = data
+        if "parameters" in params:
+            for parameter in params.get("parameters"):
+                print(parameter)
+                if parameter.get("type") == "FLOAT_TYPE":
+                    plugin_parameters[parameter.get("name")] = float(parameter.get("value"))
+                if parameter.get("type") == "INT_TYPE":
+                    plugin_parameters[parameter.get("name")] = int(parameter.get("value"))
+                if parameter.get("type") == "STRING_TYPE":
+                    plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
+                # data = data_manager.load(data_in.get("name"))
+                # plugin_inputs[data_in.get("name")] = data
         print(plugin_parameters)
         results = plugin_manager(plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters)
 
@@ -186,7 +188,10 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def download_data(self, request, context):
         try:
+            print("download_data", flush=True)
             data = self.managers["data_manager"].load(request.id)
+            print(f"download_data_ {data}", flush=True)
+
             for x in self.managers["data_manager"].dump_to_stream(data):
                 yield analyser_pb2.DownloadDataResponse(type=x["type"], data_encoded=x["data_encoded"])
 

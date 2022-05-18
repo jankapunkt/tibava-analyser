@@ -28,8 +28,7 @@ class VideoToAudio(
 
     def call(self, inputs, parameters):
 
-        output_data = AudioData(ext="mp3")
-        output_data.path = os.path.join(self.config.get("data_dir"), f"{output_data.id}.mp3")
+        output_data = AudioData(ext="mp3", data_dir=self.config.get("data_dir"))
 
         video = ffmpeg.input(inputs["video"].path)
         audio = video.audio
