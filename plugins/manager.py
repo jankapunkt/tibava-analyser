@@ -78,23 +78,17 @@ class AnalyserPluginManager(PluginManager):
                     a.register(self)
 
     def __call__(self, plugin, inputs, parameters=None):
-        print(f"start", flush=True)
         if plugin not in self._plugins:
             return None
 
-        print(self._plugins[plugin], flush=True)
         plugin_to_run = None
         for plugin_candidate in self.plugin_list:
 
-            print(f"p {plugin} {plugin_candidate.get('plugin').name }")
             if plugin_candidate.get("plugin").name == plugin:
                 plugin_to_run = plugin_candidate["plugin"]
         if plugin_to_run is None:
             return None
-        print(f"# {plugin_to_run}")
-        print(inputs)
         results = plugin_to_run(inputs, parameters)
-        print(f"results {results}", flush=True)
         return results
 
 
@@ -106,6 +100,3 @@ class VideoPlugin(Plugin):
 
     def __call__(self, images):
         return self.call(images)
-
-
-# __all__ = []

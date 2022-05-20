@@ -25,6 +25,9 @@ RUN python3 -m pip install redis
 RUN python3 -m pip install grpcio 
 RUN python3 -m pip install grpcio-tools
 
+RUN python3 -m pip install msgpack-numpy
+
+
 # RUN python3 -m pip install scikit-image
 RUN python3 -m pip install librosa 
 RUN python3 -m pip install ffmpeg-python

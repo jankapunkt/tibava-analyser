@@ -9,10 +9,19 @@ from typing import Dict, List, Any, Type, Iterator
 import json
 
 
+import msgpack
+import msgpack_numpy as m
+
 import numpy.typing as npt
 import numpy as np
 
 from analyser import analyser_pb2
+
+
+def create_data_path(data_dir, data_id, file_ext):
+    os.makedirs(data_dir, exist_ok=True)
+    data_path = os.path.join(data_dir, f"{data_id}.{file_ext}")
+    return data_path
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -24,31 +33,52 @@ class PluginData:
     def dumps(self):
         return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type}
 
-    @classmethod
-    def loads(cls, data: dict):
-        return PluginData(
-            id=data.get("id"), last_access=datetime.fromtimestamp(data.get("last_access")), type=data.get("type")
-        )
-        # self.id = data.get("id")
-        # self.last_access = datetime.fromtimestamp(data.get("last_access"))
+    def save(self, data_dir: str, save_blob: bool = True) -> bool:
+        logging.info("[PluginData::save]")
+        try:
+            if not self.save_blob(data_dir):
+                return False
+            data_path = os.path.join(data_dir, f"{self.id}.json")
+            with open(data_path, "w") as f:
+                f.write(self.dumps())
+        except:
+            return False
+        return True
 
-    def save(self, data_dir: str):
-        data_path = os.path.join(data_dir, f"{self.id}.json")
-        with open(data_path, "w") as f:
-            f.write(self.dumps())
+    def save_blob(self, data_dir: str) -> bool:
+        return True
 
     @classmethod
-    def load(cls, data_dir: str, id: str, load_blob: bool = False) -> PluginData:
+    def load(cls, data_dir: str, id: str, load_blob: bool = True) -> PluginData:
+        logging.info("[PluginData::load]")
         if len(id) != 32:
             return None
 
         if not re.match(r"^[a-f0-9]{32}$", id):
             return None
 
-        data_path = os.path.join(data_dir, f"{id}.json")
+        data_path = create_data_path(data_dir, id, "json")
 
+        data = {}
         with open(data_path, "r") as f:
-            return cls.loads(f.read())
+            data = json.load(f)
+
+        data_args = cls.load_args(data)
+        blob_args = dict()
+        if load_blob:
+            blob_args = cls.load_blob_args(data)
+
+        return cls(**data_args, **blob_args)
+
+    @classmethod
+    def load_args(cls, data: dict):
+        return dict(
+            id=data.get("id"), last_access=datetime.fromtimestamp(data.get("last_access")), type=data.get("type")
+        )
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        return {}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -108,12 +138,17 @@ class AudioData(PluginData):
                 object.__setattr__(self, "path", os.path.join(self.data_dir, f"{self.id}.{self.ext}"))
 
     def dumps(self):
-        dump = super().dumps()
-        return {**dump, "path": self.path, "ext": self.ext, "type": self.type}
+        data_dict = super().dumps()
+        return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
 
     @classmethod
-    def loads(cls, data):
-        return AudioData(**super().loads(data).dumps(), path=data.get("path"), ext=data.get("ext"))
+    def load_args(cls, data: dict):
+        data_dict = super().load_args(data)
+        return dict(**data_dict, path=data.get("path"), ext=data.get("ext"))
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        return {}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -121,17 +156,23 @@ class ScalarData(PluginData):
     y: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
 
-    def dumps(self):
-        dump = super().dumps()
-        return {**dump, "path": self.path, "ext": self.ext, "type": self.type}
+    def save_blob(self, data_dir):
+        logging.info(f"[ScalarData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(msgpack.packb({"y": self.y, "time": self.time}, default=m.encode))
+        except Exception as e:
+            logging.error(f"ScalarData::save_blob {e}")
+            return False
+        return True
 
-    def load(self, data):
-        super().load(data)
+    def load_blob(self, data_dir):
+        logging.info(f"[ScalarData::load_blob]")
+        with open(create_data_path(data_dir, self.id, "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            return data
 
-    def save_blob(self, path):
-        pass
-
-    def load_blob(self, path):
+    def load_from_stream(self, data_dir: str, data: Iterator[Any]) -> PluginData:
         pass
 
 
@@ -195,12 +236,8 @@ class DataManager:
         return data
 
     def dump_to_stream(self, data: PluginData):
-        print("#####")
-        print(data, flush=True)
         if data.type == "VideoData":
-
             chunk_size = 1024
-
             with open(data.path, "rb") as bytestream:
                 while True:
                     chunk = bytestream.read(chunk_size)
@@ -208,7 +245,6 @@ class DataManager:
                         break
                     yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk}
         elif data.type == "AudioData":
-            print(f"Audiostream {data}", flush=True)
             chunk_size = 1024
             with open(data.path, "rb") as bytestream:
                 while True:
@@ -217,31 +253,15 @@ class DataManager:
                         break
                     yield {"type": analyser_pb2.AUDIO_DATA, "data_encoded": chunk}
 
-    def load(self, data_id):
-        if len(data_id) != 32:
-            return None
-
-        if not re.match(r"^[a-f0-9]{32}$", data_id):
-            return None
-
-        data_path = os.path.join(self.data_dir, f"{data_id}.json")
-
-        if not os.path.exists(data_path):
-            return None
-
-        with open(data_path, "r") as f:
-            data_raw = json.load(f)
-        print(data_raw, flush=True)
-        if data_raw.get("type") == "VideoData":
-            data = VideoData.loads(data_raw)
-        elif data_raw.get("type") == "AudioData":
-            data = AudioData.loads(data_raw)
+    def load(self, data_id: str) -> PluginData:
+        data = PluginData.load(data_dir=self.data_dir, id=data_id, load_blob=False)
+        if data.type == "VideoData":
+            return VideoData.load(data_dir=self.data_dir, id=data_id)
+        elif data.type == "AudioData":
+            return AudioData.load(data_dir=self.data_dir, id=data_id)
         else:
-            logging.error(f"[DataManager::load] unknow type {data_raw['type']}")
+            logging.error(f"[DataManager::load] unknow type {data.type}")
             return None
-
-        return data
 
     def save(self, data):
-        with open(os.path.join(self.data_dir, f"{data.id}.json"), "w") as f:
-            f.write(json.dumps(data.dumps(), indent=2))
+        data.save(self.data_dir, save_blob=True)

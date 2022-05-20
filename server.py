@@ -63,7 +63,6 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
                 # data = data_manager.load(data_in.get("name"))
                 # plugin_inputs[data_in.get("name")] = data
-        print(plugin_parameters)
         results = plugin_manager(plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters)
 
         result_map = []

@@ -22,8 +22,8 @@ provides = {
 }
 
 
-@AnalyserPluginManager.export("audio_amp")
-class VideoToAudio(
+@AnalyserPluginManager.export("audio_amp_analysis")
+class AudioAmpAnalysis(
     Plugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
 ):
     def __init__(self, config=None):
@@ -31,7 +31,7 @@ class VideoToAudio(
 
     def call(self, inputs, parameters):
 
-        y, sr = librosa.load(inputs.get("audio"), sr=parameters.get("sr"))
+        y, sr = librosa.load(inputs.get("audio").path, sr=parameters.get("sr"))
         if parameters.get("max_samples"):
             target_sr = sr / (len(y) / int(parameters.get("max_samples")))
 
@@ -41,4 +41,4 @@ class VideoToAudio(
         if parameters.get("normalize"):
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
 
-        return {"amp": ScalarData(y=y, time=(np.arange(len(y)) / sr)).tolist()}
+        return {"amp": ScalarData(y=y, time=(np.arange(len(y)) / sr).tolist())}
