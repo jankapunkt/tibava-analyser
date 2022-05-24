@@ -74,6 +74,7 @@ message DownloadDataRequest {
 message DownloadDataResponse {
   bytes data_encoded = 1;
   PluginDataType type = 2;
+  string ext = 3;
 }
 
 message PluginParameter {
@@ -98,6 +99,14 @@ message GetPluginStatusRequest{
 }
 
 message GetPluginStatusResponse{
-  bool success = 1;
+
+  enum Status {
+    UNKNOWN = 0;
+    ERROR = 1;
+    DONE = 2;
+    RUNNING = 3;
+    WAITING = 4;
+  }
+  Status status = 1;
   repeated RunPluginData outputs = 2;
 }

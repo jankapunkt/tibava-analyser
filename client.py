@@ -8,7 +8,7 @@ from typing import Iterator, Any
 
 import grpc
 import json
-import analyser_pb2, analyser_pb2_grpc
+from analyser import analyser_pb2, analyser_pb2_grpc
 
 from google.protobuf.json_format import MessageToJson
 
@@ -89,7 +89,7 @@ class AnalyserClient:
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
-        def generateRequests(file_object, chunk_size=1024):
+        def generateRequests(file_object, chunk_size=128 * 1024):
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
             with open(file_object, "rb") as bytestream:

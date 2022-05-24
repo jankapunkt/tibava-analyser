@@ -3,11 +3,11 @@ import os
 import re
 import logging
 import uuid
+import json
+import traceback
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Type, Iterator
-import json
-
 
 import msgpack
 import msgpack_numpy as m
@@ -24,11 +24,23 @@ def create_data_path(data_dir, data_id, file_ext):
     return data_path
 
 
+def generate_id():
+    return uuid.uuid4().hex
+
+
 @dataclass(kw_only=True, frozen=True)
 class PluginData:
-    id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    id: str = field(default_factory=generate_id)
     last_access: datetime = field(default_factory=lambda: datetime.now())
     type: str = field(default="PluginData")
+    path: str = None
+    data_dir: str = None
+    ext: str = None
+
+    def __post_init__(self):
+        if not self.path:
+            if self.data_dir and self.ext:
+                object.__setattr__(self, "path", create_data_path(self.data_dir, self.id, self.ext))
 
     def dumps(self):
         return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type}
@@ -38,14 +50,17 @@ class PluginData:
         try:
             if not self.save_blob(data_dir):
                 return False
-            data_path = os.path.join(data_dir, f"{self.id}.json")
+            data_path = create_data_path(data_dir, self.id, "json")
             with open(data_path, "w") as f:
-                f.write(self.dumps())
-        except:
+                f.write(json.dumps(self.dumps()))
+        except Exception as e:
+            logging.error(f"[PluginData::save] {e}")
+            logging.error(f"[PluginData::save] {traceback.format_exc()}")
+            logging.error(f"[PluginData::save] {traceback.print_stack()}")
             return False
         return True
 
-    def save_blob(self, data_dir: str) -> bool:
+    def save_blob(self, data_dir=None, path=None) -> bool:
         return True
 
     @classmethod
@@ -71,7 +86,7 @@ class PluginData:
         return cls(**data_args, **blob_args)
 
     @classmethod
-    def load_args(cls, data: dict):
+    def load_args(cls, data: dict) -> dict:
         return dict(
             id=data.get("id"), last_access=datetime.fromtimestamp(data.get("last_access")), type=data.get("type")
         )
@@ -79,6 +94,10 @@ class PluginData:
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
         return {}
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        return cls()
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -88,18 +107,44 @@ class VideoData(PluginData):
     ext: str = None
     type: str = field(default="VideoData")
 
-    def __post_init__(self):
-        if not self.path:
-            if self.data_dir and self.ext:
-                object.__setattr__(self, "path", os.path.join(self.data_dir, f"{self.id}.{self.ext}"))
-
     def dumps(self):
         dump = super().dumps()
         return {**dump, "path": self.path, "ext": self.ext, "type": self.type}
 
     @classmethod
-    def loads(cls, data):
-        return VideoData(**super().loads(data).dumps(), path=data.get("path"), ext=data.get("ext"))
+    def load_args(cls, data: dict):
+        data_dict = super().load_args(data)
+        return dict(**data_dict, path=data.get("path"), ext=data.get("ext"))
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        return {}
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "mp4"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        return cls(id=data_id, ext=ext, data_dir=data_dir)
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        with open(self.path, "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -127,17 +172,10 @@ class ShotsData(PluginData):
 
 @dataclass(kw_only=True, frozen=True)
 class AudioData(PluginData):
-    path: str = None
-    data_dir: str = None
-    ext: str = None
     type: str = field(default="AudioData")
 
-    def __post_init__(self):
-        if not self.path:
-            if self.data_dir and self.ext:
-                object.__setattr__(self, "path", os.path.join(self.data_dir, f"{self.id}.{self.ext}"))
-
     def dumps(self):
+        print("DUMP AUDIO")
         data_dict = super().dumps()
         return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
 
@@ -150,13 +188,44 @@ class AudioData(PluginData):
     def load_blob_args(cls, data: dict) -> dict:
         return {}
 
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "mp3"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        return cls(id=data_id, ext=ext, data_dir=data_dir)
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        with open(self.path, "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk, "ext": self.ext}
+
 
 @dataclass(kw_only=True, frozen=True)
 class ScalarData(PluginData):
     y: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
+    type: str = field(default="ScalarData")
 
-    def save_blob(self, data_dir):
+    def dumps(self) -> dict:
+        data_dict = super().dumps()
+        return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
+
+    def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
@@ -172,8 +241,32 @@ class ScalarData(PluginData):
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
             return data
 
-    def load_from_stream(self, data_dir: str, data: Iterator[Any]) -> PluginData:
-        pass
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        return cls(id=data_id, ext=ext, data_dir=data_dir)
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save()
+        with open(self.path, "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -212,38 +305,26 @@ class DataManager:
 
         datastream = iter(data)
         firstpkg = next(datastream)
+
+        def data_generator():
+            yield firstpkg
+            for x in datastream:
+                yield x
+
         data = None
         if firstpkg.type == analyser_pb2.VIDEO_DATA:
-            data = VideoData()
-            if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
-                ext = firstpkg.ext
-            else:
-                ext = "mp4"
-            if self.data_dir:
-                data.path = os.path.join(self.data_dir, f"{data.id}.{data.ext}")
-
-            data = VideoData(ext=ext, data_dir=self.data_dir)
-
-            with open(data.path, "wb") as f:
-                f.write(firstpkg.data_encoded)  # write first package
-                for x in datastream:
-                    f.write(x.data_encoded)
+            data = VideoData.load_from_stream(data_dir=self.data_dir, stream=data_generator())
 
         if data is not None:
-            with open(os.path.join(self.data_dir, f"{data.id}.json"), "w") as f:
+            with open(create_data_path(self.data_dir, data.id, "json"), "w") as f:
                 f.write(json.dumps(data.dumps(), indent=2))
 
         return data
 
     def dump_to_stream(self, data: PluginData):
         if data.type == "VideoData":
-            chunk_size = 1024
-            with open(data.path, "rb") as bytestream:
-                while True:
-                    chunk = bytestream.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk}
+            return VideoData.dump_to_stream()
+
         elif data.type == "AudioData":
             chunk_size = 1024
             with open(data.path, "rb") as bytestream:

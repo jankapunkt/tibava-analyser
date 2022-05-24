@@ -160,11 +160,15 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             done = job_data["future"].done()
 
             if not done:
-                context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                context.set_details("Still running")
+                response.status = analyser_pb2.GetPluginStatusResponse.RUNNING
                 return response
+
             try:
                 results = job_data["future"].result()
+
+                if results is None:
+                    response.status = analyser_pb2.GetPluginStatusResponse.ERROR
+                    return response
                 for k in results:
                     output = response.outputs.add()
                     output.name = k["name"]
@@ -173,15 +177,14 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             except Exception as e:
                 logging.error(f"Indexer: {repr(e)}")
                 logging.error(traceback.format_exc())
+                logging.error(traceback.print_stack())
 
-                context.set_code(grpc.StatusCode.INTERNAL)
-                context.set_details("Search error")
+                response.status = analyser_pb2.GetPluginStatusResponse.ERROR
                 return response
 
+            response.status = analyser_pb2.GetPluginStatusResponse.DONE
             return response
-
-        context.set_code(grpc.StatusCode.NOT_FOUND)
-        context.set_details("Job unknown")
+        response.status = analyser_pb2.GetPluginStatusResponse.UNKNOWN
 
         return response
 
