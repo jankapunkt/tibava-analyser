@@ -38,18 +38,22 @@ def main():
     job_id = client.run_plugin("video_to_audio", [{"id": data_id, "name": "video"}], [])
     logging.info(f"Job video_to_audio started: {job_id}")
 
-    while True:
-        result = client.get_plugin_status(job_id)
-        if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
-            time.sleep(0.5)
-            continue
-        elif result.status == analyser_pb2.GetPluginStatusResponse.ERROR:
-            logging.error("Job is crashing")
-            return
-        elif result.status == analyser_pb2.GetPluginStatusResponse.DONE:
-            break
+    result = client.get_plugin_results(job_id=job_id)
+    if result is None:
+        logging.error("Job is crashing")
+        return
+    # while True:
+    #     result = client.get_plugin_status(job_id)
+    #     if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
+    #         time.sleep(0.5)
+    #         continue
+    #     elif result.status == analyser_pb2.GetPluginStatusResponse.ERROR:
+    #         logging.error("Job is crashing")
+    #         return
+    #     elif result.status == analyser_pb2.GetPluginStatusResponse.DONE:
+    #         break
 
-        break
+    #     break
 
     audio_id = None
     for output in result.outputs:
@@ -61,18 +65,11 @@ def main():
     job_id = client.run_plugin("audio_amp_analysis", [{"id": audio_id, "name": "audio"}], [])
     logging.info(f"Job audio_amp started: {job_id}")
 
-    while True:
-        result = client.get_plugin_status(job_id)
-        if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
-            time.sleep(0.5)
-            continue
-        elif result.status == analyser_pb2.GetPluginStatusResponse.ERROR:
-            logging.error("Job is crashing")
-            return
-        elif result.status == analyser_pb2.GetPluginStatusResponse.DONE:
-            break
+    result = client.get_plugin_results(job_id=job_id)
+    if result is None:
+        logging.error("Job is crashing")
+        return
 
-        break
     amp_id = None
     for output in result.outputs:
         if output.name == "amp":

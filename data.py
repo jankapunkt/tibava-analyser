@@ -28,6 +28,59 @@ def generate_id():
     return uuid.uuid4().hex
 
 
+class DataManager:
+    _data_name_lut = {}
+    _data_enum_lut = {}
+
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+
+    @classmethod
+    def export(cls, name: str, enum_value: int):
+        def export_helper(data):
+            cls._data_name_lut[name] = data
+            cls._data_enum_lut[enum_value] = data
+            return data
+
+        return export_helper
+
+    def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
+
+        datastream = iter(data)
+        firstpkg = next(datastream)
+        print(firstpkg.type, flush=True)
+
+        def data_generator():
+            yield firstpkg
+            for x in datastream:
+                yield x
+
+        data = None
+        if firstpkg.type not in self._data_enum_lut:
+            return None
+        data = self._data_enum_lut[firstpkg.type].load_from_stream(data_dir=self.data_dir, stream=data_generator())
+
+        if save_meta and data is not None:
+            with open(create_data_path(self.data_dir, data.id, "json"), "w") as f:
+                f.write(json.dumps(data.dumps(), indent=2))
+
+        return data
+
+    def dump_to_stream(self, data: PluginData):
+        return data.dump_to_stream()
+
+    def load(self, data_id: str) -> PluginData:
+        data = PluginData.load(data_dir=self.data_dir, id=data_id, load_blob=False)
+        if data.type not in self._data_name_lut:
+            logging.error(f"[DataManager::load] unknow type {data.type}")
+            return None
+
+        return self._data_name_lut[data.type].load(data_dir=self.data_dir, id=data_id)
+
+    def save(self, data):
+        data.save(self.data_dir, save_blob=True)
+
+
 @dataclass(kw_only=True, frozen=True)
 class PluginData:
     id: str = field(default_factory=generate_id)
@@ -43,7 +96,7 @@ class PluginData:
                 object.__setattr__(self, "path", create_data_path(self.data_dir, self.id, self.ext))
 
     def dumps(self):
-        return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type}
+        return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type, "ext": self.ext}
 
     def save(self, data_dir: str, save_blob: bool = True) -> bool:
         logging.info("[PluginData::save]")
@@ -76,19 +129,22 @@ class PluginData:
 
         data = {}
         with open(data_path, "r") as f:
-            data = json.load(f)
+            data = {**json.load(f), "data_dir": data_dir}
 
         data_args = cls.load_args(data)
         blob_args = dict()
         if load_blob:
-            blob_args = cls.load_blob_args(data)
+            blob_args = cls.load_blob_args(data_args)
 
         return cls(**data_args, **blob_args)
 
     @classmethod
     def load_args(cls, data: dict) -> dict:
         return dict(
-            id=data.get("id"), last_access=datetime.fromtimestamp(data.get("last_access")), type=data.get("type")
+            id=data.get("id"),
+            last_access=datetime.fromtimestamp(data.get("last_access")),
+            type=data.get("type"),
+            data_dir=data.get("data_dir"),
         )
 
     @classmethod
@@ -97,9 +153,10 @@ class PluginData:
 
     @classmethod
     def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
-        return cls()
+        return cls(data_dir=data_dir)
 
 
+@DataManager.export("VideoData", analyser_pb2.VIDEO_DATA)
 @dataclass(kw_only=True, frozen=True)
 class VideoData(PluginData):
     path: str = None
@@ -160,16 +217,67 @@ class ImagesData(PluginData):
 
 
 @dataclass(kw_only=True, frozen=True)
-class ShotData(PluginData):
+class Shot:
     start: float
     end: float
 
 
+@DataManager.export("ShotsData", analyser_pb2.SHOTS_DATA)
 @dataclass(kw_only=True, frozen=True)
 class ShotsData(PluginData):
-    shots: List[ShotData] = field(default_factory=list)
+    type: str = field(default="ShotsData")
+    ext: str = field(default="msg")
+    shots: List[Shot] = field(default_factory=list)
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[ShotsData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(msgpack.packb({"shots": [{"start": x.start, "end": x.end} for x in self.shots]}))
+        except Exception as e:
+            logging.error(f"ScalarData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[ShotsData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read())
+            data = {"shots": [Shot(start=x["start"], end=x["end"]) for x in data["shots"]]}
+        return data
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.SHOTS_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
+@DataManager.export("AudioData", analyser_pb2.AUDIO_DATA)
 @dataclass(kw_only=True, frozen=True)
 class AudioData(PluginData):
     type: str = field(default="AudioData")
@@ -212,18 +320,20 @@ class AudioData(PluginData):
                 chunk = bytestream.read(chunk_size)
                 if not chunk:
                     break
-                yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk, "ext": self.ext}
+                yield {"type": analyser_pb2.AUDIO_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
+@DataManager.export("ScalarData", analyser_pb2.SCALAR_DATA)
 @dataclass(kw_only=True, frozen=True)
 class ScalarData(PluginData):
-    y: npt.NDArray = field(default_factory=np.ndarray)
-    time: List[float] = field(default_factory=list)
     type: str = field(default="ScalarData")
+    ext: str = field(default="msg")
+    y: npt.NDArray = None
+    time: List[float] = field(default_factory=list)
 
-    def dumps(self) -> dict:
-        data_dict = super().dumps()
-        return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
+    # def dumps(self) -> dict:
+    #     data_dict = super().dumps()
+    #     return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
@@ -235,11 +345,19 @@ class ScalarData(PluginData):
             return False
         return True
 
-    def load_blob(self, data_dir):
-        logging.info(f"[ScalarData::load_blob]")
-        with open(create_data_path(data_dir, self.id, "msg"), "rb") as f:
+    # def load_blob(self, data_dir):
+    #     logging.info(f"[ScalarData::load_blob]")
+    #     with open(create_data_path(data_dir, self.id, "msg"), "rb") as f:
+    #         data = msgpack.unpackb(f.read(), object_hook=m.decode)
+    #         print(data, flush=True)
+    #         return data
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[ScalarData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
-            return data
+        return data
 
     @classmethod
     def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
@@ -257,16 +375,18 @@ class ScalarData(PluginData):
             for x in stream:
                 f.write(x.data_encoded)
 
-        return cls(id=data_id, ext=ext, data_dir=data_dir)
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
 
     def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
-        self.save()
-        with open(self.path, "rb") as bytestream:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
             while True:
                 chunk = bytestream.read(chunk_size)
                 if not chunk:
                     break
-                yield {"type": analyser_pb2.VIDEO_DATA, "data_encoded": chunk, "ext": self.ext}
+                yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -275,74 +395,23 @@ class HistData(PluginData):
     time: List[float] = field(default_factory=list)
 
 
-def data_from_proto_stream(proto, data_dir=None):
-    if proto.type == analyser_pb2.VIDEO_DATA:
-        data = VideoData()
-        if hasattr(proto, "ext"):
-            data.ext = proto.ext
-        if data_dir:
-            data.path = os.path.join(data_dir)
+# def data_from_proto_stream(proto, data_dir=None):
+#     if proto.type == analyser_pb2.VIDEO_DATA:
+#         data = VideoData()
+#         if hasattr(proto, "ext"):
+#             data.ext = proto.ext
+#         if data_dir:
+#             data.path = os.path.join(data_dir)
 
-        return data
-
-
-def data_from_proto(proto, data_dir=None):
-    if proto.type == analyser_pb2.VIDEO_DATA:
-        data = VideoData()
-        if hasattr(proto, "ext"):
-            data.ext = proto.ext
-        if data_dir:
-            data.path = os.path.join(data_dir)
-
-        return data
+#         return data
 
 
-class DataManager:
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
+# def data_from_proto(proto, data_dir=None):
+#     if proto.type == analyser_pb2.VIDEO_DATA:
+#         data = VideoData()
+#         if hasattr(proto, "ext"):
+#             data.ext = proto.ext
+#         if data_dir:
+#             data.path = os.path.join(data_dir)
 
-    def load_from_stream(self, data: Iterator[Any]) -> PluginData:
-
-        datastream = iter(data)
-        firstpkg = next(datastream)
-
-        def data_generator():
-            yield firstpkg
-            for x in datastream:
-                yield x
-
-        data = None
-        if firstpkg.type == analyser_pb2.VIDEO_DATA:
-            data = VideoData.load_from_stream(data_dir=self.data_dir, stream=data_generator())
-
-        if data is not None:
-            with open(create_data_path(self.data_dir, data.id, "json"), "w") as f:
-                f.write(json.dumps(data.dumps(), indent=2))
-
-        return data
-
-    def dump_to_stream(self, data: PluginData):
-        if data.type == "VideoData":
-            return VideoData.dump_to_stream()
-
-        elif data.type == "AudioData":
-            chunk_size = 1024
-            with open(data.path, "rb") as bytestream:
-                while True:
-                    chunk = bytestream.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield {"type": analyser_pb2.AUDIO_DATA, "data_encoded": chunk}
-
-    def load(self, data_id: str) -> PluginData:
-        data = PluginData.load(data_dir=self.data_dir, id=data_id, load_blob=False)
-        if data.type == "VideoData":
-            return VideoData.load(data_dir=self.data_dir, id=data_id)
-        elif data.type == "AudioData":
-            return AudioData.load(data_dir=self.data_dir, id=data_id)
-        else:
-            logging.error(f"[DataManager::load] unknow type {data.type}")
-            return None
-
-    def save(self, data):
-        data.save(self.data_dir, save_blob=True)
+#         return data

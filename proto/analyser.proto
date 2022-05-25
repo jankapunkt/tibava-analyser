@@ -33,6 +33,8 @@ enum PluginDataType {
   IMAGE_DATA = 2;
   ROI_DATA = 3;
   AUDIO_DATA = 4;
+  SCALAR_DATA = 5;
+  SHOTS_DATA = 6;
 }
 
 message PluginInfoData {

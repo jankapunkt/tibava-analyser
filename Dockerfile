@@ -32,6 +32,8 @@ RUN python3 -m pip install msgpack-numpy
 RUN python3 -m pip install librosa 
 RUN python3 -m pip install ffmpeg-python
 
+RUN python3 -m pip install redisai ml2rt
+
 WORKDIR /app/analyser/
 COPY . /app/analyser/
 

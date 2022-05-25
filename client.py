@@ -12,37 +12,40 @@ from analyser import analyser_pb2, analyser_pb2_grpc
 
 from google.protobuf.json_format import MessageToJson
 
+from analyser.data import DataManager
 
-def load_from_stream(output_name, data_dir: str, data: Iterator[Any]):
+import time
 
-    datastream = iter(data)
-    firstpkg = next(datastream)
-    data = None
-    path = None
-    if firstpkg.type == analyser_pb2.VIDEO_DATA:
-        ext = "mp4"
-        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
-            ext = firstpkg.ext
+# def load_from_stream(output_name, data_dir: str, data: Iterator[Any]):
 
-        path = os.path.join(data_dir, f"{output_name}.{ext}")
+#     datastream = iter(data)
+#     firstpkg = next(datastream)
+#     data = None
+#     path = None
+#     if firstpkg.type == analyser_pb2.VIDEO_DATA:
+#         ext = "mp4"
+#         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+#             ext = firstpkg.ext
 
-        with open(path, "wb") as f:
-            f.write(firstpkg.data_encoded)  # write first package
-            for x in datastream:
-                f.write(x.data_encoded)
+#         path = os.path.join(data_dir, f"{output_name}.{ext}")
 
-    if firstpkg.type == analyser_pb2.AUDIO_DATA:
-        ext = "mp3"
-        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
-            ext = firstpkg.ext
+#         with open(path, "wb") as f:
+#             f.write(firstpkg.data_encoded)  # write first package
+#             for x in datastream:
+#                 f.write(x.data_encoded)
 
-        path = os.path.join(data_dir, f"{output_name}.{ext}")
+#     if firstpkg.type == analyser_pb2.AUDIO_DATA:
+#         ext = "mp3"
+#         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+#             ext = firstpkg.ext
 
-        with open(path, "wb") as f:
-            f.write(firstpkg.data_encoded)  # write first package
-            for x in datastream:
-                f.write(x.data_encoded)
-    return path
+#         path = os.path.join(data_dir, f"{output_name}.{ext}")
+
+#         with open(path, "wb") as f:
+#             f.write(firstpkg.data_encoded)  # write first package
+#             for x in datastream:
+#                 f.write(x.data_encoded)
+#     return path
 
 
 def parse_args():
@@ -139,9 +142,9 @@ class AnalyserClient:
         logging.error("Error while run plugin ...")
         return None
 
-    def get_plugin_status(self, plugin_id):
+    def get_plugin_status(self, job_id):
 
-        get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=plugin_id)
+        get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=job_id)
 
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         stub = analyser_pb2_grpc.AnalyserStub(channel)
@@ -149,6 +152,26 @@ class AnalyserClient:
         response = stub.get_plugin_status(get_plugin_request)
 
         return response
+
+    def get_plugin_results(self, job_id, timeout=None):
+        result = None
+        start_time = time.time()
+        while True:
+            if timeout:
+                print(time.time() - start_time)
+                if time.time() - start_time > timeout:
+                    return None
+            result = self.get_plugin_status(job_id)
+            if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
+                time.sleep(0.5)
+                continue
+            elif result.status == analyser_pb2.GetPluginStatusResponse.ERROR:
+                logging.error("Job is crashing")
+                return
+            elif result.status == analyser_pb2.GetPluginStatusResponse.DONE:
+                break
+
+        return result
 
     def download_data(self, data_id, output_path):
 
@@ -158,9 +181,11 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
         response = stub.download_data(download_data_request)
-        path = load_from_stream(data_id, output_path, response)
-        print(path)
-        return path
+        data = DataManager(output_path).load_from_stream(response)
+        print(data)
+        # path = load_from_stream(data_id, output_path, response)
+        print(data)
+        return data
 
 
 def main():
