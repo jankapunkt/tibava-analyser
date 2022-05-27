@@ -16,37 +16,6 @@ from analyser.data import DataManager
 
 import time
 
-# def load_from_stream(output_name, data_dir: str, data: Iterator[Any]):
-
-#     datastream = iter(data)
-#     firstpkg = next(datastream)
-#     data = None
-#     path = None
-#     if firstpkg.type == analyser_pb2.VIDEO_DATA:
-#         ext = "mp4"
-#         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
-#             ext = firstpkg.ext
-
-#         path = os.path.join(data_dir, f"{output_name}.{ext}")
-
-#         with open(path, "wb") as f:
-#             f.write(firstpkg.data_encoded)  # write first package
-#             for x in datastream:
-#                 f.write(x.data_encoded)
-
-#     if firstpkg.type == analyser_pb2.AUDIO_DATA:
-#         ext = "mp3"
-#         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
-#             ext = firstpkg.ext
-
-#         path = os.path.join(data_dir, f"{output_name}.{ext}")
-
-#         with open(path, "wb") as f:
-#             f.write(firstpkg.data_encoded)  # write first package
-#             for x in datastream:
-#                 f.write(x.data_encoded)
-#     return path
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="")

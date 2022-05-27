@@ -1,8 +1,11 @@
 import os
 
+import imageio
+
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import ImageData, VideoData, ShotsData
+from analyser.data import ImageData, VideoData, ImagesData
+from analyser.data import generate_id, create_data_path
 from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
 
@@ -29,22 +32,16 @@ class ThumbnailGenerator(
         super().__init__(config)
 
     def call(self, inputs, parameters):
-        print(parameters)
-
-        output_data = ImageData(ext="mp3")
 
         video_decoder = VideoDecoder(
             path=inputs["video"].path, fps=parameters.get("fps"), max_dimension=parameters.get("max_dimension")
         )
 
+        images = []
         for frame in video_decoder:
-            print(frame.get("frame").shape)
-
-        output_data.path = os.path.join(self.config.get("data_dir"), f"{output_data.id}.mp3")
-
-        video = ffmpeg.input(inputs["video"].path)
-        audio = video.audio
-        stream = ffmpeg.output(audio, output_data.path)
-        ffmpeg.run(stream)
-
-        return {"audio": output_data}
+            image_id = generate_id()
+            output_path = create_data_path(self.config.get("data_dir"), image_id, "jpg")
+            imageio.imwrite(output_path, frame.get("frame"))
+            images.append(ImageData(id=image_id, ext="jpg", time=frame.get("time")))
+        data = ImagesData(images=images)
+        return {"images": data}

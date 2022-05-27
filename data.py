@@ -9,6 +9,8 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Type, Iterator
 
+import io
+import imageio
 import msgpack
 import msgpack_numpy as m
 
@@ -71,6 +73,7 @@ class DataManager:
 
     def load(self, data_id: str) -> PluginData:
         data = PluginData.load(data_dir=self.data_dir, id=data_id, load_blob=False)
+        print(data, flush=True)
         if data.type not in self._data_name_lut:
             logging.error(f"[DataManager::load] unknow type {data.type}")
             return None
@@ -118,7 +121,7 @@ class PluginData:
 
     @classmethod
     def load(cls, data_dir: str, id: str, load_blob: bool = True) -> PluginData:
-        logging.info("[PluginData::load]")
+        logging.info(f"[PluginData::load] {id}")
         if len(id) != 32:
             return None
 
@@ -206,14 +209,104 @@ class VideoData(PluginData):
 
 @dataclass(kw_only=True, frozen=True)
 class ImageData(PluginData):
-    path: str = None
     time: float = None
-    ext: str = None
+    ext: str = field(default="jpg")
 
 
+@DataManager.export("ImagesData", analyser_pb2.IMAGES_DATA)
 @dataclass(kw_only=True, frozen=True)
 class ImagesData(PluginData):
     images: List[ImageData] = field(default_factory=list)
+    ext: str = field(default="msg")
+    type: str = field(default="ImagesData")
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[ImagesData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                # TODO use dump
+                f.write(
+                    msgpack.packb(
+                        {"images": [{"time": image.time, "ext": image.ext, "id": image.id} for image in self.images]}
+                    )
+                )
+        except Exception as e:
+            logging.error(f"ImagesData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[ImagesData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read())
+            data = {"images": [ImageData(time=x["time"], id=x["id"], ext=x["ext"]) for x in data["images"]]}
+        return data
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        unpacker = msgpack.Unpacker()
+        unpacker.feed(firstpkg.data_encoded)
+        images = []
+        for x in stream:
+            unpacker.feed(x.data_encoded)
+            for image in unpacker:
+                image_id = generate_id()
+                image_path = create_data_path(data_dir, image_id, image.get("ext"))
+                with open(image_path, "wb") as f:
+                    f.write(image.get("image"))
+                images.append(ImageData(data_dir=data_dir, id=image_id, ext=image.get("ext"), time=image.get("time")))
+
+        data = cls(images=images)
+        data.save_blob(data_dir=data_dir)
+        # unpacker = msgpack.Unpacker(buffer, raw=False)
+        # for unpacked in unpacker:
+        #     print(unpacked)
+
+        # data_id = generate_id()
+        # path = create_data_path(data_dir, data_id, ext)
+
+        # with open(path, "wb") as f:
+        #     f.write(firstpkg.data_encoded)
+        #     for x in stream:
+        #         f.write(x.data_encoded)
+
+        # data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return data
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        buffer = io.BytesIO()
+        buffer_size = 0
+        for image in self.images:
+            with open(create_data_path(self.data_dir, image.id, image.ext), "rb") as f:
+                image_raw = f.read()
+            dump = msgpack.packb({"time": image.time, "ext": image.ext, "image": image_raw})
+            buffer_size += len(dump)
+
+            buffer.write(dump)
+            buffer.seek(0)
+
+            while buffer_size > chunk_size:
+                chunk = buffer.read(chunk_size)
+                # if not chunk:
+                #     break
+                print(f"{buffer_size} {chunk_size} {len(chunk)}", flush=True)
+                if chunk
+                buffer_size -= len(chunk)
+                yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
+
+        chunk = buffer.read(chunk_size)
+        if chunk:
+            print(len(chunk), flush=True)
+            yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -233,6 +326,7 @@ class ShotsData(PluginData):
         logging.info(f"[ShotsData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                # TODO use dump
                 f.write(msgpack.packb({"shots": [{"start": x.start, "end": x.end} for x in self.shots]}))
         except Exception as e:
             logging.error(f"ScalarData::save_blob {e}")

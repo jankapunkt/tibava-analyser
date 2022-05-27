@@ -35,20 +35,20 @@ def main():
     data_id = client.upload_data(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
-    job_id = client.run_plugin("transnet_shotdetection", [{"id": data_id, "name": "video"}], [])
+    job_id = client.run_plugin("thumbnail_generator", [{"id": data_id, "name": "video"}], [])
     logging.info(f"Job video_to_audio started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
     if result is None:
         logging.error("Job is crashing")
         return
-
-    shots_id = None
+    print(result, flush=True)
+    images_id = None
     for output in result.outputs:
-        if output.name == "shots":
-            shots_id = output.id
+        if output.name == "images":
+            images_id = output.id
 
-    logging.info(client.download_data(shots_id, args.output_path))
+    logging.info(client.download_data(images_id, args.output_path))
     return 0
 
 
