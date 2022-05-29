@@ -1,6 +1,7 @@
 import re
 
 from .video_decoder import *
+from .byte_fifo import *
 
 
 def read_chunk(iterator, chunksize=64):

@@ -19,6 +19,8 @@ import numpy as np
 
 from analyser import analyser_pb2
 
+from analyser.utils import ByteFIFO
+
 
 def create_data_path(data_dir, data_id, file_ext):
     os.makedirs(data_dir, exist_ok=True)
@@ -283,29 +285,24 @@ class ImagesData(PluginData):
 
     def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
         self.save(self.data_dir)
-        buffer = io.BytesIO()
-        buffer_size = 0
+        buffer = ByteFIFO()
         for image in self.images:
             with open(create_data_path(self.data_dir, image.id, image.ext), "rb") as f:
                 image_raw = f.read()
             dump = msgpack.packb({"time": image.time, "ext": image.ext, "image": image_raw})
-            buffer_size += len(dump)
-
             buffer.write(dump)
-            buffer.seek(0)
 
-            while buffer_size > chunk_size:
+            while len(buffer) > chunk_size:
                 chunk = buffer.read(chunk_size)
                 # if not chunk:
                 #     break
-                print(f"{buffer_size} {chunk_size} {len(chunk)}", flush=True)
-                if chunk
-                buffer_size -= len(chunk)
+                print(f"Loop {len(buffer)} {chunk_size} {len(chunk)}", flush=True)
+                
                 yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
         chunk = buffer.read(chunk_size)
         if chunk:
-            print(len(chunk), flush=True)
+            print(f"End {len(chunk)}", flush=True)
             yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
 
