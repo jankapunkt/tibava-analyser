@@ -1,6 +1,6 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import AudioData, VideoData
+from analyser.data import AudioData, ImagesData, VideoData
 from analyser.plugins import Plugin
 import ffmpeg
 import os
@@ -11,7 +11,7 @@ default_config = {"data_dir": "/data/"}
 default_parameters = {}
 
 requires = {
-    "video": VideoData,
+    "images": ImagesData,
 }
 
 provides = {

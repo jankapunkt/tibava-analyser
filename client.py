@@ -54,22 +54,28 @@ class AnalyserClient:
         return result
 
     def upload_data(self, path):
+        print(f"{path}", flush=True)
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
-
+        print(data_type, flush=True)
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        print("{channel}", flush=True)
         stub = analyser_pb2_grpc.AnalyserStub(channel)
+        print("{stub}", flush=True)
 
         def generateRequests(file_object, chunk_size=128 * 1024):
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
+            print("Start generator", flush=True)
             with open(file_object, "rb") as bytestream:
                 while True:
+                    print("loop", flush=True)
                     data = bytestream.read(chunk_size)
                     if not data:
                         break
                     yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
+            print("done", flush=True)
 
         response = stub.upload_data(generateRequests(path))
 

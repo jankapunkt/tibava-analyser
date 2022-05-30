@@ -1,6 +1,6 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import Shot, ShotsData, VideoData, generate_id
+from analyser.data import Shot, ShotsData, ImagesData, generate_id
 from analyser.plugins import Plugin
 import ffmpeg
 import os
@@ -20,16 +20,16 @@ default_config = {
 default_parameters = {"threshold": 0.5}
 
 requires = {
-    "video": VideoData,
+    "images": ImagesData,
 }
 
 provides = {
-    "shots": ShotsData,
+    # "emotions": ProbData,
 }
 
 
-@AnalyserPluginManager.export("transnet_shotdetection")
-class TransnetShotdetection(
+@AnalyserPluginManager.export("face_emotion")
+class FaceEmotion(
     Plugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
 ):
     def __init__(self, config=None):
@@ -122,22 +122,15 @@ class TransnetShotdetection(
             .run(capture_stdout=True, capture_stderr=True)
         )
 
-        video_decoder = VideoDecoder(inputs["video"].path)
-        video_decoder.fps
-
         video = np.frombuffer(video_stream, np.uint8).reshape([-1, 27, 48, 3])
 
-        print(f"shape {video.shape}", flush=True)
-        print(f"fps {video_decoder.fps()}", flush=True)
+        print(video.shape, flush=True)
 
         prediction, _ = self.predict_frames(video)
 
         shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))
 
-        data = ShotsData(
-            shots=[
-                Shot(start=x[0].item() / video_decoder.fps(), end=x[1].item() / video_decoder.fps()) for x in shot_list
-            ]
-        )
+        data = ShotsData(shots=[Shot(start=x[0].item(), end=x[1].item()) for x in shot_list])
+        # print(probabilities)
 
         return {"shots": data}

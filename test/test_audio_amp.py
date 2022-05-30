@@ -42,18 +42,6 @@ def main():
     if result is None:
         logging.error("Job is crashing")
         return
-    # while True:
-    #     result = client.get_plugin_status(job_id)
-    #     if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
-    #         time.sleep(0.5)
-    #         continue
-    #     elif result.status == analyser_pb2.GetPluginStatusResponse.ERROR:
-    #         logging.error("Job is crashing")
-    #         return
-    #     elif result.status == analyser_pb2.GetPluginStatusResponse.DONE:
-    #         break
-
-    #     break
 
     audio_id = None
     for output in result.outputs:
