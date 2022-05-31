@@ -25,7 +25,7 @@ class VideoDecoder:
             video_reader = imageio.get_reader(self._path, fps=self._fps)
 
         for i, frame in enumerate(video_reader):
-            yield {"time": i / self.fps, "index": i, "frame": frame}
+            yield {"time": i / self._fps, "index": i, "frame": frame}
 
     def fps(self):
         return self._fps

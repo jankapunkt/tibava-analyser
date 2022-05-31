@@ -351,6 +351,9 @@ class ShotsData(PluginData):
                     break
                 yield {"type": analyser_pb2.SHOTS_DATA, "data_encoded": chunk, "ext": self.ext}
 
+    def dumps_to_web(self):
+        return {"shots": [{"start": x.start, "end": x.end} for x in self.shots]}
+
 
 @DataManager.export("AudioData", analyser_pb2.AUDIO_DATA)
 @dataclass(kw_only=True, frozen=True)
