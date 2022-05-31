@@ -289,6 +289,9 @@ class ImagesData(PluginData):
         if chunk:
             yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
+    def dumps_to_web(self):
+        return {"images": [{"time": image.time, "ext": image.ext, "id": image.id} for image in self.images]}
+
 
 @dataclass(kw_only=True, frozen=True)
 class Shot:
