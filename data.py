@@ -458,6 +458,9 @@ class ScalarData(PluginData):
                     break
                 yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
+    def dumps_to_web(self):
+        return {"y": self.y.tolist(), "time": self.time}
+
 
 @dataclass(kw_only=True, frozen=True)
 class HistData(PluginData):
@@ -466,4 +469,9 @@ class HistData(PluginData):
 
 
 class ProbData:
+    pass
+
+
+@dataclass(kw_only=True, frozen=True)
+class ImagesEmbedding(PluginData):
     pass
