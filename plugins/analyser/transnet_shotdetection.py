@@ -127,9 +127,6 @@ class TransnetShotdetection(
 
         video = np.frombuffer(video_stream, np.uint8).reshape([-1, 27, 48, 3])
 
-        print(f"shape {video.shape}", flush=True)
-        print(f"fps {video_decoder.fps()}", flush=True)
-
         prediction, _ = self.predict_frames(video)
 
         shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))

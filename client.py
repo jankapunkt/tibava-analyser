@@ -48,34 +48,27 @@ class AnalyserClient:
         response = stub.list_plugins(analyser_pb2.ListPluginsRequest())
         result = {}
 
-        for plugin in response.plugins:
-            print(MessageToJson(plugin))
+        # for plugin in response.plugins:
+        #     print(MessageToJson(plugin))
 
         return result
 
     def upload_data(self, path):
-        print(f"{path}", flush=True)
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
-        print(data_type, flush=True)
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        print("{channel}", flush=True)
         stub = analyser_pb2_grpc.AnalyserStub(channel)
-        print("{stub}", flush=True)
 
         def generateRequests(file_object, chunk_size=128 * 1024):
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
-            print("Start generator", flush=True)
             with open(file_object, "rb") as bytestream:
                 while True:
-                    print("loop", flush=True)
                     data = bytestream.read(chunk_size)
                     if not data:
                         break
                     yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
-            print("done", flush=True)
 
         response = stub.upload_data(generateRequests(path))
 
@@ -88,7 +81,6 @@ class AnalyserClient:
     def run_plugin(self, plugin, inputs, parameters):
 
         run_request = analyser_pb2.RunPluginRequest()
-        print(inputs)
         run_request.plugin = plugin
         for i in inputs:
             x = run_request.inputs.add()
@@ -157,9 +149,6 @@ class AnalyserClient:
 
         response = stub.download_data(download_data_request)
         data = DataManager(output_path).load_from_stream(response)
-        print(data)
-        # path = load_from_stream(data_id, output_path, response)
-        print(data)
         return data
 
 

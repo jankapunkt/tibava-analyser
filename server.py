@@ -54,7 +54,6 @@ def run_plugin(args):
         plugin_parameters = {}
         if "parameters" in params:
             for parameter in params.get("parameters"):
-                print(parameter)
                 if parameter.get("type") == "FLOAT_TYPE":
                     plugin_parameters[parameter.get("name")] = float(parameter.get("value"))
                 if parameter.get("type") == "INT_TYPE":
@@ -190,15 +189,13 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def download_data(self, request, context):
         try:
-            print("download_data", flush=True)
             data = self.managers["data_manager"].load(request.id)
-            print(f"download_data_ {data}", flush=True)
 
             for x in self.managers["data_manager"].dump_to_stream(data):
                 yield analyser_pb2.DownloadDataResponse(type=x["type"], data_encoded=x["data_encoded"])
 
         except Exception as e:
-            logging.error(f"copy_video: {repr(e)}")
+            logging.error(f"download_data: {repr(e)}")
             logging.error(traceback.format_exc())
             return analyser_pb2.DownloadDataResponse()
             # context.set_code(grpc.StatusCode.UNAVAILABLE)
