@@ -472,8 +472,6 @@ class ProbData:
     pass
 
 
-<<<<<<< HEAD
-
 # def data_from_proto(proto, data_dir=None):
 #     if proto.type == analyser_pb2.VIDEO_DATA:
 #         data = VideoData()
@@ -491,17 +489,16 @@ class BboxData(PluginData):
     time: float = None
     x: int = None
     y: int = None
-    w: int =  None
+    w: int = None
     h: int = None
-    
-    
+
+
 @DataManager.export("BboxesData", analyser_pb2.BBOXES_DATA)
 @dataclass(kw_only=True, frozen=True)
 class BboxesData(PluginData):
     bboxes: List[BboxData] = field(default_factory=list)
-    
-=======
+
+
 @dataclass(kw_only=True, frozen=True)
 class ImagesEmbedding(PluginData):
     pass
->>>>>>> 183fbe9ecd1e933ab64e9e6f6462d6a30856f173
