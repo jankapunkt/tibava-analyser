@@ -10,3 +10,5 @@ plugins:
     params: {}
   - plugin: transnet_shotdetection
     params: {}
+  - plugin: insightface_detector
+    params: {}

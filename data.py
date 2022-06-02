@@ -506,3 +506,20 @@ class HistData(PluginData):
 #             data.path = os.path.join(data_dir)
 
 #         return data
+
+
+@dataclass(kw_only=True, frozen=True)
+class BboxData(PluginData):
+    image_id: int = None
+    time: float = None
+    x: int = None
+    y: int = None
+    w: int =  None
+    h: int = None
+    
+    
+@DataManager.export("BboxesData", analyser_pb2.BBOXES_DATA)
+@dataclass(kw_only=True, frozen=True)
+class BboxesData(PluginData):
+    bboxes: List[BboxData] = field(default_factory=list)
+    

@@ -15,30 +15,30 @@ class AnalyserStub(object):
             channel: A grpc.Channel.
         """
         self.list_plugins = channel.unary_unary(
-            "/tibava.analyser.Analyser/list_plugins",
-            request_serializer=analyser__pb2.ListPluginsRequest.SerializeToString,
-            response_deserializer=analyser__pb2.ListPluginsReply.FromString,
-        )
+                '/tibava.analyser.Analyser/list_plugins',
+                request_serializer=analyser__pb2.ListPluginsRequest.SerializeToString,
+                response_deserializer=analyser__pb2.ListPluginsReply.FromString,
+                )
         self.upload_data = channel.stream_unary(
-            "/tibava.analyser.Analyser/upload_data",
-            request_serializer=analyser__pb2.UploadDataRequest.SerializeToString,
-            response_deserializer=analyser__pb2.UploadDataResponse.FromString,
-        )
+                '/tibava.analyser.Analyser/upload_data',
+                request_serializer=analyser__pb2.UploadDataRequest.SerializeToString,
+                response_deserializer=analyser__pb2.UploadDataResponse.FromString,
+                )
         self.download_data = channel.unary_stream(
-            "/tibava.analyser.Analyser/download_data",
-            request_serializer=analyser__pb2.DownloadDataRequest.SerializeToString,
-            response_deserializer=analyser__pb2.DownloadDataResponse.FromString,
-        )
+                '/tibava.analyser.Analyser/download_data',
+                request_serializer=analyser__pb2.DownloadDataRequest.SerializeToString,
+                response_deserializer=analyser__pb2.DownloadDataResponse.FromString,
+                )
         self.run_plugin = channel.unary_unary(
-            "/tibava.analyser.Analyser/run_plugin",
-            request_serializer=analyser__pb2.RunPluginRequest.SerializeToString,
-            response_deserializer=analyser__pb2.RunPluginResponse.FromString,
-        )
+                '/tibava.analyser.Analyser/run_plugin',
+                request_serializer=analyser__pb2.RunPluginRequest.SerializeToString,
+                response_deserializer=analyser__pb2.RunPluginResponse.FromString,
+                )
         self.get_plugin_status = channel.unary_unary(
-            "/tibava.analyser.Analyser/get_plugin_status",
-            request_serializer=analyser__pb2.GetPluginStatusRequest.SerializeToString,
-            response_deserializer=analyser__pb2.GetPluginStatusResponse.FromString,
-        )
+                '/tibava.analyser.Analyser/get_plugin_status',
+                request_serializer=analyser__pb2.GetPluginStatusRequest.SerializeToString,
+                response_deserializer=analyser__pb2.GetPluginStatusResponse.FromString,
+                )
 
 
 class AnalyserServicer(object):
@@ -47,211 +47,152 @@ class AnalyserServicer(object):
     def list_plugins(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def upload_data(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def download_data(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def run_plugin(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def get_plugin_status(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_AnalyserServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "list_plugins": grpc.unary_unary_rpc_method_handler(
-            servicer.list_plugins,
-            request_deserializer=analyser__pb2.ListPluginsRequest.FromString,
-            response_serializer=analyser__pb2.ListPluginsReply.SerializeToString,
-        ),
-        "upload_data": grpc.stream_unary_rpc_method_handler(
-            servicer.upload_data,
-            request_deserializer=analyser__pb2.UploadDataRequest.FromString,
-            response_serializer=analyser__pb2.UploadDataResponse.SerializeToString,
-        ),
-        "download_data": grpc.unary_stream_rpc_method_handler(
-            servicer.download_data,
-            request_deserializer=analyser__pb2.DownloadDataRequest.FromString,
-            response_serializer=analyser__pb2.DownloadDataResponse.SerializeToString,
-        ),
-        "run_plugin": grpc.unary_unary_rpc_method_handler(
-            servicer.run_plugin,
-            request_deserializer=analyser__pb2.RunPluginRequest.FromString,
-            response_serializer=analyser__pb2.RunPluginResponse.SerializeToString,
-        ),
-        "get_plugin_status": grpc.unary_unary_rpc_method_handler(
-            servicer.get_plugin_status,
-            request_deserializer=analyser__pb2.GetPluginStatusRequest.FromString,
-            response_serializer=analyser__pb2.GetPluginStatusResponse.SerializeToString,
-        ),
+            'list_plugins': grpc.unary_unary_rpc_method_handler(
+                    servicer.list_plugins,
+                    request_deserializer=analyser__pb2.ListPluginsRequest.FromString,
+                    response_serializer=analyser__pb2.ListPluginsReply.SerializeToString,
+            ),
+            'upload_data': grpc.stream_unary_rpc_method_handler(
+                    servicer.upload_data,
+                    request_deserializer=analyser__pb2.UploadDataRequest.FromString,
+                    response_serializer=analyser__pb2.UploadDataResponse.SerializeToString,
+            ),
+            'download_data': grpc.unary_stream_rpc_method_handler(
+                    servicer.download_data,
+                    request_deserializer=analyser__pb2.DownloadDataRequest.FromString,
+                    response_serializer=analyser__pb2.DownloadDataResponse.SerializeToString,
+            ),
+            'run_plugin': grpc.unary_unary_rpc_method_handler(
+                    servicer.run_plugin,
+                    request_deserializer=analyser__pb2.RunPluginRequest.FromString,
+                    response_serializer=analyser__pb2.RunPluginResponse.SerializeToString,
+            ),
+            'get_plugin_status': grpc.unary_unary_rpc_method_handler(
+                    servicer.get_plugin_status,
+                    request_deserializer=analyser__pb2.GetPluginStatusRequest.FromString,
+                    response_serializer=analyser__pb2.GetPluginStatusResponse.SerializeToString,
+            ),
     }
-    generic_handler = grpc.method_handlers_generic_handler("tibava.analyser.Analyser", rpc_method_handlers)
+    generic_handler = grpc.method_handlers_generic_handler(
+            'tibava.analyser.Analyser', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Analyser(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def list_plugins(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def list_plugins(request,
             target,
-            "/tibava.analyser.Analyser/list_plugins",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/list_plugins',
             analyser__pb2.ListPluginsRequest.SerializeToString,
             analyser__pb2.ListPluginsReply.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def upload_data(
-        request_iterator,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.stream_unary(
-            request_iterator,
+    def upload_data(request_iterator,
             target,
-            "/tibava.analyser.Analyser/upload_data",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(request_iterator, target, '/tibava.analyser.Analyser/upload_data',
             analyser__pb2.UploadDataRequest.SerializeToString,
             analyser__pb2.UploadDataResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def download_data(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_stream(
-            request,
+    def download_data(request,
             target,
-            "/tibava.analyser.Analyser/download_data",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/tibava.analyser.Analyser/download_data',
             analyser__pb2.DownloadDataRequest.SerializeToString,
             analyser__pb2.DownloadDataResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def run_plugin(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def run_plugin(request,
             target,
-            "/tibava.analyser.Analyser/run_plugin",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/run_plugin',
             analyser__pb2.RunPluginRequest.SerializeToString,
             analyser__pb2.RunPluginResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def get_plugin_status(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def get_plugin_status(request,
             target,
-            "/tibava.analyser.Analyser/get_plugin_status",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tibava.analyser.Analyser/get_plugin_status',
             analyser__pb2.GetPluginStatusRequest.SerializeToString,
             analyser__pb2.GetPluginStatusResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
