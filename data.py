@@ -267,20 +267,6 @@ class ImagesData(PluginData):
 
         data = cls(images=images)
         data.save_blob(data_dir=data_dir)
-        # unpacker = msgpack.Unpacker(buffer, raw=False)
-        # for unpacked in unpacker:
-        #     print(unpacked)
-
-        # data_id = generate_id()
-        # path = create_data_path(data_dir, data_id, ext)
-
-        # with open(path, "wb") as f:
-        #     f.write(firstpkg.data_encoded)
-        #     for x in stream:
-        #         f.write(x.data_encoded)
-
-        # data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
-
         return data
 
     def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
@@ -296,14 +282,15 @@ class ImagesData(PluginData):
                 chunk = buffer.read(chunk_size)
                 # if not chunk:
                 #     break
-                print(f"Loop {len(buffer)} {chunk_size} {len(chunk)}", flush=True)
-                
+
                 yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
         chunk = buffer.read(chunk_size)
         if chunk:
-            print(f"End {len(chunk)}", flush=True)
             yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        return {"images": [{"time": image.time, "ext": image.ext, "id": image.id} for image in self.images]}
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -367,6 +354,9 @@ class ShotsData(PluginData):
                     break
                 yield {"type": analyser_pb2.SHOTS_DATA, "data_encoded": chunk, "ext": self.ext}
 
+    def dumps_to_web(self):
+        return {"shots": [{"start": x.start, "end": x.end} for x in self.shots]}
+
 
 @DataManager.export("AudioData", analyser_pb2.AUDIO_DATA)
 @dataclass(kw_only=True, frozen=True)
@@ -422,10 +412,6 @@ class ScalarData(PluginData):
     y: npt.NDArray = None
     time: List[float] = field(default_factory=list)
 
-    # def dumps(self) -> dict:
-    #     data_dict = super().dumps()
-    #     return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
-
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
         try:
@@ -435,13 +421,6 @@ class ScalarData(PluginData):
             logging.error(f"ScalarData::save_blob {e}")
             return False
         return True
-
-    # def load_blob(self, data_dir):
-    #     logging.info(f"[ScalarData::load_blob]")
-    #     with open(create_data_path(data_dir, self.id, "msg"), "rb") as f:
-    #         data = msgpack.unpackb(f.read(), object_hook=m.decode)
-    #         print(data, flush=True)
-    #         return data
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
@@ -479,6 +458,9 @@ class ScalarData(PluginData):
                     break
                 yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
+    def dumps_to_web(self):
+        return {"y": self.y.tolist(), "time": self.time}
+
 
 @dataclass(kw_only=True, frozen=True)
 class HistData(PluginData):
@@ -486,16 +468,11 @@ class HistData(PluginData):
     time: List[float] = field(default_factory=list)
 
 
-# def data_from_proto_stream(proto, data_dir=None):
-#     if proto.type == analyser_pb2.VIDEO_DATA:
-#         data = VideoData()
-#         if hasattr(proto, "ext"):
-#             data.ext = proto.ext
-#         if data_dir:
-#             data.path = os.path.join(data_dir)
+class ProbData:
+    pass
 
-#         return data
 
+<<<<<<< HEAD
 
 # def data_from_proto(proto, data_dir=None):
 #     if proto.type == analyser_pb2.VIDEO_DATA:
@@ -523,3 +500,8 @@ class BboxData(PluginData):
 class BboxesData(PluginData):
     bboxes: List[BboxData] = field(default_factory=list)
     
+=======
+@dataclass(kw_only=True, frozen=True)
+class ImagesEmbedding(PluginData):
+    pass
+>>>>>>> 183fbe9ecd1e933ab64e9e6f6462d6a30856f173
