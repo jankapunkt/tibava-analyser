@@ -12,3 +12,5 @@ plugins:
     params: {}
   - plugin: insightface_detector
     params: {}
+  - plugin: shot_type_classifier
+    params: {}

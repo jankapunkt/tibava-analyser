@@ -49,7 +49,7 @@ class DataManager:
         return export_helper
 
     def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
-
+        logging.info(f"data.py (load_from_stream): {data}")
         datastream = iter(data)
         firstpkg = next(datastream)
         print(firstpkg.type, flush=True)
@@ -468,8 +468,11 @@ class HistData(PluginData):
     time: List[float] = field(default_factory=list)
 
 
-class ProbData:
-    pass
+@dataclass(kw_only=True, frozen=True)
+class ProbData(PluginData):
+    probs: List[ScalarData] = field(default_factory=list)
+    labels: List[str] = field(default_factory=list)
+    shortlabels: List[str] = field(default_factory=list)
 
 
 # def data_from_proto(proto, data_dir=None):
