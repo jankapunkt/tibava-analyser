@@ -15,16 +15,17 @@ default_config = {
     "model_name": "shot_type_classifier",
     "model_device": "cpu",
     "model_file": "/models/shot_type_classification/shot_type_classifier_e9-s3199_cpu.pt",
+    "image_resolution": 224,
 }
 
-default_parameters = {}
+default_parameters = {"fps": 5}
 
 requires = {
     "video": VideoData,
 }
 
 provides = {
-    "probs": ProbData,
+    "probs": ScalarData,
 }
 
 
@@ -39,6 +40,7 @@ class ShotTypeClassifier(
         self.model_name = self.config["model_name"]
         self.model_device = self.config["model_device"]
         self.model_file = self.config["model_file"]
+        self.image_resolution = self.config["image_resolution"]
 
         self.con = rai.Client(host=self.host, port=self.port)
 
@@ -53,32 +55,36 @@ class ShotTypeClassifier(
         )
 
     def call(self, inputs, parameters):
+        video_decoder = VideoDecoder(
+            inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
+        )
 
-        video_decoder = VideoDecoder(inputs["video"].path)
-        video_decoder.fps
+        # video_decoder.fps
         job_id = generate_id()
 
         predictions = []
-        times = []
+        time = []
         for i, frame in enumerate(video_decoder):
-            if i % 100 == 0:
-                logging.info(f"shot_type_classification.py: {i} frames processed")
             frame = image_pad(frame["frame"])
-            frame = image_resize(frame, size=(224, 224))
             self.con.tensorset(f"data_{job_id}", frame)
 
             _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
             prediction = self.con.tensorget(f"prob_{job_id}")
-            predictions.append(prediction)
-            times.append(i / video_decoder.fps())
+            predictions.append(np.asarray(prediction))
+            time.append(i / parameters.get("fps"))
 
         # predictions: list(list) in form of [p_ECU, p_CU, p_MS, p_FS, p_LS] * #frames
         # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
-        logging.info("shot_type_classification.py: return result")
-        data = ProbData(
-            probs=ScalarData(y=predictions, time=times),
-            labels=["Extreme Close-Up", "Close-Up", "Medium Shot", "Full Shot", "Long Shot"],
-            shortlabels=["ECU", "CU", "MS", "FS", "LS"],
-        )
+        logging.info(f"shot_type_classification::number of frames ({len(predictions)})")
+        logging.info(f"shot_type_classification::prediction shape{predictions[0].shape}")
+        logging.info("shot_type_classification::return result")
+
+        data = ScalarData(y=predictions, time=time)
+
+        # data = ProbData(
+        #     probs=ScalarData(y=predictions, time=time),
+        #     labels=["Extreme Close-Up", "Close-Up", "Medium Shot", "Full Shot", "Long Shot"],
+        #     shortlabels=["ECU", "CU", "MS", "FS", "LS"],
+        # )
 
         return {"probs": data}
