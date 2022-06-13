@@ -1,11 +1,9 @@
-from lzma import PRESET_DEFAULT
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.utils import VideoDecoder, image_pad, image_resize
-from analyser.data import ScalarData, VideoData, ProbData, generate_id
+from analyser.utils import VideoDecoder, image_pad
+from analyser.data import ScalarData, VideoData, generate_id
 from analyser.plugins import Plugin
 import redisai as rai
 import ml2rt
-import numpy as np
 import logging
 
 default_config = {
@@ -70,21 +68,9 @@ class ShotTypeClassifier(
 
             _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
             prediction = self.con.tensorget(f"prob_{job_id}")
-            predictions.append(np.asarray(prediction))
+            predictions.append(prediction)
             time.append(i / parameters.get("fps"))
 
-        # predictions: list(list) in form of [p_ECU, p_CU, p_MS, p_FS, p_LS] * #frames
+        # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
         # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
-        logging.info(f"shot_type_classification::number of frames ({len(predictions)})")
-        logging.info(f"shot_type_classification::prediction shape{predictions[0].shape}")
-        logging.info("shot_type_classification::return result")
-
-        data = ScalarData(y=predictions, time=time)
-
-        # data = ProbData(
-        #     probs=ScalarData(y=predictions, time=time),
-        #     labels=["Extreme Close-Up", "Close-Up", "Medium Shot", "Full Shot", "Long Shot"],
-        #     shortlabels=["ECU", "CU", "MS", "FS", "LS"],
-        # )
-
-        return {"probs": data}
+        return {"probs": ScalarData(y=predictions, time=time)}
