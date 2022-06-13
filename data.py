@@ -478,6 +478,7 @@ class HistData(PluginData):
 class ListData(PluginData):
     data: List[PluginData] = field(default_factory=list)
     ext: str = field(default="msg")
+    type: str = field(default="ListData")
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ListData::save_blob]")
@@ -532,7 +533,7 @@ class ListData(PluginData):
                         pkg = self.get_next()
                         pkg_decoded = msgpack.unpackb(pkg.data_encoded)
                         if firstpkg.index == pkg.index:
-                            yield pkg.chunk
+                            yield pkg_decoded.chunk
                         else:
                             self.push(pkg)
                 except StopIteration as e:

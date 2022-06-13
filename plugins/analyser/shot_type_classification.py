@@ -1,6 +1,6 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
-from analyser.data import ScalarData, VideoData, generate_id
+from analyser.data import ListData, ScalarData, VideoData, ListData, generate_id
 from analyser.plugins import Plugin
 import redisai as rai
 import ml2rt
@@ -23,7 +23,7 @@ requires = {
 }
 
 provides = {
-    "probs": ScalarData,
+    "probs": ListData,
 }
 
 
@@ -68,9 +68,12 @@ class ShotTypeClassifier(
 
             _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
             prediction = self.con.tensorget(f"prob_{job_id}")
-            predictions.append(prediction)
+            predictions.append(prediction.tolist())
             time.append(i / parameters.get("fps"))
+        # predictions = zip(*predictions)
+        probs = ListData(data=[ScalarData(y=y, time=time) for y in zip(*predictions)])
+        print(len(probs.data))
 
         # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
         # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
-        return {"probs": ScalarData(y=predictions, time=time)}
+        return {"probs": probs}
