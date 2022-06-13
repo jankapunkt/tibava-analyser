@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any, Type, Iterator
 
 import io
+
+from matplotlib.colors import same_color
 import imageio
 import msgpack
 import msgpack_numpy as m
@@ -48,7 +50,8 @@ class DataManager:
 
         return export_helper
 
-    def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
+    @classmethod
+    def _load_from_stream(cls, data_dir: str, data: Iterator[Any], save_meta=True) -> PluginData:
         logging.info(f"data.py (load_from_stream): {data}")
         datastream = iter(data)
         firstpkg = next(datastream)
@@ -60,15 +63,18 @@ class DataManager:
                 yield x
 
         data = None
-        if firstpkg.type not in self._data_enum_lut:
+        if firstpkg.type not in cls._data_enum_lut:
             return None
-        data = self._data_enum_lut[firstpkg.type].load_from_stream(data_dir=self.data_dir, stream=data_generator())
+        data = cls._data_enum_lut[firstpkg.type].load_from_stream(data_dir=data_dir, stream=data_generator())
 
         if save_meta and data is not None:
-            with open(create_data_path(self.data_dir, data.id, "json"), "w") as f:
+            with open(create_data_path(data_dir, data.id, "json"), "w") as f:
                 f.write(json.dumps(data.dumps(), indent=2))
 
         return data
+
+    def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
+        return self._load_from_stream(self.data_dir, data, save_meta)
 
     def dump_to_stream(self, data: PluginData):
         return data.dump_to_stream()
@@ -364,7 +370,6 @@ class AudioData(PluginData):
     type: str = field(default="AudioData")
 
     def dumps(self):
-        print("DUMP AUDIO")
         data_dict = super().dumps()
         return {**data_dict, "path": self.path, "ext": self.ext, "type": self.type}
 
@@ -466,6 +471,97 @@ class ScalarData(PluginData):
 class HistData(PluginData):
     y: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
+
+
+@DataManager.export("ListData", analyser_pb2.LIST_DATA)
+@dataclass(kw_only=True, frozen=True)
+class ListData(PluginData):
+    data: List[PluginData] = field(default_factory=list)
+    ext: str = field(default="msg")
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[ListData::save_blob]")
+        try:
+            for d in self.data:
+                d.save_blob(data_dir, path)
+        except Exception as e:
+            logging.error(f"ListData::save_blob {e}")
+            return False
+
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                # TODO use dump
+                f.write(msgpack.packb({"data": [{"id": d.id} for d in self.data]}))
+        except Exception as e:
+            logging.error(f"ListData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[ListData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+
+        return [cls.load(d.id) for d in data]
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        class DataYielder:
+            def __init__(self, stream):
+                self.cache = []
+                self.stream = stream
+                self.empty = False
+
+            def push(self, data):
+                self.cache.append(data)
+
+            def get_next(self):
+                if len(self.cache) > 0:
+                    return self.cache.pop()
+
+                return next(stream)
+
+            def __iter__(self):
+                try:
+                    firstpkg = self.get_next()
+                    firstpkg_decoded = msgpack.unpackb(firstpkg.data_encoded)
+
+                    yield firstpkg_decoded.chunk
+                    while True:
+                        pkg = self.get_next()
+                        pkg_decoded = msgpack.unpackb(pkg.data_encoded)
+                        if firstpkg.index == pkg.index:
+                            yield pkg.chunk
+                        else:
+                            self.push(pkg)
+                except StopIteration as e:
+                    self.empty = True
+                    raise e
+
+        yielder = DataYielder(stream)
+
+        data = []
+        while yielder.empty:
+            data.append(DataManager._load_from_stream(yielder))
+
+        data_obj = cls(data_dir=data_dir, data=data)
+
+        data_obj.save(data_dir=data_dir)
+        return data_obj
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        for i, d in enumerate(self.data):
+            for chunk in d.dump_to_stream(chunk_size=chunk_size):
+                yield {
+                    "type": analyser_pb2.LIST_DATA,
+                    "data_encoded": msgpack.packb({"index": i, "chunk": chunk}),
+                    "ext": self.ext,
+                }
+
+    def dumps_to_web(self):
+        return {"y": self.y.tolist(), "time": self.time}
 
 
 @dataclass(kw_only=True, frozen=True)

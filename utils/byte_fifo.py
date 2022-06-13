@@ -5,7 +5,7 @@ class ByteFIFO:
     def write(self, data: bytes) -> None:
         self.buffer.extend(data)
 
-    def read(self, chunk_size: int=None) -> bytes:
+    def read(self, chunk_size: int = None) -> bytes:
         if not chunk_size:
             data = self.buffer[:]
             del self.buffer[:]
