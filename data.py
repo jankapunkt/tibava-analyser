@@ -55,7 +55,6 @@ class DataManager:
         logging.info(f"data.py (load_from_stream): {data}")
         datastream = iter(data)
         firstpkg = next(datastream)
-        print(firstpkg.type, flush=True)
 
         def data_generator():
             yield firstpkg
@@ -79,14 +78,17 @@ class DataManager:
     def dump_to_stream(self, data: PluginData):
         return data.dump_to_stream()
 
-    def load(self, data_id: str) -> PluginData:
-        data = PluginData.load(data_dir=self.data_dir, id=data_id, load_blob=False)
-        print(data, flush=True)
+    @classmethod
+    def _load(self, data_dir: str, data_id: str) -> PluginData:
+        data = PluginData.load(data_dir=data_dir, id=data_id, load_blob=False)
         if data.type not in self._data_name_lut:
             logging.error(f"[DataManager::load] unknow type {data.type}")
             return None
 
-        return self._data_name_lut[data.type].load(data_dir=self.data_dir, id=data_id)
+        return self._data_name_lut[data.type].load(data_dir=data_dir, id=data_id)
+
+    def load(self, data_id: str) -> PluginData:
+        return self._load(self.data_dir, data_id)
 
     def save(self, data):
         data.save(self.data_dir, save_blob=True)
@@ -484,7 +486,7 @@ class ListData(PluginData):
         logging.info(f"[ListData::save_blob]")
         try:
             for d in self.data:
-                d.save_blob(data_dir, path)
+                d.save(data_dir)
         except Exception as e:
             logging.error(f"ListData::save_blob {e}")
             return False
@@ -502,9 +504,9 @@ class ListData(PluginData):
     def load_blob_args(cls, data: dict) -> dict:
         logging.info(f"[ListData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
-            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            data_decoded = msgpack.unpackb(f.read(), object_hook=m.decode)
 
-        return [cls.load(d.id) for d in data]
+        return {"data": [DataManager._load(data.get("data_dir"), d.get("id")) for d in data_decoded.get("data")]}
 
     @classmethod
     def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
@@ -528,23 +530,28 @@ class ListData(PluginData):
                     firstpkg = self.get_next()
                     firstpkg_decoded = msgpack.unpackb(firstpkg.data_encoded)
 
-                    yield firstpkg_decoded.chunk
+                    chunk = firstpkg_decoded.get("chunk")
+
+                    yield analyser_pb2.DownloadDataResponse(**chunk)
                     while True:
                         pkg = self.get_next()
                         pkg_decoded = msgpack.unpackb(pkg.data_encoded)
-                        if firstpkg.index == pkg.index:
-                            yield pkg_decoded.chunk
+                        if firstpkg_decoded.get("index") == pkg_decoded.get("index"):
+                            chunk = pkg_decoded.get("chunk")
+
+                            yield analyser_pb2.DownloadDataResponse(**chunk)
                         else:
                             self.push(pkg)
+                            break
                 except StopIteration as e:
                     self.empty = True
-                    raise e
+                    return
 
         yielder = DataYielder(stream)
 
         data = []
-        while yielder.empty:
-            data.append(DataManager._load_from_stream(yielder))
+        while not yielder.empty:
+            data.append(DataManager._load_from_stream(data_dir, yielder))
 
         data_obj = cls(data_dir=data_dir, data=data)
 
@@ -555,6 +562,7 @@ class ListData(PluginData):
         self.save(self.data_dir)
         for i, d in enumerate(self.data):
             for chunk in d.dump_to_stream(chunk_size=chunk_size):
+
                 yield {
                     "type": analyser_pb2.LIST_DATA,
                     "data_encoded": msgpack.packb({"index": i, "chunk": chunk}),
