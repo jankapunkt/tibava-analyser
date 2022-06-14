@@ -5,6 +5,7 @@ from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
 import logging
 from sklearn.cluster import KMeans
+import numpy as np
 
 default_config = {"data_dir": "/data/"}
 
@@ -47,4 +48,6 @@ class ColorAnalyser(
             kcolors.append(cls.cluster_centers_.tolist())
             time.append(i / parameters.get("fps"))
 
-        return {"colors": ListData(data=[RGBData(colors=colors, time=time) for colors in zip(*kcolors)])}
+        return {
+            "colors": ListData(data=[RGBData(colors=np.asarray(colors) / 255, time=time) for colors in zip(*kcolors)])
+        }

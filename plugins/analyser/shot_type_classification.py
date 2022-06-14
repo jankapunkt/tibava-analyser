@@ -3,8 +3,10 @@ from analyser.utils import VideoDecoder, image_pad
 from analyser.data import ListData, ScalarData, VideoData, ListData, generate_id
 from analyser.plugins import Plugin
 import redisai as rai
+import numpy as np
 import ml2rt
 import logging
+
 
 default_config = {
     "data_dir": "/data/",
@@ -72,7 +74,7 @@ class ShotTypeClassifier(
             time.append(i / parameters.get("fps"))
         # predictions = zip(*predictions)
         probs = ListData(
-            data=[ScalarData(y=y, time=time) for y in zip(*predictions)],
+            data=[ScalarData(y=np.asarray(y), time=time) for y in zip(*predictions)],
             index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
         )
 

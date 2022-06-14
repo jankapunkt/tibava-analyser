@@ -525,7 +525,11 @@ class RGBData(PluginData):
                 yield {"type": analyser_pb2.RGB_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        return {"colors": self.colors.tolist(), "time": self.time}
+        if hasattr(self.colors, "tolist"):
+            colors = self.colors.tolist()
+        else:
+            colors = self.colors
+        return {"colors": colors, "time": self.time}
 
 
 @DataManager.export("ListData", analyser_pb2.LIST_DATA)
@@ -537,10 +541,8 @@ class ListData(PluginData):
     index: List[Union[str, int]] = field(default=None)
 
     def __post_init__(self):
-        print(f"post_init {self.index}")
         if not self.index:
             object.__setattr__(self, "index", list(range(len(self.data))))
-        print(f"post_init b {self.index}")
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ListData::save_blob]")
