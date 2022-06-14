@@ -1,5 +1,6 @@
+from ctypes.wintypes import RGB
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.data import VideoData, ScalarData
+from analyser.data import VideoData, ScalarData, ListData, RGBData
 from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
 import logging
@@ -9,10 +10,10 @@ default_config = {"data_dir": "/data/"}
 
 
 default_parameters = {
-    "k": 8,
+    "k": 4,
     "fps": 5,
     "max_iter": 20,
-    "max_resolution": 128,
+    "max_resolution": 64,
 }
 
 requires = {
@@ -20,7 +21,7 @@ requires = {
 }
 
 provides = {
-    "colors": ScalarData,
+    "colors": ListData,
 }
 
 
@@ -43,7 +44,7 @@ class ColorAnalyser(
             image = image.reshape((image.shape[0] * image.shape[1], 3))
             cls = KMeans(n_clusters=parameters.get("k"), max_iter=parameters.get("max_iter"))
             cls.fit(image)
-            kcolors.append(cls.cluster_centers_)
+            kcolors.append(cls.cluster_centers_.tolist())
             time.append(i / parameters.get("fps"))
 
-        return {"colors": ScalarData(y=kcolors, time=time)}
+        return {"colors": ListData(data=[RGBData(colors=colors, time=time) for colors in zip(*kcolors)])}

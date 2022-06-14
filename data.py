@@ -7,7 +7,7 @@ import json
 import traceback
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Type, Iterator
+from typing import Dict, List, Any, Type, Iterator, Union
 
 import io
 
@@ -416,8 +416,9 @@ class AudioData(PluginData):
 class ScalarData(PluginData):
     type: str = field(default="ScalarData")
     ext: str = field(default="msg")
-    y: npt.NDArray = None
+    y: npt.NDArray = field()
     time: List[float] = field(default_factory=list)
+    name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
@@ -469,18 +470,77 @@ class ScalarData(PluginData):
         return {"y": self.y.tolist(), "time": self.time}
 
 
+@DataManager.export("RGBData", analyser_pb2.RGB_DATA)
 @dataclass(kw_only=True, frozen=True)
-class HistData(PluginData):
-    y: npt.NDArray = field(default_factory=np.ndarray)
+class RGBData(PluginData):
+    type: str = field(default="RGBData")
+    ext: str = field(default="msg")
+    colors: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[RGBData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(msgpack.packb({"colors": self.colors, "time": self.time}, default=m.encode))
+        except Exception as e:
+            logging.error(f"RGBData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[RGBData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+        return data
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.RGB_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        return {"colors": self.colors.tolist(), "time": self.time}
 
 
 @DataManager.export("ListData", analyser_pb2.LIST_DATA)
 @dataclass(kw_only=True, frozen=True)
 class ListData(PluginData):
-    data: List[PluginData] = field(default_factory=list)
-    ext: str = field(default="msg")
     type: str = field(default="ListData")
+    ext: str = field(default="msg")
+    data: List[PluginData] = field(default_factory=list)
+    index: List[Union[str, int]] = field(default=None)
+
+    def __post_init__(self):
+        print(f"post_init {self.index}")
+        if not self.index:
+            object.__setattr__(self, "index", list(range(len(self.data))))
+        print(f"post_init b {self.index}")
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ListData::save_blob]")
@@ -494,7 +554,7 @@ class ListData(PluginData):
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 # TODO use dump
-                f.write(msgpack.packb({"data": [{"id": d.id} for d in self.data]}))
+                f.write(msgpack.packb({"data": [{"id": d.id} for d in self.data], "index": self.index}))
         except Exception as e:
             logging.error(f"ListData::save_blob {e}")
             return False
@@ -506,7 +566,10 @@ class ListData(PluginData):
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data_decoded = msgpack.unpackb(f.read(), object_hook=m.decode)
 
-        return {"data": [DataManager._load(data.get("data_dir"), d.get("id")) for d in data_decoded.get("data")]}
+        return {
+            "data": [DataManager._load(data.get("data_dir"), d.get("id")) for d in data_decoded.get("data")],
+            "index": data_decoded.get("index"),
+        }
 
     @classmethod
     def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
@@ -515,6 +578,7 @@ class ListData(PluginData):
                 self.cache = []
                 self.stream = stream
                 self.empty = False
+                self.index = {}
 
             def push(self, data):
                 self.cache.append(data)
@@ -529,14 +593,16 @@ class ListData(PluginData):
                 try:
                     firstpkg = self.get_next()
                     firstpkg_decoded = msgpack.unpackb(firstpkg.data_encoded)
-
+                    self.index[firstpkg_decoded.get("i")] = firstpkg_decoded.get("id")
                     chunk = firstpkg_decoded.get("chunk")
 
                     yield analyser_pb2.DownloadDataResponse(**chunk)
                     while True:
                         pkg = self.get_next()
                         pkg_decoded = msgpack.unpackb(pkg.data_encoded)
-                        if firstpkg_decoded.get("index") == pkg_decoded.get("index"):
+
+                        self.index[pkg_decoded.get("i")] = pkg_decoded.get("id")
+                        if firstpkg_decoded.get("i") == pkg_decoded.get("i"):
                             chunk = pkg_decoded.get("chunk")
 
                             yield analyser_pb2.DownloadDataResponse(**chunk)
@@ -553,42 +619,28 @@ class ListData(PluginData):
         while not yielder.empty:
             data.append(DataManager._load_from_stream(data_dir, yielder))
 
-        data_obj = cls(data_dir=data_dir, data=data)
+        data_obj = cls(
+            data_dir=data_dir,
+            data=data,
+            index=list(map(lambda x: x[1], sorted(yielder.index.items(), key=lambda x: x[0]))),
+        )
 
         data_obj.save(data_dir=data_dir)
         return data_obj
 
     def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
         self.save(self.data_dir)
-        for i, d in enumerate(self.data):
+        for i, (id, d) in enumerate(zip(self.index, self.data)):
             for chunk in d.dump_to_stream(chunk_size=chunk_size):
 
                 yield {
                     "type": analyser_pb2.LIST_DATA,
-                    "data_encoded": msgpack.packb({"index": i, "chunk": chunk}),
+                    "data_encoded": msgpack.packb({"i": i, "id": id, "chunk": chunk}),
                     "ext": self.ext,
                 }
 
     def dumps_to_web(self):
         return {"y": self.y.tolist(), "time": self.time}
-
-
-@dataclass(kw_only=True, frozen=True)
-class ProbData(PluginData):
-    probs: List[ScalarData] = field(default_factory=list)
-    labels: List[str] = field(default_factory=list)
-    shortlabels: List[str] = field(default_factory=list)
-
-
-# def data_from_proto(proto, data_dir=None):
-#     if proto.type == analyser_pb2.VIDEO_DATA:
-#         data = VideoData()
-#         if hasattr(proto, "ext"):
-#             data.ext = proto.ext
-#         if data_dir:
-#             data.path = os.path.join(data_dir)
-
-#         return data
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -605,8 +657,3 @@ class BboxData(PluginData):
 @dataclass(kw_only=True, frozen=True)
 class BboxesData(PluginData):
     bboxes: List[BboxData] = field(default_factory=list)
-
-
-@dataclass(kw_only=True, frozen=True)
-class ImagesEmbedding(PluginData):
-    pass

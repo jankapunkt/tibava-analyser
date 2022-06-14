@@ -37,6 +37,7 @@ enum PluginDataType {
   SHOTS_DATA = 6;
   IMAGES_DATA = 7;
   LIST_DATA = 8;
+  RGB_DATA = 9;
 }
 
 message PluginInfoData {

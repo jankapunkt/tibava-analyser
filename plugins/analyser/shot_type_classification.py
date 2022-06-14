@@ -71,8 +71,10 @@ class ShotTypeClassifier(
             predictions.append(prediction.tolist())
             time.append(i / parameters.get("fps"))
         # predictions = zip(*predictions)
-        probs = ListData(data=[ScalarData(y=y, time=time) for y in zip(*predictions)])
-        print(len(probs.data))
+        probs = ListData(
+            data=[ScalarData(y=y, time=time) for y in zip(*predictions)],
+            index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
+        )
 
         # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
         # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]

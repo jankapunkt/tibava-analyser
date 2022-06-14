@@ -1,6 +1,6 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import AudioData, ImagesData, ImagesEmbedding, VideoData
+from analyser.data import AudioData, ImagesData
 from analyser.plugins import Plugin
 import ffmpeg
 import os
@@ -15,7 +15,7 @@ requires = {
 }
 
 provides = {
-    "images_embedding": ImagesEmbedding,
+    # "images_embedding": ImagesEmbedding,
 }
 
 
