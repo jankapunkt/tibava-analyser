@@ -8,6 +8,8 @@ plugins:
       data_dir: /data
   - plugin: audio_amp_analysis
     params: {}
+  - plugin: audio_freq_analysis
+    params: {}
   - plugin: transnet_shotdetection
     params: {}
   - plugin: insightface_detector
