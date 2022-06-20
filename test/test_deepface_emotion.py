@@ -29,6 +29,7 @@ def main():
     data_id = client.upload_data(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
+    # insightface_detection
     job_id = client.run_plugin("insightface_detector", [{"id": data_id, "name": "video"}], [])
     logging.info(f"Job insightface_detector started: {job_id}")
 
@@ -37,12 +38,29 @@ def main():
         logging.error("Job is crashing")
         return
 
-    bboxes_id = None
+    # get facial images from facedetection
+    images_id = None
     for output in result.outputs:
-        if output.name == "bboxes":
-            bboxes_id = output.id
+        if output.name == "images":
+            images_id = output.id
 
-    logging.info(client.download_data(bboxes_id, args.output_path))
+    # deepface_emotion
+    job_id = client.run_plugin("deepface_emotion", [{"id": images_id, "name": "images"}], [])
+    logging.info(f"Job deepface_emotion started: {job_id}")
+
+    result = client.get_plugin_results(job_id=job_id)
+    if result is None:
+        logging.error("Job is crashing")
+        return
+
+    # get emotions
+    output_id = None
+    for output in result.outputs:
+        if output.name == "probs":
+            output_id = output.id
+
+    logging.info(client.download_data(output_id, args.output_path))
+
     return 0
 
 

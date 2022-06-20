@@ -249,9 +249,19 @@ class ImagesData(PluginData):
     def load_blob_args(cls, data: dict) -> dict:
         logging.info(f"[ImagesData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
-            data = msgpack.unpackb(f.read())
-            data = {"images": [ImageData(time=x["time"], id=x["id"], ext=x["ext"]) for x in data["images"]]}
-        return data
+            packdata = msgpack.unpackb(f.read())
+            dictdata = {
+                "images": [
+                    ImageData(
+                        time=x["time"],
+                        id=x["id"],
+                        ext=x["ext"],
+                        data_dir=data.get("data_dir"),
+                    )
+                    for x in packdata["images"]
+                ]
+            }
+        return dictdata
 
     @classmethod
     def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
@@ -774,4 +784,70 @@ class BboxData(PluginData):
 @DataManager.export("BboxesData", analyser_pb2.BBOXES_DATA)
 @dataclass(kw_only=True, frozen=True)
 class BboxesData(PluginData):
+    type: str = field(default="BboxesData")
+    ext: str = field(default="msg")
     bboxes: List[BboxData] = field(default_factory=list)
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[BboxesData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(
+                    msgpack.packb(
+                        {
+                            "bboxes": [
+                                {"x": bbox.x, "y": bbox.y, "w": bbox.w, "h": bbox.h, "time": bbox.time}
+                                for bbox in self.bboxes
+                            ]
+                        },
+                        default=m.encode,
+                    )
+                )
+        except Exception as e:
+            logging.error(f"BboxesData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[BboxesData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            bboxes = {"bboxes": [BboxData(**bbox) for bbox in data.get("bboxes")]}
+        return bboxes
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.BBOXES_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        if hasattr(self.bboxes, "tolist"):
+            bboxes = self.bboxes.tolist()  # TODO
+        else:
+            bboxes = self.bboxes
+        return {"bboxes": bboxes}
