@@ -314,7 +314,7 @@ class InsightfaceDetector(
                         ],
                     )
                     images.append(
-                        ImageData(id=bbox_id, ext="jpg", time=frame.get("time"), delta_time=parameters.get("fps"))
+                        ImageData(id=bbox_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
                     )
 
                 # get bboxes
