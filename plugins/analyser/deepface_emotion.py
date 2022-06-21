@@ -18,7 +18,7 @@ default_config = {
     "target_size": (48, 48),
 }
 
-default_parameters = {"threshold": 0.5}
+default_parameters = {"threshold": 0.5, "reduction": "max"}
 
 requires = {
     "images": ImagesData,
@@ -102,8 +102,8 @@ class DeepfaceEmotion(
         return img_pixels
 
     def call(self, inputs, parameters):
-        predictions = []
-        time = []
+        predictions_dict = {}
+        # time = []
         delta_time = None
         for entry in inputs["images"].images:
             job_id = generate_id()
@@ -115,13 +115,21 @@ class DeepfaceEmotion(
             _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
             prediction = self.con.tensorget(f"prob_{job_id}")[0]
 
-            predictions.append(prediction.tolist())
-            time.append(entry.time)
+            if entry.time not in predictions_dict:
+                predictions_dict[entry.time] = []
 
+            predictions_dict[entry.time].append(prediction)
             delta_time = entry.delta_time
 
+        if parameters.get("reduction") == "max":
+            predictions = [np.max(np.stack(x, axis=0), axis=0).tolist() for x in predictions_dict.values()]
+        else:  # parameters.get("reduction") == "mean":
+            predictions = [np.mean(np.stack(x, axis=0), axis=0).tolist() for x in predictions_dict.values()]
+
         probs = ListData(
-            data=[ScalarData(y=np.asarray(y), time=time, delta_time=delta_time) for y in zip(*predictions)],
+            data=[
+                ScalarData(y=y, time=list(predictions_dict.keys()), delta_time=delta_time) for y in zip(*predictions)
+            ],
             index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
         )
 

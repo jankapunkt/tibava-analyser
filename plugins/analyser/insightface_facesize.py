@@ -2,6 +2,7 @@ from analyser.plugins.manager import AnalyserPluginManager
 from analyser.data import BboxesData, ScalarData
 from analyser.plugins import Plugin
 
+import numpy as np
 
 default_config = {
     "data_dir": "/data/",
@@ -9,7 +10,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {}
+default_parameters = {"reduction": "max"}
 
 requires = {
     "bboxes": BboxesData,
@@ -30,13 +31,18 @@ class InsightfaceFacesize(
         self.port = self.config["port"]
 
     def call(self, inputs, parameters):
-        facesizes = []
-        time = []
+        facesizes_dict = {}
         delta_time = None
 
         for bbox in inputs["bboxes"].bboxes:
-            facesizes.append(bbox.w * bbox.h)
-            time.append(bbox.time)
+            if bbox.time not in facesizes_dict:
+                facesizes_dict[bbox.time] = []
+            facesizes_dict[bbox.time].append(bbox.w * bbox.h)
             delta_time = bbox.delta_time
 
-        return {"facesizes": ScalarData(y=facesizes, time=time, delta_time=delta_time)}
+        if parameters.get("reduction") == "max":
+            facesizes = [np.max(x).tolist() for x in facesizes_dict.values()]
+        else:  # parameters.get("reduction") == "mean":
+            facesizes = [np.mean(x).tolist() for x in facesizes_dict.values()]
+
+        return {"facesizes": ScalarData(y=facesizes, time=list(facesizes_dict.keys()), delta_time=delta_time)}
