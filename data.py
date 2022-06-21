@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any, Type, Iterator, Union
 
 import io
+from attr import has
 
 from matplotlib.colors import same_color
 import imageio
@@ -626,7 +627,10 @@ class ScalarData(PluginData):
                 yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        return {"y": self.y.tolist(), "time": self.time, "delta_time": self.delta_time}
+        if hasattr(self.y, "tolist"):
+            return {"y": self.y.tolist(), "time": self.time, "delta_time": self.delta_time}
+
+        return {"y": self.y, "time": self.time, "delta_time": self.delta_time}
 
 
 @DataManager.export("RGBData", analyser_pb2.RGB_DATA)
