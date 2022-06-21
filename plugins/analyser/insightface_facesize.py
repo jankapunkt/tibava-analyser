@@ -1,7 +1,6 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.data import BboxesData, ScalarData
 from analyser.plugins import Plugin
-import logging
 
 
 default_config = {
@@ -33,11 +32,11 @@ class InsightfaceFacesize(
     def call(self, inputs, parameters):
         facesizes = []
         time = []
+        delta_time = None
 
-        print(inputs)
         for bbox in inputs["bboxes"].bboxes:
-            print(bbox.x, bbox.y, bbox.w, bbox.h)
             facesizes.append(bbox.w * bbox.h)
             time.append(bbox.time)
+            delta_time = bbox.delta_time
 
-        return {"facesizes": ScalarData(y=facesizes, time=time)}
+        return {"facesizes": ScalarData(y=facesizes, time=time, delta_time=delta_time)}

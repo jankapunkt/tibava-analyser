@@ -41,4 +41,4 @@ class AudioAmpAnalysis(
         if parameters.get("normalize"):
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
 
-        return {"amp": ScalarData(y=y, time=(np.arange(len(y)) / sr).tolist())}
+        return {"amp": ScalarData(y=y, time=(np.arange(len(y)) / sr).tolist(), delta_time=1 / sr)}

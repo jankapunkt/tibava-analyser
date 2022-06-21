@@ -1,22 +1,16 @@
-import os
 import sys
-import re
 import argparse
 import logging
-import time
-
-import grpc
 
 from analyser.client import AnalyserClient
-from analyser import analyser_pb2
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
-    parser.add_argument("--input_path", help="verbose output")
-    parser.add_argument("--output_path", help="verbose output")
+    parser.add_argument("--input_path", default="/media/test.mp4", help="path to input video .mp4")
+    parser.add_argument("--output_path", default="/media", help="path to output folder")
     args = parser.parse_args()
     return args
 
@@ -64,7 +58,6 @@ def main():
             amp_id = output.id
 
     logging.info(f"Job audio_amp done: {amp_id}")
-
     logging.info(client.download_data(amp_id, args.output_path))
 
     return 0

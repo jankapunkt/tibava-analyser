@@ -104,9 +104,10 @@ class DeepfaceEmotion(
     def call(self, inputs, parameters):
         predictions = []
         time = []
-        for path in inputs["images"].images:
+        delta_time = None
+        for entry in inputs["images"].images:
             job_id = generate_id()
-            image = self.preprocess(path.path)
+            image = self.preprocess(entry.path)
 
             self.con.tensorset(f"data_{job_id}", image)
 
@@ -115,10 +116,12 @@ class DeepfaceEmotion(
             prediction = self.con.tensorget(f"prob_{job_id}")[0]
 
             predictions.append(prediction.tolist())
-            time.append(path.time)
+            time.append(entry.time)
+
+            delta_time = entry.delta_time
 
         probs = ListData(
-            data=[ScalarData(y=np.asarray(y), time=time) for y in zip(*predictions)],
+            data=[ScalarData(y=np.asarray(y), time=time, delta_time=delta_time) for y in zip(*predictions)],
             index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
         )
 

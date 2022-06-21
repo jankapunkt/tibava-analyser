@@ -1,5 +1,3 @@
-import os
-
 import imageio
 
 from analyser.plugins.manager import AnalyserPluginManager
@@ -42,6 +40,8 @@ class ThumbnailGenerator(
             image_id = generate_id()
             output_path = create_data_path(self.config.get("data_dir"), image_id, "jpg")
             imageio.imwrite(output_path, frame.get("frame"))
-            images.append(ImageData(id=image_id, ext="jpg", time=frame.get("time")))
+            images.append(
+                ImageData(id=image_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
+            )
         data = ImagesData(images=images)
         return {"images": data}

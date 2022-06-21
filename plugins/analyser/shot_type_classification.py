@@ -5,7 +5,6 @@ from analyser.plugins import Plugin
 import redisai as rai
 import numpy as np
 import ml2rt
-import logging
 
 
 default_config = {
@@ -47,11 +46,7 @@ class ShotTypeClassifier(
         model = ml2rt.load_model(self.model_file)
 
         self.con.modelset(
-            self.model_name,
-            backend="torch",
-            device=self.model_device,
-            data=model,
-            batch=16,
+            self.model_name, backend="torch", device=self.model_device, data=model, batch=16,
         )
 
     def call(self, inputs, parameters):
@@ -74,7 +69,9 @@ class ShotTypeClassifier(
             time.append(i / parameters.get("fps"))
         # predictions = zip(*predictions)
         probs = ListData(
-            data=[ScalarData(y=np.asarray(y), time=time) for y in zip(*predictions)],
+            data=[
+                ScalarData(y=np.asarray(y), time=time, delta_time=1 / parameters.get("fps")) for y in zip(*predictions)
+            ],
             index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
         )
 

@@ -220,6 +220,7 @@ class VideoData(PluginData):
 @dataclass(kw_only=True, frozen=True)
 class ImageData(PluginData):
     time: float = None
+    delta_time: float = field(default=None)
     ext: str = field(default="jpg")
 
 
@@ -237,7 +238,12 @@ class ImagesData(PluginData):
                 # TODO use dump
                 f.write(
                     msgpack.packb(
-                        {"images": [{"time": image.time, "ext": image.ext, "id": image.id} for image in self.images]}
+                        {
+                            "images": [
+                                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "id": image.id}
+                                for image in self.images
+                            ]
+                        }
                     )
                 )
         except Exception as e:
@@ -254,6 +260,7 @@ class ImagesData(PluginData):
                 "images": [
                     ImageData(
                         time=x["time"],
+                        delta_time=x["delta_time"],
                         id=x["id"],
                         ext=x["ext"],
                         data_dir=data.get("data_dir"),
@@ -281,7 +288,15 @@ class ImagesData(PluginData):
                 image_path = create_data_path(data_dir, image_id, image.get("ext"))
                 with open(image_path, "wb") as f:
                     f.write(image.get("image"))
-                images.append(ImageData(data_dir=data_dir, id=image_id, ext=image.get("ext"), time=image.get("time")))
+                images.append(
+                    ImageData(
+                        data_dir=data_dir,
+                        id=image_id,
+                        ext=image.get("ext"),
+                        time=image.get("time"),
+                        delta_time=image.get("delta_time"),
+                    )
+                )
 
         data = cls(images=images)
         data.save_blob(data_dir=data_dir)
@@ -293,7 +308,9 @@ class ImagesData(PluginData):
         for image in self.images:
             with open(create_data_path(self.data_dir, image.id, image.ext), "rb") as f:
                 image_raw = f.read()
-            dump = msgpack.packb({"time": image.time, "ext": image.ext, "image": image_raw})
+            dump = msgpack.packb(
+                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "image": image_raw}
+            )
             buffer.write(dump)
 
             while len(buffer) > chunk_size:
@@ -308,7 +325,12 @@ class ImagesData(PluginData):
             yield {"type": analyser_pb2.IMAGES_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        return {"images": [{"time": image.time, "ext": image.ext, "id": image.id} for image in self.images]}
+        return {
+            "images": [
+                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "id": image.id}
+                for image in self.images
+            ]
+        }
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -428,13 +450,18 @@ class HistData(PluginData):
     ext: str = field(default="msg")
     hist: npt.NDArray = field()
     time: List[float] = field(default_factory=list)
+    delta_time: float = field(default=None)
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
-                f.write(msgpack.packb({"hist": self.hist, "time": self.time}, default=m.encode))
+                f.write(
+                    msgpack.packb(
+                        {"hist": self.hist, "time": self.time, "delta_time": self.delta_time}, default=m.encode
+                    )
+                )
         except Exception as e:
             logging.error(f"ScalarData::save_blob {e}")
             return False
@@ -477,7 +504,8 @@ class HistData(PluginData):
                 yield {"type": analyser_pb2.HIST_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        return {"hist": self.hist.tolist(), "time": self.time}
+        return {"hist": self.hist.tolist(), "time": self.time, "delta_time": self.delta_time}
+
 
 @DataManager.export("AnnotationData", analyser_pb2.ANNOTATION_DATA)
 @dataclass(kw_only=True, frozen=True)
@@ -486,6 +514,7 @@ class AnnotationData(PluginData):
     ext: str = field(default="msg")
     hist: npt.NDArray = field()
     time: List[float] = field(default_factory=list)
+    # delta_time: float = field(default=None)
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
@@ -537,6 +566,7 @@ class AnnotationData(PluginData):
     def dumps_to_web(self):
         return {"hist": self.hist.tolist(), "time": self.time}
 
+
 @DataManager.export("ScalarData", analyser_pb2.SCALAR_DATA)
 @dataclass(kw_only=True, frozen=True)
 class ScalarData(PluginData):
@@ -544,13 +574,16 @@ class ScalarData(PluginData):
     ext: str = field(default="msg")
     y: npt.NDArray = field()
     time: List[float] = field(default_factory=list)
+    delta_time: float = field(default=None)
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
-                f.write(msgpack.packb({"y": self.y, "time": self.time}, default=m.encode))
+                f.write(
+                    msgpack.packb({"y": self.y, "time": self.time, "delta_time": self.delta_time}, default=m.encode)
+                )
         except Exception as e:
             logging.error(f"ScalarData::save_blob {e}")
             return False
@@ -593,7 +626,7 @@ class ScalarData(PluginData):
                 yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        return {"y": self.y.tolist(), "time": self.time}
+        return {"y": self.y.tolist(), "time": self.time, "delta_time": self.delta_time}
 
 
 @DataManager.export("RGBData", analyser_pb2.RGB_DATA)
@@ -603,12 +636,17 @@ class RGBData(PluginData):
     ext: str = field(default="msg")
     colors: npt.NDArray = field(default_factory=np.ndarray)
     time: List[float] = field(default_factory=list)
+    delta_time: float = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
         logging.info(f"[RGBData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
-                f.write(msgpack.packb({"colors": self.colors, "time": self.time}, default=m.encode))
+                f.write(
+                    msgpack.packb(
+                        {"colors": self.colors, "time": self.time, "delta_time": self.delta_time}, default=m.encode
+                    )
+                )
         except Exception as e:
             logging.error(f"RGBData::save_blob {e}")
             return False
@@ -655,7 +693,7 @@ class RGBData(PluginData):
             colors = self.colors.tolist()
         else:
             colors = self.colors
-        return {"colors": colors, "time": self.time}
+        return {"colors": colors, "time": self.time, "delta_time": self.delta_time}
 
 
 @DataManager.export("ListData", analyser_pb2.LIST_DATA)
@@ -775,6 +813,7 @@ class ListData(PluginData):
 class BboxData(PluginData):
     image_id: int = None
     time: float = None
+    delta_time: float = field(default=None)
     x: int = None
     y: int = None
     w: int = None
@@ -796,7 +835,14 @@ class BboxesData(PluginData):
                     msgpack.packb(
                         {
                             "bboxes": [
-                                {"x": bbox.x, "y": bbox.y, "w": bbox.w, "h": bbox.h, "time": bbox.time}
+                                {
+                                    "x": bbox.x,
+                                    "y": bbox.y,
+                                    "w": bbox.w,
+                                    "h": bbox.h,
+                                    "time": bbox.time,
+                                    "delta_time": bbox.delta_time,
+                                }
                                 for bbox in self.bboxes
                             ]
                         },

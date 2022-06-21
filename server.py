@@ -75,11 +75,7 @@ def run_plugin(args):
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         traceback.print_exception(
-            exc_type,
-            exc_value,
-            exc_traceback,
-            limit=2,
-            file=sys.stdout,
+            exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout,
         )
 
 
@@ -218,8 +214,7 @@ class Server:
             ],
         )
         analyser_pb2_grpc.add_AnalyserServicer_to_server(
-            self.commune,
-            self.server,
+            self.commune, self.server,
         )
 
         grpc_config = config.get("grpc", {})
@@ -273,6 +268,8 @@ def main():
         config = read_config(args.config)
     else:
         config = {}
+
+    time.sleep(1)  # TODO
     server = Server(config)
     server.run()
     return 0

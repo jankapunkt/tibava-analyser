@@ -5,7 +5,7 @@ FROM ubuntu:22.04
 RUN DEBIAN_FRONTEND=noninteractive apt update --fix-missing -y
 RUN DEBIAN_FRONTEND=noninteractive apt upgrade -y 
 RUN DEBIAN_FRONTEND=noninteractive apt install python3-pip npm git libsndfile1-dev python3-numba python3-opencv python3-psycopg2 python3-numpy ffmpeg python3-imageio -y
-RUN DEBIAN_FRONTEND=noninteractive apt install libmariadbclient-dev-compat imagemagick python3-sklearn -y
+RUN DEBIAN_FRONTEND=noninteractive apt install libmariadbclient-dev-compat imagemagick python3-sklearn wget -y
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1

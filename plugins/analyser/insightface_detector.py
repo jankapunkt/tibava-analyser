@@ -206,7 +206,15 @@ class InsightfaceDetector(
         return keep
 
     def detect(
-        self, frame, image_id, input_size=(640, 640), max_num=0, metric="default", det_thresh=0.5, nms_thresh=0.4
+        self,
+        frame,
+        image_id,
+        input_size=(640, 640),
+        max_num=0,
+        metric="default",
+        det_thresh=0.5,
+        nms_thresh=0.4,
+        fps=10,
     ):
         img = frame.get("frame")
         im_ratio = float(img.shape[0]) / img.shape[1]
@@ -265,6 +273,7 @@ class InsightfaceDetector(
                 BboxData(
                     image_id=image_id,
                     time=frame.get("time"),
+                    delta_time=1 / fps,
                     x=x / img.shape[1],
                     y=y / img.shape[0],
                     w=w / img.shape[1],
@@ -304,7 +313,9 @@ class InsightfaceDetector(
                             :,
                         ],
                     )
-                    images.append(ImageData(id=bbox_id, ext="jpg", time=frame.get("time")))
+                    images.append(
+                        ImageData(id=bbox_id, ext="jpg", time=frame.get("time"), delta_time=parameters.get("fps"))
+                    )
 
                 # get bboxes
                 bboxes.extend(
@@ -314,6 +325,7 @@ class InsightfaceDetector(
                         parameters.get("input_size"),
                         det_thresh=parameters.get("det_thresh"),
                         nms_thresh=parameters.get("nms_thresh"),
+                        fps=parameters.get("fps"),
                     )
                 )
 
