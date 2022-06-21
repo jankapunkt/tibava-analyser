@@ -1,3 +1,0 @@
-media_folder: /media
-model_path: /models/transnetv2-weights/
-grpc_port: 50051
