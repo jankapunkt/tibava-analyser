@@ -51,11 +51,7 @@ class InsightfaceDetector(
         model = ml2rt.load_model(self.model_file)
 
         self.con.modelset(
-            self.model_name,
-            backend="onnx",
-            device=self.model_device,
-            data=model,
-            batch=1,
+            self.model_name, backend="onnx", device=self.model_device, data=model, batch=1,
         )
 
     def distance2bbox(self, points, distance, max_shape=None):
@@ -265,7 +261,16 @@ class InsightfaceDetector(
             x, y = int(max(0, bbox[0])), int(max(0, bbox[1]))
             w, h = int(bbox[2] - x), int(bbox[3] - y)
             # det_score = bbox[4]  # TODO: check if it is necessary to get the score
-            predictions.append(BboxData(image_id=image_id, time=frame.get("time"), x=x, y=y, w=w, h=h))
+            predictions.append(
+                BboxData(
+                    image_id=image_id,
+                    time=frame.get("time"),
+                    x=x / img.shape[1],
+                    y=y / img.shape[0],
+                    w=w / img.shape[1],
+                    h=h / img.shape[0],
+                )
+            )
         return predictions
 
     def call(self, inputs, parameters):
@@ -290,7 +295,15 @@ class InsightfaceDetector(
                     bbox_id = generate_id()
                     output_path = create_data_path(self.config.get("data_dir"), bbox_id, "jpg")
                     frame_image = frame.get("frame")
-                    imageio.imwrite(output_path, frame_image[bbox.y : bbox.y + bbox.h, bbox.x : bbox.x + bbox.w, :])
+                    h, w = frame_image.shape[:2]
+                    imageio.imwrite(
+                        output_path,
+                        frame_image[
+                            int(bbox.y * h + 0.5) : int((bbox.y + bbox.h) * h + 0.5),
+                            int(bbox.x * w + 0.5) : int((bbox.x + bbox.w) * w + 0.5),
+                            :,
+                        ],
+                    )
                     images.append(ImageData(id=bbox_id, ext="jpg", time=frame.get("time")))
 
                 # get bboxes
@@ -312,10 +325,6 @@ class InsightfaceDetector(
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
+                exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout,
             )
         return {}
