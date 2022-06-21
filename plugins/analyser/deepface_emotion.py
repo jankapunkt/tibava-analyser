@@ -114,8 +114,6 @@ class DeepfaceEmotion(
             _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
             prediction = self.con.tensorget(f"prob_{job_id}")[0]
 
-            print(prediction.shape)
-
             predictions.append(prediction.tolist())
             time.append(path.time)
 
