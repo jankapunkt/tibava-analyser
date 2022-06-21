@@ -1,2 +1,0 @@
-sudo systemctl restart tibava_backend_celery.service
-sudo systemctl restart tibava_backend.service
