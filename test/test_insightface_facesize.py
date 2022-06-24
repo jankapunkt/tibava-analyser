@@ -53,13 +53,17 @@ def main():
         logging.error("Job is crashing")
         return
 
-    # get emotions
-    output_id = None
+    # get shot size prediction
+    output_id_probs = None
+    output_id_facesizes = None
     for output in result.outputs:
+        if output.name == "probs":
+            output_id_probs = output.id
         if output.name == "facesizes":
-            output_id = output.id
+            output_id_facesizes = output.id
 
-    logging.info(client.download_data(output_id, args.output_path))
+    logging.info(client.download_data(output_id_probs, args.output_path))
+    logging.info(client.download_data(output_id_facesizes, args.output_path))
 
     return 0
 

@@ -1,13 +1,15 @@
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.data import BboxesData, ScalarData
+from analyser.data import BboxesData, ListData, ScalarData
 from analyser.plugins import Plugin
 
 import numpy as np
+import pickle
 
 default_config = {
     "data_dir": "/data/",
     "host": "localhost",
     "port": 6379,
+    "model_file": "/models/naivebayes_facesize/naivebayes_facesize.pkl",
 }
 
 default_parameters = {"reduction": "max"}
@@ -17,6 +19,7 @@ requires = {
 }
 
 provides = {
+    "probs": ListData,
     "facesizes": ScalarData,
 }
 
@@ -29,6 +32,9 @@ class InsightfaceFacesize(
         super().__init__(config)
         self.host = self.config["host"]
         self.port = self.config["port"]
+
+        with open(self.config["model_file"], "rb") as pklfile:
+            self.model = pickle.load(pklfile)
 
     def call(self, inputs, parameters):
         facesizes_dict = {}
@@ -45,4 +51,16 @@ class InsightfaceFacesize(
         else:  # parameters.get("reduction") == "mean":
             facesizes = [np.mean(x).tolist() for x in facesizes_dict.values()]
 
-        return {"facesizes": ScalarData(y=facesizes, time=list(facesizes_dict.keys()), delta_time=delta_time)}
+        # predict shot size based on facesizes
+        predictions = self.model.predict_proba(np.asarray(facesizes).reshape(-1, 1))
+        print(predictions.shape)
+
+        return {
+            "probs": ListData(
+                data=[
+                    ScalarData(y=y, time=list(facesizes_dict.keys()), delta_time=delta_time) for y in zip(*predictions)
+                ],
+                index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
+            ),
+            "facesizes": ScalarData(y=facesizes, time=list(facesizes_dict.keys()), delta_time=delta_time),
+        }
