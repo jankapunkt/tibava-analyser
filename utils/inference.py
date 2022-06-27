@@ -90,8 +90,8 @@ class InferenceServer:
 
         assert backend in self.backend_lut, "Backend is unknown"
         assert device in self.device_lut, "Backend is unknown"
-        print(f"inputs: {inputs}")
-        print(f"outputs: {outputs}")
+        # print(f"inputs: {inputs}")
+        # print(f"outputs: {outputs}")
 
         start_time = time.time()
         model_uploaded = False
@@ -128,13 +128,17 @@ class InferenceServer:
         for o in outputs:
             output_keys.append(f"{o}_{job_id}")
 
-        print(f"run inputs: {input_keys}")
-        print(f"run outputs: {output_keys}")
+        # print(f"run inputs: {input_keys}")
+        # print(f"run outputs: {output_keys}")
         ok = self.con.modelrun(self.model_name, input_keys, output_keys)
+
+        for k in input_keys:
+            self.con.delete(f"{k}_{job_id}")
         if ok != "OK":
             return None
 
         output_dict = {}
         for o in outputs:
             output_dict[o] = self.con.tensorget(f"{o}_{job_id}")
+            self.con.delete(f"{o}_{job_id}")
         return output_dict
