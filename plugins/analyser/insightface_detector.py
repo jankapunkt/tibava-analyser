@@ -6,11 +6,10 @@ from analyser.utils import VideoDecoder
 import cv2
 import imageio
 import logging
-import ml2rt
 import numpy as np
-import redisai as rai
 import sys
 import traceback
+from analyser.utils import InferenceServer, Backend, Device
 
 
 default_config = {
@@ -46,12 +45,8 @@ class InsightfaceDetector(
         self.model_device = self.config["model_device"]
         self.model_file = self.config["model_file"]
 
-        self.con = rai.Client(host=self.host, port=self.port)
-
-        model = ml2rt.load_model(self.model_file)
-
-        self.con.modelset(
-            self.model_name, backend="onnx", device=self.model_device, data=model, batch=1,
+        self.server = InferenceServer(
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, backend=Backend.ONNX
         )
 
     def distance2bbox(self, points, distance, max_shape=None):
@@ -97,18 +92,7 @@ class InsightfaceDetector(
         return np.stack(preds, axis=-1)
 
     def forward(self, img, threshold, use_kps=True):
-        job_id = generate_id()
-        output_names = [
-            f"448_{job_id}",
-            f"471_{job_id}",
-            f"494_{job_id}",
-            f"451_{job_id}",
-            f"474_{job_id}",
-            f"497_{job_id}",
-            f"454_{job_id}",
-            f"477_{job_id}",
-            f"500_{job_id}",
-        ]
+        output_names = ["448", "471", "494", "451", "474", "497", "454", "477", "500"]
         scores_list = []
         bboxes_list = []
         kpss_list = []
@@ -124,10 +108,11 @@ class InsightfaceDetector(
             img, 1.0 / input_std, input_size, (input_mean, input_mean, input_mean), swapRB=True
         )
         # print(blob, blob.shape)
-        self.con.tensorset(f"data_{job_id}", blob)
-        result = self.con.modelrun(self.model_name, f"data_{job_id}", output_names)
+        # self.con.tensorset(f"data_{job_id}", blob)
+        result = self.server({"data": blob}, output_names)
+        # result = self.con.modelrun(self.model_name, f"data_{job_id}", output_names)
         # net_outs = self.session.run(self.output_names, {self.input_name : blob})  # original function
-        net_outs = [self.con.tensorget(output_name) for output_name in output_names]
+        net_outs = [result.get(output_name) for output_name in output_names]
 
         input_height = blob.shape[2]
         input_width = blob.shape[3]
@@ -337,6 +322,10 @@ class InsightfaceDetector(
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(
-                exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout,
+                exc_type,
+                exc_value,
+                exc_traceback,
+                limit=2,
+                file=sys.stdout,
             )
         return {}

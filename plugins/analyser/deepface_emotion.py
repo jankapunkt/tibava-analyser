@@ -1,10 +1,9 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.data import ListData, ScalarData, ImagesData, generate_id
 from analyser.plugins import Plugin
+from analyser.utils import InferenceServer, Backend, Device
 import cv2
 import imageio
-import redisai as rai
-import ml2rt
 import numpy as np
 
 default_config = {
@@ -44,18 +43,14 @@ class DeepfaceEmotion(
         self.grayscale = self.config["grayscale"]
         self.target_size = self.config["target_size"]
 
-        self.con = rai.Client(host=self.host, port=self.port)
-
-        model = ml2rt.load_model(self.model_file)
-
-        self.con.modelset(
-            self.model_name,
-            backend="onnx",
-            device=self.model_device,
-            data=model,
+        self.server = InferenceServer(
+            model_file=self.model_file,
+            model_name=self.model_name,
+            host=self.host,
+            port=self.port,
+            backend=Backend.ONNX,
             inputs=["input"],
             outputs=["dense_2"],
-            batch=16,
         )
 
     def preprocess(self, img_path):
@@ -106,14 +101,17 @@ class DeepfaceEmotion(
         # time = []
         delta_time = None
         for entry in inputs["images"].images:
-            job_id = generate_id()
             image = self.preprocess(entry.path)
 
-            self.con.tensorset(f"data_{job_id}", image)
+            result = self.server({"data": image}, ["prob"])
+            if result:
+                prediction = result.get(f"prob")[0]
 
-            # modelname, input, output
-            _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
-            prediction = self.con.tensorget(f"prob_{job_id}")[0]
+            # self.con.tensorset(f"data_{job_id}", image)
+
+            # # modelname, input, output
+            # _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
+            # prediction = self.con.tensorget(f"prob_{job_id}")[0]
 
             if entry.time not in predictions_dict:
                 predictions_dict[entry.time] = []

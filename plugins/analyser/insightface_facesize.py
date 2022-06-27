@@ -53,7 +53,6 @@ class InsightfaceFacesize(
 
         # predict shot size based on facesizes
         predictions = self.model.predict_proba(np.asarray(facesizes).reshape(-1, 1))
-        print(predictions.shape)
 
         return {
             "probs": ListData(

@@ -2,9 +2,9 @@ from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
 from analyser.data import ListData, ScalarData, VideoData, ListData, generate_id
 from analyser.plugins import Plugin
-import redisai as rai
+from analyser.utils import InferenceServer
+
 import numpy as np
-import ml2rt
 
 
 default_config = {
@@ -41,12 +41,8 @@ class ShotTypeClassifier(
         self.model_file = self.config["model_file"]
         self.image_resolution = self.config["image_resolution"]
 
-        self.con = rai.Client(host=self.host, port=self.port)
-
-        model = ml2rt.load_model(self.model_file)
-
-        self.con.modelset(
-            self.model_name, backend="torch", device=self.model_device, data=model, batch=16,
+        self.server = InferenceServer(
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port
         )
 
     def call(self, inputs, parameters):
@@ -55,18 +51,16 @@ class ShotTypeClassifier(
         )
 
         # video_decoder.fps
-        job_id = generate_id()
 
         predictions = []
         time = []
         for i, frame in enumerate(video_decoder):
             frame = image_pad(frame["frame"])
-            self.con.tensorset(f"data_{job_id}", frame)
 
-            _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
-            prediction = self.con.tensorget(f"prob_{job_id}")
-            predictions.append(prediction.tolist())
-            time.append(i / parameters.get("fps"))
+            result = self.server({"data": frame}, ["prob"])
+            if result is not None:
+                predictions.append(result["prob"].tolist())
+                time.append(i / parameters.get("fps"))
         # predictions = zip(*predictions)
         probs = ListData(
             data=[

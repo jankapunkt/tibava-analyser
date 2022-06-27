@@ -2,10 +2,9 @@ from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
 from analyser.data import Shot, ShotsData, VideoData, generate_id
 from analyser.plugins import Plugin
+from analyser.utils import InferenceServer
+
 import ffmpeg
-import os
-import redisai as rai
-import ml2rt
 import numpy as np
 
 default_config = {
@@ -40,22 +39,11 @@ class TransnetShotdetection(
         self.model_device = self.config["model_device"]
         self.model_file = self.config["model_file"]
 
-        self.con = rai.Client(host=self.host, port=self.port)
-
-        model = ml2rt.load_model(self.model_file)
-
-        self.con.modelset(
-            self.model_name,
-            backend="torch",
-            device=self.model_device,
-            data=model,
-            batch=16,
+        self.server = InferenceServer(
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port
         )
 
     def predict_frames(self, frames: np.ndarray):
-
-        job_id = generate_id()
-
         def input_iterator():
             # return windows of size 100 where the first/last 25 frames are from the previous/next batch
             # the first and last window must be padded by copies of the first and last frame of the video
@@ -78,15 +66,13 @@ class TransnetShotdetection(
 
         for inp in input_iterator():
 
-            self.con.tensorset(f"data_{job_id}", inp)
-            result = self.con.modelrun(
-                self.model_name, f"data_{job_id}", [f"single_frame_pred_{job_id}", f"all_frames_pred_{job_id}"]
-            )
+            result = self.server({"data": inp}, ["single_frame_pred", "all_frames_pred"])
 
-            single_frame_pred = self.con.tensorget(f"single_frame_pred_{job_id}")
-            all_frames_pred = self.con.tensorget(f"all_frames_pred_{job_id}")
+            if result is not None:
+                single_frame_pred = result.get(f"single_frame_pred")
+                all_frames_pred = result.get(f"all_frames_pred")
 
-            predictions.append((single_frame_pred[0, 25:75, 0], all_frames_pred[0, 25:75, 0]))
+                predictions.append((single_frame_pred[0, 25:75, 0], all_frames_pred[0, 25:75, 0]))
 
         single_frame_pred = np.concatenate([single_ for single_, all_ in predictions])
         all_frames_pred = np.concatenate([all_ for single_, all_ in predictions])
@@ -115,7 +101,6 @@ class TransnetShotdetection(
 
     def call(self, inputs, parameters):
 
-        output_data = ShotsData(ext="msg", data_dir=self.config.get("data_dir"))
         video_stream, err = (
             ffmpeg.input(inputs["video"].path)
             .output("pipe:", format="rawvideo", pix_fmt="rgb24", s="48x27")
