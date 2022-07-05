@@ -901,3 +901,176 @@ class BboxesData(PluginData):
         else:
             bboxes = self.bboxes
         return {"bboxes": bboxes}
+
+
+@dataclass(kw_only=True, frozen=True)
+class StringData(PluginData):
+    text: str = None
+
+
+@dataclass(kw_only=True, frozen=True)
+class ImageEmbedding(PluginData):
+    image_id: int = None
+    time: float = None
+    delta_time: float = field(default=None)
+    embedding: npt.NDArray = field(default_factory=np.ndarray)
+
+
+@dataclass(kw_only=True, frozen=True)
+class TextEmbedding(PluginData):
+    text_id: int = None
+    text: str = None
+    embedding: npt.NDArray = field(default_factory=np.ndarray)
+
+
+@DataManager.export("ImageEmbeddings", analyser_pb2.IMAGE_EMBEDDING_DATA)
+@dataclass(kw_only=True, frozen=True)
+class ImageEmbeddings(PluginData):
+    type: str = field(default="ImageEmbeddings")
+    ext: str = field(default="msg")
+    embeddings: List[ImageEmbedding] = field(default_factory=list)
+    
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[ImageEmbeddings::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(
+                    msgpack.packb(
+                        {
+                            "embeddings": [
+                                {
+                                    "image_id": embd.image_id,
+                                    "time": embd.time,
+                                    "delta_time": embd.delta_time,
+                                    "embedding": embd.embedding,
+                                }
+                                for embd in self.embeddings
+                            ]
+                        },
+                        default=m.encode,
+                    )
+                )
+        except Exception as e:
+            logging.error(f"ImageEmbeddings::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[ImageEmbeddings::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            embeddings = {"embeddings": [ImageEmbedding(**embd) for embd in data.get("embeddings")]}
+        return embeddings
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.IMAGE_EMBEDDING_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        if hasattr(self.embeddings, "tolist"):
+            embeddings = self.embeddings.tolist()
+        else:
+            embeddings = self.embeddings
+        return {"embeddings": embeddings}
+
+
+@DataManager.export("TextEmbeddings", analyser_pb2.TEXT_EMBEDDING_DATA)
+@dataclass(kw_only=True, frozen=True)
+class TextEmbeddings(PluginData):
+    type: str = field(default="TextEmbeddings")
+    ext: str = field(default="msg")
+    embeddings: List[TextEmbedding] = field(default_factory=list)
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.info(f"[TextEmbeddings::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(
+                    msgpack.packb(
+                        {
+                            "embeddings": [
+                                {
+                                    "text_id": embd.text_id,
+                                    "text": embd.text,
+                                    "embedding": embd.embedding,
+                                }
+                                for embd in self.embeddings
+                            ]
+                        },
+                        default=m.encode,
+                    )
+                )
+        except Exception as e:
+            logging.error(f"TextEmbeddings::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.info(f"[TextEmbeddings::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            embeddings = {"embeddings": [TextEmbedding(**embd) for embd in data.get("embeddings")]}
+        return embeddings
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.TEXT_EMBEDDING_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        if hasattr(self.embeddings, "tolist"):
+            embeddings = self.embeddings.tolist()
+        else:
+            embeddings = self.embeddings
+        return {"embeddings": embeddings}

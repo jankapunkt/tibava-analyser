@@ -22,3 +22,9 @@ plugins:
     params: {}
   - plugin: color_analyser
     params: {}
+  - plugin: clip_image_embedding
+    params: {}
+  - plugin: clip_text_embedding
+    params: {}
+  - plugin: clip_probs
+    params: {}

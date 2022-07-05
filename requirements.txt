@@ -9,3 +9,5 @@ PyYAML
 redis 
 scikit-image
 scikit-learn
+ftfy
+regex

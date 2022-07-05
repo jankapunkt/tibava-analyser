@@ -41,6 +41,8 @@ enum PluginDataType {
   HIST_DATA = 10;
   RGB_HIST_DATA = 11;
   ANNOTATION_DATA = 12;
+  IMAGE_EMBEDDING_DATA = 13;
+  TEXT_EMBEDDING_DATA = 14;
 }
 
 message PluginInfoData {
