@@ -53,7 +53,7 @@ class DataManager:
 
     @classmethod
     def _load_from_stream(cls, data_dir: str, data: Iterator[Any], save_meta=True) -> PluginData:
-        logging.info(f"data.py (load_from_stream): {data}")
+        logging.debug(f"data.py (load_from_stream): {data}")
         datastream = iter(data)
         firstpkg = next(datastream)
 
@@ -113,7 +113,7 @@ class PluginData:
         return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type, "ext": self.ext}
 
     def save(self, data_dir: str, save_blob: bool = True) -> bool:
-        logging.info("[PluginData::save]")
+        logging.debug("[PluginData::save]")
         try:
             if not self.save_blob(data_dir):
                 return False
@@ -132,7 +132,7 @@ class PluginData:
 
     @classmethod
     def load(cls, data_dir: str, id: str, load_blob: bool = True) -> PluginData:
-        logging.info(f"[PluginData::load] {id}")
+        logging.debug(f"[PluginData::load] {id}")
         if len(id) != 32:
             return None
 
@@ -233,7 +233,7 @@ class ImagesData(PluginData):
     type: str = field(default="ImagesData")
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ImagesData::save_blob]")
+        logging.debug(f"[ImagesData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 # TODO use dump
@@ -254,7 +254,7 @@ class ImagesData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ImagesData::load_blob_args]")
+        logging.debug(f"[ImagesData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             packdata = msgpack.unpackb(f.read())
             dictdata = {
@@ -348,7 +348,7 @@ class ShotsData(PluginData):
     shots: List[Shot] = field(default_factory=list)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ShotsData::save_blob]")
+        logging.debug(f"[ShotsData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 # TODO use dump
@@ -360,7 +360,7 @@ class ShotsData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ShotsData::load_blob_args]")
+        logging.debug(f"[ShotsData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read())
             data = {"shots": [Shot(start=x["start"], end=x["end"]) for x in data["shots"]]}
@@ -455,7 +455,7 @@ class HistData(PluginData):
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ScalarData::save_blob]")
+        logging.debug(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -470,7 +470,7 @@ class HistData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ScalarData::load_blob_args]")
+        logging.debug(f"[ScalarData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
         return data
@@ -519,7 +519,7 @@ class AnnotationData(PluginData):
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ScalarData::save_blob]")
+        logging.debug(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(msgpack.packb({"hist": self.hist, "time": self.time}, default=m.encode))
@@ -530,7 +530,7 @@ class AnnotationData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ScalarData::load_blob_args]")
+        logging.debug(f"[ScalarData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
         return data
@@ -579,7 +579,7 @@ class ScalarData(PluginData):
     name: str = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ScalarData::save_blob]")
+        logging.debug(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -592,7 +592,7 @@ class ScalarData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ScalarData::load_blob_args]")
+        logging.debug(f"[ScalarData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
         return data
@@ -643,7 +643,7 @@ class RGBData(PluginData):
     delta_time: float = field(default=None)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[RGBData::save_blob]")
+        logging.debug(f"[RGBData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -658,7 +658,7 @@ class RGBData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[RGBData::load_blob_args]")
+        logging.debug(f"[RGBData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
         return data
@@ -713,7 +713,7 @@ class ListData(PluginData):
             object.__setattr__(self, "index", list(range(len(self.data))))
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ListData::save_blob]")
+        logging.debug(f"[ListData::save_blob]")
         try:
             for d in self.data:
                 d.save(data_dir)
@@ -732,7 +732,7 @@ class ListData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ListData::load_blob_args]")
+        logging.debug(f"[ListData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data_decoded = msgpack.unpackb(f.read(), object_hook=m.decode)
 
@@ -832,7 +832,7 @@ class BboxesData(PluginData):
     bboxes: List[BboxData] = field(default_factory=list)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[BboxesData::save_blob]")
+        logging.debug(f"[BboxesData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -860,7 +860,7 @@ class BboxesData(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[BboxesData::load_blob_args]")
+        logging.debug(f"[BboxesData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
             bboxes = {"bboxes": [BboxData(**bbox) for bbox in data.get("bboxes")]}
@@ -929,9 +929,9 @@ class ImageEmbeddings(PluginData):
     type: str = field(default="ImageEmbeddings")
     ext: str = field(default="msg")
     embeddings: List[ImageEmbedding] = field(default_factory=list)
-    
+
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[ImageEmbeddings::save_blob]")
+        logging.debug(f"[ImageEmbeddings::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -957,7 +957,7 @@ class ImageEmbeddings(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[ImageEmbeddings::load_blob_args]")
+        logging.debug(f"[ImageEmbeddings::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
             embeddings = {"embeddings": [ImageEmbedding(**embd) for embd in data.get("embeddings")]}
@@ -1008,7 +1008,7 @@ class TextEmbeddings(PluginData):
     embeddings: List[TextEmbedding] = field(default_factory=list)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.info(f"[TextEmbeddings::save_blob]")
+        logging.debug(f"[TextEmbeddings::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
@@ -1033,7 +1033,7 @@ class TextEmbeddings(PluginData):
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.info(f"[TextEmbeddings::load_blob_args]")
+        logging.debug(f"[TextEmbeddings::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
             embeddings = {"embeddings": [TextEmbedding(**embd) for embd in data.get("embeddings")]}

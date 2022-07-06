@@ -1,19 +1,34 @@
 import gzip
+import os
 import html
 import ftfy
 import regex as re
 import numpy as np
 
+import scipy
 from scipy import spatial
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.data import VideoData, StringData, ScalarData, AnnotationData, ImageEmbedding, TextEmbedding, ImageEmbeddings, TextEmbeddings, generate_id
+from analyser.data import (
+    VideoData,
+    StringData,
+    ScalarData,
+    AnnotationData,
+    ImageEmbedding,
+    TextEmbedding,
+    ImageEmbeddings,
+    TextEmbeddings,
+    generate_id,
+)
 from analyser.plugins import Plugin
 from analyser.utils import InferenceServer, Backend, Device, VideoDecoder
-from analyser.utils.imageops import image_resize, image_crop
+from analyser.utils.imageops import image_resize, image_crop, image_pad
 from PIL import Image
 from functools import lru_cache
 from cv2 import cvtColor, COLOR_BGR2RGB
-from typing import  Union, List
+from typing import Union, List
+
+from sklearn.preprocessing import normalize
+import imageio
 
 
 default_config = {
@@ -28,16 +43,22 @@ default_config = {
 }
 
 
-img_embd_parameters = {"fps": 1,
-                       "resize_size": [500, 500],
-                       "crop_size": [224, 224],
-                       }
+img_embd_parameters = {
+    "fps": 2,
+    "crop_size": [224, 224],
+}
 
-text_embd_parameters = {"search_term": "",}
+text_embd_parameters = {
+    "search_term": "",
+}
 
-prob_parameters = {"search_term": "",}
+prob_parameters = {
+    "search_term": "",
+}
 
-anno_parameters = {"threshold": 0.5,}
+anno_parameters = {
+    "threshold": 0.5,
+}
 
 img_embd_requires = {
     "video": VideoData,
@@ -82,13 +103,13 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
@@ -113,42 +134,50 @@ def basic_clean(text):
 
 
 def whitespace_clean(text):
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
     text = text.strip()
     return text
 
 
 class SimpleTokenizer(object):
-    def __init__(self, bpe_path: str = "/models/clip/bpe_simple_vocab_16e6.txt.gz",context_length: int = 77, truncate: bool = False):
+    def __init__(
+        self,
+        bpe_path: str = "/models/clip/bpe_simple_vocab_16e6.txt.gz",
+        context_length: int = 77,
+        truncate: bool = False,
+    ):
         self.byte_encoder = bytes_to_unicode()
         self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
-        merges = gzip.open(bpe_path).read().decode("utf-8").split('\n')
-        merges = merges[1:49152-256-2+1]
+        merges = gzip.open(bpe_path).read().decode("utf-8").split("\n")
+        merges = merges[1 : 49152 - 256 - 2 + 1]
         merges = [tuple(merge.split()) for merge in merges]
         vocab = list(bytes_to_unicode().values())
-        vocab = vocab + [v+'</w>' for v in vocab]
+        vocab = vocab + [v + "</w>" for v in vocab]
         for merge in merges:
-            vocab.append(''.join(merge))
-        vocab.extend(['<|startoftext|>', '<|endoftext|>'])
+            vocab.append("".join(merge))
+        vocab.extend(["<|startoftext|>", "<|endoftext|>"])
         self.encoder = dict(zip(vocab, range(len(vocab))))
         self.decoder = {v: k for k, v in self.encoder.items()}
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
-        self.cache = {'<|startoftext|>': '<|startoftext|>', '<|endoftext|>': '<|endoftext|>'}
-        self.pat = re.compile(r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""", re.IGNORECASE)
+        self.cache = {"<|startoftext|>": "<|startoftext|>", "<|endoftext|>": "<|endoftext|>"}
+        self.pat = re.compile(
+            r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""",
+            re.IGNORECASE,
+        )
         self.context_length = context_length
         self.truncate = truncate
 
     def bpe(self, token):
         if token in self.cache:
             return self.cache[token]
-        word = tuple(token[:-1]) + ( token[-1] + '</w>',)
+        word = tuple(token[:-1]) + (token[-1] + "</w>",)
         pairs = get_pairs(word)
 
         if not pairs:
-            return token+'</w>'
+            return token + "</w>"
 
         while True:
-            bigram = min(pairs, key = lambda pair: self.bpe_ranks.get(pair, float('inf')))
+            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf")))
             if bigram not in self.bpe_ranks:
                 break
             first, second = bigram
@@ -163,8 +192,8 @@ class SimpleTokenizer(object):
                     new_word.extend(word[i:])
                     break
 
-                if word[i] == first and i < len(word)-1 and word[i+1] == second:
-                    new_word.append(first+second)
+                if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
+                    new_word.append(first + second)
                     i += 2
                 else:
                     new_word.append(word[i])
@@ -175,7 +204,7 @@ class SimpleTokenizer(object):
                 break
             else:
                 pairs = get_pairs(word)
-        word = ' '.join(word)
+        word = " ".join(word)
         self.cache[token] = word
         return word
 
@@ -183,19 +212,19 @@ class SimpleTokenizer(object):
         bpe_tokens = []
         text = whitespace_clean(basic_clean(text)).lower()
         for token in re.findall(self.pat, text):
-            token = ''.join(self.byte_encoder[b] for b in token.encode('utf-8'))
-            bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(' '))
+            token = "".join(self.byte_encoder[b] for b in token.encode("utf-8"))
+            bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" "))
         return bpe_tokens
 
     def decode(self, tokens):
-        text = ''.join([self.decoder[token] for token in tokens])
-        text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors="replace").replace('</w>', ' ')
+        text = "".join([self.decoder[token] for token in tokens])
+        text = bytearray([self.byte_decoder[c] for c in text]).decode("utf-8", errors="replace").replace("</w>", " ")
         return text
 
     def tokenize(self, texts: Union[str, List[str]]):
         if isinstance(texts, str):
             texts = [texts]
-        
+
         sot_token = self.encoder["<|startoftext|>"]
         eot_token = self.encoder["<|endoftext|>"]
         all_tokens = [[sot_token] + self.encode(text) + [eot_token] for text in texts]
@@ -205,18 +234,23 @@ class SimpleTokenizer(object):
         for i, tokens in enumerate(all_tokens):
             if len(tokens) > self.context_length:
                 if self.truncate:
-                    tokens = tokens[:self.context_length]
+                    tokens = tokens[: self.context_length]
                     tokens[-1] = eot_token
                 else:
                     raise RuntimeError(f"Input {texts[i]} is too long for context length {self.context_length}")
-            result[i, :len(tokens)] = np.array(tokens, dtype=int)
+            result[i, : len(tokens)] = np.array(tokens, dtype=int)
 
         return result
 
 
 @AnalyserPluginManager.export("clip_image_embedding")
 class ClipImageEmbedding(
-    Plugin, config=default_config, parameters=img_embd_parameters, version="0.1", requires=img_embd_requires, provides=img_embd_provides
+    Plugin,
+    config=default_config,
+    parameters=img_embd_parameters,
+    version="0.1",
+    requires=img_embd_requires,
+    provides=img_embd_provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)
@@ -227,29 +261,45 @@ class ClipImageEmbedding(
         self.model_file = self.config["image_model_file"]
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, backend=Backend.PYTORCH
+            model_file=self.model_file,
+            model_name=self.model_name,
+            host=self.host,
+            port=self.port,
+            backend=Backend.PYTORCH,
         )
-    
-    def preprocess(self, img, resize_size, crop_size):
-        converted = image_crop(image_resize(img, size=resize_size), size=crop_size)
-        return converted
 
+    def preprocess(self, img, resize_size, crop_size):
+        converted = image_resize(image_pad(img), size=crop_size)
+        return converted
 
     def call(self, inputs, parameters):
         preds = []
         video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
-        for frame in video_decoder:
+        for i, frame in enumerate(video_decoder):
             img_id = generate_id()
             img = frame.get("frame")
             img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
+            imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
             result = self.server({"data": img}, ["output"])
-            preds.append(ImageEmbedding(embedding=result["output"], image_id=img_id, time=frame.get("time"), delta_time=1 / parameters.get("fps")))
+            preds.append(
+                ImageEmbedding(
+                    embedding=normalize(result["output"]),
+                    image_id=img_id,
+                    time=frame.get("time"),
+                    delta_time=1 / parameters.get("fps"),
+                )
+            )
         return {"embeddings": ImageEmbeddings(embeddings=preds)}
 
 
 @AnalyserPluginManager.export("clip_text_embedding")
 class ClipTextEmbedding(
-    Plugin, config=default_config, parameters=text_embd_parameters, version="0.1", requires=text_embd_requires, provides=text_embd_provides
+    Plugin,
+    config=default_config,
+    parameters=text_embd_parameters,
+    version="0.1",
+    requires=text_embd_requires,
+    provides=text_embd_provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)
@@ -260,35 +310,47 @@ class ClipTextEmbedding(
         self.model_file = self.config["text_model_file"]
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, backend=Backend.PYTORCH
+            model_file=self.model_file,
+            model_name=self.model_name,
+            host=self.host,
+            port=self.port,
+            backend=Backend.PYTORCH,
         )
-    
+
     def preprocess(self, text):
         # tokenize text
         tokenizer = SimpleTokenizer()
         tokenized = tokenizer.tokenize(text)
         return tokenized
 
-
     def call(self, inputs, parameters):
         text_id = generate_id()
         text = self.preprocess(parameters["search_term"])
         result = self.server({"data": text}, ["o"])
-        return {"embeddings": TextEmbeddings(embeddings=[TextEmbedding(text_id=text_id, text=parameters["search_term"], embedding=result['o'][0])])}
+        return {
+            "embeddings": TextEmbeddings(
+                embeddings=[TextEmbedding(text_id=text_id, text=parameters["search_term"], embedding=result["o"][0])]
+            )
+        }
 
 
 @AnalyserPluginManager.export("clip_probs")
 class ClipProbs(
-    Plugin, config=default_config, parameters=prob_parameters, version="0.1", requires=prob_requires, provides=prob_provides
+    Plugin,
+    config=default_config,
+    parameters=prob_parameters,
+    version="0.1",
+    requires=prob_requires,
+    provides=prob_provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)
         self.host = self.config["host"]
         self.port = self.config["port"]
-        #self.image_model_name = self.config["image_model_name"]
+        # self.image_model_name = self.config["image_model_name"]
         self.text_model_name = self.config["text_model_name"]
         self.model_device = self.config["model_device"]
-        #self.image_model_file = self.config["image_model_file"]
+        # self.image_model_file = self.config["image_model_file"]
         self.text_model_file = self.config["text_model_file"]
         """
         self.image_server = InferenceServer(
@@ -296,15 +358,18 @@ class ClipProbs(
         )
         """
         self.text_server = InferenceServer(
-            model_file=self.text_model_file, model_name=self.text_model_name, host=self.host, port=self.port, backend=Backend.PYTORCH
+            model_file=self.text_model_file,
+            model_name=self.text_model_name,
+            host=self.host,
+            port=self.port,
+            backend=Backend.PYTORCH,
         )
-    
+
     def preprocess(self, text):
         # tokenize text
         tokenizer = SimpleTokenizer()
         tokenized = tokenizer.tokenize(text)
         return tokenized
-
 
     def call(self, inputs, parameters):
         probs = []
@@ -313,21 +378,46 @@ class ClipProbs(
         embeddings = inputs["embeddings"]
         text = self.preprocess(parameters["search_term"])
         result = self.text_server({"data": text}, ["o"])
-        text_embedding = result['o'][0]
+        print(f'first {result["o"].shape}', flush=True)
+        text_embedding = normalize(result["o"])
+
+        neg_text = self.preprocess("Not " + parameters["search_term"])
+        neg_result = self.text_server({"data": neg_text}, ["o"])
+        print(f'second {result["o"].shape}', flush=True)
+        neg_text_embedding = normalize(neg_result["o"])
+
+        text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
         for embedding in embeddings.embeddings:
-            sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
-            probs.append(sim)
+            print("bar", flush=True)
+            print(text_embedding.shape, flush=True)
+            print(embedding.embedding.shape, flush=True)
+            result = 100 * text_embedding @ embedding.embedding.T
+            print(result.shape, flush=True)
+            print(result, flush=True)
+            prob = scipy.special.softmax(result, axis=0)
+            print(prob.shape, flush=True)
+            print(prob, flush=True)
+            # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
+            probs.append(prob[0, 0])
             time.append(embedding.time)
             delta_time = embedding.delta_time
-        return {"probs":ScalarData(y=np.array(probs), time=time, delta_time=delta_time, name="image_text_similarities")}
+        return {
+            "probs": ScalarData(y=np.array(probs), time=time, delta_time=delta_time, name="image_text_similarities")
+        }
 
 
 @AnalyserPluginManager.export("clip_annotation")
 class ImageTextAnnotation(
-    Plugin, config=default_config, parameters=anno_parameters, version="0.1", requires=anno_requires, provides=anno_provides
+    Plugin,
+    config=default_config,
+    parameters=anno_parameters,
+    version="0.1",
+    requires=anno_requires,
+    provides=anno_provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)
+
     def call(self, inputs, parameters):
         # TODO
         return {}

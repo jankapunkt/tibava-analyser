@@ -75,7 +75,11 @@ def run_plugin(args):
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         traceback.print_exception(
-            exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout,
+            exc_type,
+            exc_value,
+            exc_traceback,
+            limit=2,
+            file=sys.stdout,
         )
 
 
@@ -127,8 +131,6 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
         return analyser_pb2.UploadDataResponse(success=False)
 
     def run_plugin(self, request, context):
-
-        logging.info("[Commune] run")
 
         if request.plugin not in self.managers["plugin_manager"].plugins():
             return analyser_pb2.RunPluginResponse(success=False)
@@ -214,7 +216,8 @@ class Server:
             ],
         )
         analyser_pb2_grpc.add_AnalyserServicer_to_server(
-            self.commune, self.server,
+            self.commune,
+            self.server,
         )
 
         grpc_config = config.get("grpc", {})

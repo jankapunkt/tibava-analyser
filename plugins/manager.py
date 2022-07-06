@@ -88,9 +88,9 @@ class AnalyserPluginManager(PluginManager):
                 plugin_to_run = plugin_candidate["plugin"]
         if plugin_to_run is None:
             return None
-        logging.info(f"manager.py: {plugin_to_run}")
-        logging.info(f"manager.py: {inputs}")
-        logging.info(f"manager.py: {parameters}")
+        logging.debug(f"manager.py: {plugin_to_run}")
+        logging.debug(f"manager.py: {inputs}")
+        logging.debug(f"manager.py: {parameters}")
         results = plugin_to_run(inputs, parameters)
         return results
 
