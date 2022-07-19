@@ -21,7 +21,7 @@ default_config = {
     "model_file": "/models/insightface_detector/scrfd_10g_bnkps.onnx",
 }
 
-default_parameters = {"fps": 5.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
 
 requires = {
     "video": VideoData,
@@ -322,10 +322,6 @@ class InsightfaceDetector(
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
+                exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout,
             )
         return {}
