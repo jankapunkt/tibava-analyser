@@ -50,7 +50,6 @@ class ShotAnnotator(
 
         for shot in inputs["shots"].shots:
             mean_class_probs = self.mean_shot_probabilities(start=shot.start, end=shot.end, probs=inputs["probs"])
-            print(mean_class_probs)
 
             max_mean_class_prob = parameters.get("threshold")
             max_label = None
