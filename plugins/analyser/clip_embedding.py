@@ -87,9 +87,9 @@ prob_provides = {
     "probs": ScalarData,
 }
 
-anno_provides = {
-    "annotation": AnnotationData,
-}
+# anno_provides = {
+#     "annotation": AnnotationData,
+# }
 
 
 @lru_cache()
@@ -106,10 +106,10 @@ def bytes_to_unicode():
     bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
-    for b in range(2**8):
+    for b in range(2 ** 8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8 + n)
+            cs.append(2 ** 8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
@@ -406,18 +406,18 @@ class ClipProbs(
         }
 
 
-@AnalyserPluginManager.export("clip_annotation")
-class ImageTextAnnotation(
-    Plugin,
-    config=default_config,
-    parameters=anno_parameters,
-    version="0.1",
-    requires=anno_requires,
-    provides=anno_provides,
-):
-    def __init__(self, config=None):
-        super().__init__(config)
+# @AnalyserPluginManager.export("clip_annotation")
+# class ImageTextAnnotation(
+#     Plugin,
+#     config=default_config,
+#     parameters=anno_parameters,
+#     version="0.1",
+#     requires=anno_requires,
+#     provides=anno_provides,
+# ):
+#     def __init__(self, config=None):
+#         super().__init__(config)
 
-    def call(self, inputs, parameters):
-        # TODO
-        return {}
+#     def call(self, inputs, parameters):
+#         # TODO
+#         return {}
