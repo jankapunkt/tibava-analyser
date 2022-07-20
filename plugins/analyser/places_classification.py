@@ -117,7 +117,7 @@ class PlacesClassifier(
 
                 # store places365 probabilities
                 prob = result["prob"]
-                probs["places365"].append(prob.tolist())
+                probs["places365"].append(np.squeeze(np.asarray(prob)))
 
                 # store places16 probabilities
                 probs["places16"].append(np.matmul(prob, self.hierarchy["places16"])[0])

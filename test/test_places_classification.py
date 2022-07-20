@@ -27,7 +27,7 @@ def main():
 
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
-    data_id = client.upload_data(args.input_path)
+    data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
     """
@@ -99,7 +99,7 @@ def main():
     """
     if args.shots and shots:
         job_id = client.run_plugin(
-            "shot_annotator", [{"id": shots_id, "name": "shots"}, {"id": places3_id, "name": "probs"}], []
+            "shot_annotator", [{"id": shots_id, "name": "shots"}, {"id": places365_id, "name": "probs"}], []
         )
         logging.info(f"Job shot_annotator started: {job_id}")
 
