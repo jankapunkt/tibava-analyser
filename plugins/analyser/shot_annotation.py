@@ -58,8 +58,9 @@ class ShotAnnotator(
                     max_mean_class_prob = class_prob
                     max_label = label
 
-            annotations.append(
-                Annotation(start=shot.start, end=shot.end, labels=[max_label])
-            )  # Maybe store max_mean_class_prob as well?
+            if max_label:
+                annotations.append(
+                    Annotation(start=shot.start, end=shot.end, labels=[max_label])
+                )  # Maybe store max_mean_class_prob as well?
 
         return {"annotations": AnnotationData(annotations=annotations)}
