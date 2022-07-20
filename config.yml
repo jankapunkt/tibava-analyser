@@ -30,3 +30,5 @@ plugins:
     params: {}
   - plugin: places_classifier
     params: {}
+  - plugin: shot_annotator
+    params: {}

@@ -11,6 +11,7 @@ def parse_args():
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("--input_path", default="/media/test.mp4", help="path to input video .mp4")
     parser.add_argument("--output_path", default="/media", help="path to output folder")
+    parser.add_argument("--shots", action="store_true", help="aggregate labels by detected shots")
     args = parser.parse_args()
     return args
 
@@ -29,6 +30,29 @@ def main():
     data_id = client.upload_data(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
+    """
+    Run shot detection if specified
+    """
+    shots_id = None
+    shots = None
+    if args.shots:
+        job_id = client.run_plugin("transnet_shotdetection", [{"id": data_id, "name": "video"}], [])
+        logging.info(f"Job transnet_shotdetection started: {job_id}")
+
+        result = client.get_plugin_results(job_id=job_id)
+        if result is None:
+            logging.error("Job is crashing")
+            return
+
+        for output in result.outputs:
+            if output.name == "shots":
+                shots_id = output.id
+
+        shots = client.download_data(shots_id, args.output_path)
+
+    """
+    Run place classification
+    """
     job_id = client.run_plugin("places_classifier", [{"id": data_id, "name": "video"}], [])
     logging.info(f"Job places_classifier started: {job_id}")
 
@@ -69,6 +93,30 @@ def main():
     logging.info("#### Places3 results")
     logging.info(places3_id)
     logging.info(client.download_data(places3_id, args.output_path))
+
+    """
+    Aggregate places label by shot
+    """
+    if args.shots and shots:
+        job_id = client.run_plugin(
+            "shot_annotator", [{"id": shots_id, "name": "shots"}, {"id": places3_id, "name": "probs"}], []
+        )
+        logging.info(f"Job shot_annotator started: {job_id}")
+
+        result = client.get_plugin_results(job_id=job_id)
+        if result is None:
+            logging.error("Job is crashing")
+            return
+        logging.info(result)
+
+        annotation_id = None
+        for output in result.outputs:
+            if output.name == "annotations":
+                annotation_id = output.id
+
+        logging.info("#### Places3 annotations by shot")
+        logging.info(annotation_id)
+        logging.info(client.download_data(annotation_id, args.output_path))
 
     return 0
 
