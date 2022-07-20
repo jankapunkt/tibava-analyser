@@ -508,31 +508,49 @@ class HistData(PluginData):
         return {"hist": self.hist.tolist(), "time": self.time, "delta_time": self.delta_time}
 
 
+@dataclass(kw_only=True, frozen=True)
+class Annotation:
+    start: float
+    end: float
+    labels: list
+
+
 @DataManager.export("AnnotationData", analyser_pb2.ANNOTATION_DATA)
 @dataclass(kw_only=True, frozen=True)
 class AnnotationData(PluginData):
     type: str = field(default="AnnotationData")
     ext: str = field(default="msg")
-    hist: npt.NDArray = field()
-    time: List[float] = field(default_factory=list)
-    # delta_time: float = field(default=None)
-    name: str = field(default=None)
+    annotations: List[Annotation] = field(default_factory=list)
 
     def save_blob(self, data_dir=None, path=None):
-        logging.debug(f"[ScalarData::save_blob]")
+        logging.debug(f"[AnnotationData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
-                f.write(msgpack.packb({"hist": self.hist, "time": self.time}, default=m.encode))
+                # TODO use dump
+                f.write(
+                    msgpack.packb(
+                        {
+                            "annotations": [
+                                {"start": x.start, "end": x.end, "labels": x.labels} for x in self.annotations
+                            ]
+                        }
+                    )
+                )
         except Exception as e:
-            logging.error(f"ScalarData::save_blob {e}")
+            logging.error(f"AnnotationData::save_blob {e}")
             return False
         return True
 
     @classmethod
     def load_blob_args(cls, data: dict) -> dict:
-        logging.debug(f"[ScalarData::load_blob_args]")
+        logging.debug(f"[AnnotationData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
-            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            data = msgpack.unpackb(f.read())
+            data = {
+                "annotations": [
+                    Annotation(start=x["start"], end=x["end"], labels=x["labels"]) for x in data["annotations"]
+                ]
+            }
         return data
 
     @classmethod
@@ -563,9 +581,6 @@ class AnnotationData(PluginData):
                 if not chunk:
                     break
                 yield {"type": analyser_pb2.ANNOTATION_DATA, "data_encoded": chunk, "ext": self.ext}
-
-    def dumps_to_web(self):
-        return {"hist": self.hist.tolist(), "time": self.time}
 
 
 @DataManager.export("ScalarData", analyser_pb2.SCALAR_DATA)
@@ -1015,11 +1030,7 @@ class TextEmbeddings(PluginData):
                     msgpack.packb(
                         {
                             "embeddings": [
-                                {
-                                    "text_id": embd.text_id,
-                                    "text": embd.text,
-                                    "embedding": embd.embedding,
-                                }
+                                {"text_id": embd.text_id, "text": embd.text, "embedding": embd.embedding,}
                                 for embd in self.embeddings
                             ]
                         },
