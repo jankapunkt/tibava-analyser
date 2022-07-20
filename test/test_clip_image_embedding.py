@@ -26,7 +26,7 @@ def main():
 
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
-    data_id = client.upload_data(args.input_path)
+    data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
     job_id = client.run_plugin("clip_image_embedding", [{"id": data_id, "name": "video"}], [])
@@ -49,4 +49,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

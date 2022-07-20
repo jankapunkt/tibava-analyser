@@ -4,6 +4,7 @@ import re
 import logging
 import uuid
 import json
+import tempfile
 import traceback
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -39,7 +40,9 @@ class DataManager:
     _data_name_lut = {}
     _data_enum_lut = {}
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir=None):
+        if not data_dir:
+            data_dir = tempfile.mkdtemp()
         self.data_dir = data_dir
 
     @classmethod

@@ -1,16 +1,17 @@
+import sys
 import argparse
 import logging
-import sys
 
 from analyser.client import AnalyserClient
+from analyser.data import ShotsData, Shot
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
-    parser.add_argument("--input_path", default="/media/test.mp4", help="path to input video .mp4")
     parser.add_argument("--output_path", default="/media", help="path to output folder")
+
     args = parser.parse_args()
     return args
 
@@ -26,23 +27,12 @@ def main():
 
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
-    data_id = client.upload_file(args.input_path)
+    data_id = client.upload_data(ShotsData(shots=[Shot(start=0, end=10)]))
     logging.info(f"Upload done: {data_id}")
 
-    job_id = client.run_plugin("insightface_detector", [{"id": data_id, "name": "video"}], [])
-    logging.info(f"Job insightface_detector started: {job_id}")
+    logging.info(f"Downloading: {data_id}")
+    logging.info(client.download_data(data_id, args.output_path))
 
-    result = client.get_plugin_results(job_id=job_id)
-    if result is None:
-        logging.error("Job is crashing")
-        return
-
-    bboxes_id = None
-    for output in result.outputs:
-        if output.name == "bboxes":
-            bboxes_id = output.id
-
-    logging.info(client.download_data(bboxes_id, args.output_path))
     return 0
 
 

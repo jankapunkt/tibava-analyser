@@ -53,14 +53,37 @@ class AnalyserClient:
 
         return result
 
-    def upload_data(self, path):
+    def upload_data(self, data):
+        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
+
+        def generate_requests(data, chunk_size=128 * 1024):
+
+            data_manager = DataManager()
+            print(data_manager.data_dir)
+            data_manager.save(data)
+            data = data_manager.load(data.id)
+            """Lazy function (generator) to read a file piece by piece.
+            Default chunk size: 1k"""
+            for x in data_manager.dump_to_stream(data):
+                yield analyser_pb2.UploadDataRequest(type=x["type"], data_encoded=x["data_encoded"])
+
+        response = stub.upload_data(generate_requests(data))
+
+        if response.success:
+            return response.id
+
+        logging.error("Error while copying data ...")
+        return None
+
+    def upload_file(self, path):
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
-        def generateRequests(file_object, chunk_size=128 * 1024):
+        def generate_requests(file_object, chunk_size=128 * 1024):
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
             with open(file_object, "rb") as bytestream:
@@ -70,7 +93,7 @@ class AnalyserClient:
                         break
                     yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
 
-        response = stub.upload_data(generateRequests(path))
+        response = stub.upload_data(generate_requests(path))
 
         if response.success:
             return response.id

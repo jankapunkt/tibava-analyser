@@ -26,7 +26,7 @@ def main():
 
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
-    data_id = client.upload_data(args.input_path)
+    data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
     # insightface_detection

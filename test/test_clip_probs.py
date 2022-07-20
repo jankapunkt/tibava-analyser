@@ -26,7 +26,7 @@ def main():
 
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
-    data_id = client.upload_data(args.input_path)
+    data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
     # generate image embeddings
@@ -45,7 +45,9 @@ def main():
             break
     logging.info(f"finished job with resulting embedding id: {embd_id}")
     # calculate similarities between image embeddings and search term
-    job_id = client.run_plugin("clip_probs", [{"id": embd_id, "name": "embeddings"}], [{"name": "search_term", "value": "This is a test."}])
+    job_id = client.run_plugin(
+        "clip_probs", [{"id": embd_id, "name": "embeddings"}], [{"name": "search_term", "value": "This is a test."}]
+    )
     logging.info(f"Job clip_probs started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
@@ -64,4 +66,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

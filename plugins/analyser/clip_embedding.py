@@ -319,8 +319,8 @@ class ClipTextEmbedding(
 
     def preprocess(self, text):
         # tokenize text
-        tokenizer = SimpleTokenizer()
-        tokenized = tokenizer.tokenize(text)
+
+        tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
     def call(self, inputs, parameters):
@@ -378,25 +378,25 @@ class ClipProbs(
         embeddings = inputs["embeddings"]
         text = self.preprocess(parameters["search_term"])
         result = self.text_server({"data": text}, ["o"])
-        print(f'first {result["o"].shape}', flush=True)
+        
         text_embedding = normalize(result["o"])
 
         neg_text = self.preprocess("Not " + parameters["search_term"])
         neg_result = self.text_server({"data": neg_text}, ["o"])
-        print(f'second {result["o"].shape}', flush=True)
+        
         neg_text_embedding = normalize(neg_result["o"])
 
         text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
         for embedding in embeddings.embeddings:
-            print("bar", flush=True)
-            print(text_embedding.shape, flush=True)
-            print(embedding.embedding.shape, flush=True)
+            
+            
+            
             result = 100 * text_embedding @ embedding.embedding.T
-            print(result.shape, flush=True)
-            print(result, flush=True)
+            
+            
             prob = scipy.special.softmax(result, axis=0)
-            print(prob.shape, flush=True)
-            print(prob, flush=True)
+            
+            
             # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
             probs.append(prob[0, 0])
             time.append(embedding.time)
