@@ -57,7 +57,8 @@ class InsightfaceFacesize(
         return {
             "probs": ListData(
                 data=[
-                    ScalarData(y=y, time=list(facesizes_dict.keys()), delta_time=delta_time) for y in zip(*predictions)
+                    ScalarData(y=np.asarray(y), time=list(facesizes_dict.keys()), delta_time=delta_time)
+                    for y in zip(*predictions)
                 ],
                 index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
             ),

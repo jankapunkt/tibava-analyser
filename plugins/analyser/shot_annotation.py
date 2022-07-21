@@ -41,7 +41,10 @@ class ShotAnnotator(
                 if t > start and t < end:
                     idx.append(i)
 
-            mean_class_probs[label] = np.mean(class_probs.y[idx])
+            if len(idx) > 0:
+                mean_class_probs[label] = np.mean(class_probs.y[idx])
+            else:
+                mean_class_probs[label] = None
 
         return mean_class_probs
 
@@ -54,6 +57,9 @@ class ShotAnnotator(
             max_mean_class_prob = parameters.get("threshold")
             max_label = None
             for label, class_prob in mean_class_probs.items():
+                if not class_prob:
+                    continue
+
                 if class_prob > max_mean_class_prob:
                     max_mean_class_prob = class_prob
                     max_label = label

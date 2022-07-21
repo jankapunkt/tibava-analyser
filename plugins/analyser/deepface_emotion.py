@@ -126,7 +126,8 @@ class DeepfaceEmotion(
 
         probs = ListData(
             data=[
-                ScalarData(y=y, time=list(predictions_dict.keys()), delta_time=delta_time) for y in zip(*predictions)
+                ScalarData(y=np.asarray(y), time=list(predictions_dict.keys()), delta_time=delta_time)
+                for y in zip(*predictions)
             ],
             index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
         )
