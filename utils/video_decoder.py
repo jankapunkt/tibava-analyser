@@ -2,6 +2,8 @@ import imageio
 
 
 class VideoDecoder:
+    # TODO: test.mp4 with vertical aspect ratio is loaded with horizontal aspect ratio
+    # TODO: it seems that SAR and DAR information provided by ffprobe is not used by imageio
     def __init__(self, path, max_dimension=None, fps=None):
         self._path = path
         self._max_dimension = max_dimension
