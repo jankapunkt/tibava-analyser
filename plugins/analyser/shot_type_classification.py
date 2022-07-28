@@ -42,7 +42,7 @@ class ShotTypeClassifier(
         self.image_resolution = self.config["image_resolution"]
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, device=self.model_device
         )
 
     def call(self, inputs, parameters):

@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import Dict, List, Any, Type
+import traceback
+import sys
 from numpy import require
 
 import numpy.typing as npt
@@ -107,4 +109,21 @@ class Plugin:
         input_parameters = self._parameters
         if parameters is not None:
             input_parameters.update(parameters)
-        return self.call(inputs, input_parameters)
+        logging.info(f'[Plugin] {self._name} starting')
+        try:
+            result = self.call(inputs, input_parameters)
+
+        except Exception as e:
+            logging.error(f"[Plugin] {self._name} {repr(e)}")
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+
+            traceback.print_exception(
+                exc_type,
+                exc_value,
+                exc_traceback,
+                limit=2,
+                file=sys.stdout,
+            )
+            return {}
+        logging.info(f'[Plugin] {self._name} done')
+        return result

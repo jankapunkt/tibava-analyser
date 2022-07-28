@@ -71,7 +71,7 @@ def run_plugin(args):
 
         return result_map
     except Exception as e:
-        logging.error(f"Indexer: {repr(e)}")
+        logging.error(f"Analyser: {repr(e)}")
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         traceback.print_exception(
@@ -103,10 +103,10 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def __init__(self, config):
         self.config = config
         self.managers = init_plugins(config)
-        self.process_pool = futures.ProcessPoolExecutor(max_workers=1, initializer=init_process, initargs=(config,))
+        self.process_pool = futures.ProcessPoolExecutor(max_workers=self.config.get('num_worker',1), initializer=init_process, initargs=(config,))
         self.futures = []
 
-        # self.max_results = config.get("indexer", {}).get("max_results", 100)
+        # self.max_results = config.get("Analyser", {}).get("max_results", 100)
 
     def list_plugins(self, request, context):
         reply = analyser_pb2.ListPluginsReply()
@@ -172,7 +172,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
                     output.id = k["id"]
 
             except Exception as e:
-                logging.error(f"Indexer: {repr(e)}")
+                logging.error(f"Analyser: {repr(e)}")
                 logging.error(traceback.format_exc())
                 logging.error(traceback.print_stack())
 

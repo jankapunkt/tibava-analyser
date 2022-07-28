@@ -266,6 +266,7 @@ class ClipImageEmbedding(
             host=self.host,
             port=self.port,
             backend=Backend.PYTORCH,
+            device=self.model_device
         )
 
     def preprocess(self, img, resize_size, crop_size):
@@ -308,6 +309,8 @@ class ClipTextEmbedding(
         self.model_name = self.config["text_model_name"]
         self.model_device = self.config["model_device"]
         self.model_file = self.config["text_model_file"]
+        self.bpe_path = self.config["bpe_file"]
+        self.tokenizer = SimpleTokenizer(self.bpe_path)
 
         self.server = InferenceServer(
             model_file=self.model_file,
@@ -315,6 +318,7 @@ class ClipTextEmbedding(
             host=self.host,
             port=self.port,
             backend=Backend.PYTORCH,
+            device=self.model_device
         )
 
     def preprocess(self, text):
@@ -352,23 +356,21 @@ class ClipProbs(
         self.model_device = self.config["model_device"]
         # self.image_model_file = self.config["image_model_file"]
         self.text_model_file = self.config["text_model_file"]
-        """
-        self.image_server = InferenceServer(
-            model_file=self.image_model_file, model_name=self.image_model_name, host=self.host, port=self.port, backend=Backend.PYTORCH
-        )
-        """
+
+        self.bpe_path = self.config["bpe_file"]
+        self.tokenizer = SimpleTokenizer(self.bpe_path)
         self.text_server = InferenceServer(
             model_file=self.text_model_file,
             model_name=self.text_model_name,
             host=self.host,
             port=self.port,
-            backend=Backend.PYTORCH,
+            backend=Backend.PYTORCH, 
+            device=self.model_device
         )
 
     def preprocess(self, text):
         # tokenize text
-        tokenizer = SimpleTokenizer()
-        tokenized = tokenizer.tokenize(text)
+        tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
     def call(self, inputs, parameters):

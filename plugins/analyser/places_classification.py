@@ -52,7 +52,7 @@ class PlacesClassifier(
         self.hierarchy = self.read_hierarchy(self.config["hierarchy_file"])
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, device=self.model_device
         )
 
     def read_classes(self, classes_file, hierarchy_file):

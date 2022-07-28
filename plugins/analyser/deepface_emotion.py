@@ -48,7 +48,8 @@ class DeepfaceEmotion(
             model_name=self.model_name,
             host=self.host,
             port=self.port,
-            backend=Backend.ONNX,
+            backend=Backend.ONNX, 
+            device=self.model_device,
             inputs=["input"],
             outputs=["dense_2"],
         )

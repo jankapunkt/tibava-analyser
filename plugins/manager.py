@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import logging
+import uuid
 
 # from typing import Union
 
@@ -88,10 +89,13 @@ class AnalyserPluginManager(PluginManager):
                 plugin_to_run = plugin_candidate["plugin"]
         if plugin_to_run is None:
             return None
-        logging.debug(f"manager.py: {plugin_to_run}")
-        logging.debug(f"manager.py: {inputs}")
-        logging.debug(f"manager.py: {parameters}")
+        
+        run_id = uuid.uuid4().hex[:4]
+        logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
+        logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
+        logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
         results = plugin_to_run(inputs, parameters)
+        logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
         return results
 
 

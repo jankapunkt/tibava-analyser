@@ -77,19 +77,19 @@ class InferenceServer:
         if isinstance(backend, str):
             if backend.lower() == "torch":
                 backend = Backend.PYTORCH
-            if backend.lower() == "tf":
+            elif backend.lower() == "tf":
                 backend = Backend.TENSORFLOW
-            if backend.lower() == "onnx":
+            elif backend.lower() == "onnx":
                 backend = Backend.ONNX
 
         if isinstance(device, str):
             if device.lower() == "cpu":
                 device = Device.CPU
-            if device.lower() == "gpu":
+            elif device.lower() == "gpu":
                 device = Device.GPU
 
         assert backend in self.backend_lut, "Backend is unknown"
-        assert device in self.device_lut, "Backend is unknown"
+        assert device in self.device_lut, "Device is unknown"
         # print(f"inputs: {inputs}")
         # print(f"outputs: {outputs}")
 

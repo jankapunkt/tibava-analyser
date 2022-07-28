@@ -46,7 +46,7 @@ class InsightfaceDetector(
         self.model_file = self.config["model_file"]
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, backend=Backend.ONNX
+            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, backend=Backend.ONNX, device=self.model_device
         )
 
     def distance2bbox(self, points, distance, max_shape=None):
@@ -110,6 +110,7 @@ class InsightfaceDetector(
         # print(blob, blob.shape)
         # self.con.tensorset(f"data_{job_id}", blob)
         result = self.server({"data": blob}, output_names)
+        
         # result = self.con.modelrun(self.model_name, f"data_{job_id}", output_names)
         # net_outs = self.session.run(self.output_names, {self.input_name : blob})  # original function
         net_outs = [result.get(output_name) for output_name in output_names]
@@ -318,7 +319,7 @@ class InsightfaceDetector(
             bboxes_data = BboxesData(bboxes=bboxes)
             return {"images": images_data, "bboxes": bboxes_data}
         except Exception as e:
-            logging.error(f"Indexer: {repr(e)}")
+            logging.error(f"InsightfaceDetector: {repr(e)}")
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(
