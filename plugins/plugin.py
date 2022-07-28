@@ -86,7 +86,6 @@ class Plugin:
             r = result.requires.add()
             r.name = k
             if v == VideoData:
-                print("VIDEO_DATA")
                 r.type = analyser_pb2.VIDEO_DATA
             elif v == ImageData:
                 r.type = analyser_pb2.IMAGE_DATA
@@ -109,7 +108,7 @@ class Plugin:
         input_parameters = self._parameters
         if parameters is not None:
             input_parameters.update(parameters)
-        logging.info(f'[Plugin] {self._name} starting')
+        logging.info(f"[Plugin] {self._name} starting")
         try:
             result = self.call(inputs, input_parameters)
 
@@ -125,5 +124,5 @@ class Plugin:
                 file=sys.stdout,
             )
             return {}
-        logging.info(f'[Plugin] {self._name} done')
+        logging.info(f"[Plugin] {self._name} done")
         return result
