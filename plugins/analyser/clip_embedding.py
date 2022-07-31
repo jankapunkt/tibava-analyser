@@ -40,6 +40,7 @@ default_config = {
     "model_device": "cpu",
     "image_model_file": "/models/clip/clip_image.pt",
     "text_model_file": "/models/clip/clip_text.pt",
+    "bpe_file": "/models/clip/bpe_simple_vocab_16e6.txt.gz",
 }
 
 
@@ -106,10 +107,10 @@ def bytes_to_unicode():
     bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
-    for b in range(2 ** 8):
+    for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2 ** 8 + n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
@@ -266,7 +267,7 @@ class ClipImageEmbedding(
             host=self.host,
             port=self.port,
             backend=Backend.PYTORCH,
-            device=self.model_device
+            device=self.model_device,
         )
 
     def preprocess(self, img, resize_size, crop_size):
@@ -318,7 +319,7 @@ class ClipTextEmbedding(
             host=self.host,
             port=self.port,
             backend=Backend.PYTORCH,
-            device=self.model_device
+            device=self.model_device,
         )
 
     def preprocess(self, text):
@@ -356,7 +357,6 @@ class ClipProbs(
         self.model_device = self.config["model_device"]
         # self.image_model_file = self.config["image_model_file"]
         self.text_model_file = self.config["text_model_file"]
-
         self.bpe_path = self.config["bpe_file"]
         self.tokenizer = SimpleTokenizer(self.bpe_path)
         self.text_server = InferenceServer(
@@ -364,8 +364,8 @@ class ClipProbs(
             model_name=self.text_model_name,
             host=self.host,
             port=self.port,
-            backend=Backend.PYTORCH, 
-            device=self.model_device
+            backend=Backend.PYTORCH,
+            device=self.model_device,
         )
 
     def preprocess(self, text):
@@ -380,25 +380,21 @@ class ClipProbs(
         embeddings = inputs["embeddings"]
         text = self.preprocess(parameters["search_term"])
         result = self.text_server({"data": text}, ["o"])
-        
+
         text_embedding = normalize(result["o"])
 
         neg_text = self.preprocess("Not " + parameters["search_term"])
         neg_result = self.text_server({"data": neg_text}, ["o"])
-        
+
         neg_text_embedding = normalize(neg_result["o"])
 
         text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
         for embedding in embeddings.embeddings:
-            
-            
-            
+
             result = 100 * text_embedding @ embedding.embedding.T
-            
-            
+
             prob = scipy.special.softmax(result, axis=0)
-            
-            
+
             # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
             probs.append(prob[0, 0])
             time.append(embedding.time)
