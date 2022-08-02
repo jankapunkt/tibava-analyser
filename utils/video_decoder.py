@@ -23,7 +23,10 @@ class VideoDecoder:
             video_reader = iio.imread(
                 self._path,
                 plugin="pyav",
-                filter_sequence=[("fps", f"{self._fps}"), ("scale", {"width": f"{res[0]}", "height": f"{res[1]}"})],
+                filter_sequence=[
+                    ("fps", {"fps": f"{self._fps}", "round": "up"}),
+                    ("scale", {"width": f"{res[0]}", "height": f"{res[1]}"}),
+                ],
             )
         else:
             video_reader = iio.imread(self._path, fps=self._fps, plugin="pyav")
