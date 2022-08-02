@@ -10,11 +10,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Type, Iterator, Union
 
-import io
-from attr import has
 
-from matplotlib.colors import same_color
-import imageio
 import msgpack
 import msgpack_numpy as m
 
@@ -1033,7 +1029,11 @@ class TextEmbeddings(PluginData):
                     msgpack.packb(
                         {
                             "embeddings": [
-                                {"text_id": embd.text_id, "text": embd.text, "embedding": embd.embedding,}
+                                {
+                                    "text_id": embd.text_id,
+                                    "text": embd.text,
+                                    "embedding": embd.embedding,
+                                }
                                 for embd in self.embeddings
                             ]
                         },

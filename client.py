@@ -15,6 +15,7 @@ from google.protobuf.json_format import MessageToJson
 from analyser.data import DataManager
 
 import time
+import msgpack
 
 
 def parse_args():
@@ -125,7 +126,7 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
         response = stub.run_plugin(run_request)
-
+        print(response)
         if response.success:
             return response.id
 
@@ -173,6 +174,20 @@ class AnalyserClient:
         response = stub.download_data(download_data_request)
         data = DataManager(output_path).load_from_stream(response)
         return data
+
+    def download_data_to_blob(self, data_id, output_path):
+
+        download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
+
+        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
+        stub = analyser_pb2_grpc.AnalyserStub(channel)
+
+        response = stub.download_data(download_data_request)
+        with open(os.path.join(output_path, f"{data_id}.bin"), "wb") as f:
+            for x in response:
+                f.write(msgpack.packb({"d": x.SerializeToString()}))
+
+        return os.path.join(output_path, f"{data_id}.bin")
 
 
 def main():
