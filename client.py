@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", default=50051, type=int)
     parser.add_argument(
-        "-t", "--task", choices=["list_plugins", "upload_data", "run_plugin", "download_data", "get_plugin_status"]
+        "-t", "--task", choices=["list_plugins", "upload_file", "run_plugin", "download_data", "get_plugin_status"]
     )
     parser.add_argument("--path")
     parser.add_argument("--plugin")
@@ -206,8 +206,8 @@ def main():
         result = client.list_plugins()
         print(result)
 
-    if args.task == "upload_data":
-        result = client.upload_data(args.path)
+    if args.task == "upload_file":
+        result = client.upload_file(args.path)
         print(result)
 
     if args.task == "run_plugin":
