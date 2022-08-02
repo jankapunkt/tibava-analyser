@@ -29,7 +29,13 @@ class VideoDecoder:
                 ],
             )
         else:
-            video_reader = iio.imread(self._path, fps=self._fps, plugin="pyav")
+            video_reader = iio.imread(
+                self._path,
+                plugin="pyav",
+                filter_sequence=[
+                    ("fps", {"fps": f"{self._fps}", "round": "up"}),
+                ],
+            )
 
         for i, frame in enumerate(video_reader):
             yield {"time": i / self._fps, "index": i, "frame": frame}
