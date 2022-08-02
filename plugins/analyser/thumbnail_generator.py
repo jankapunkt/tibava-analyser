@@ -11,7 +11,7 @@ from analyser.utils import VideoDecoder
 default_config = {"data_dir": "/data"}
 
 
-default_parameters = {"fps": 1.0, "max_dimension": 128}
+default_parameters = {"fps": 5.0, "max_dimension": 128}
 
 requires = {
     "video": VideoData,
