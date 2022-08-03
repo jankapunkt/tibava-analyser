@@ -1,4 +1,31 @@
 import imageio.v3 as iio
+import ffmpeg
+
+
+def parse_meta_ffmpeg(path):
+    try:
+        meta = ffmpeg.probe(path)
+
+        streams = meta.get("streams", [])
+        for s in streams:
+            if s.get("codec_type") == "video":
+                avg_frame_rate = s.get("avg_frame_rate", None)
+                width = s.get("width", None)
+                height = s.get("height", None)
+
+                if avg_frame_rate is None or width is None or height is None:
+                    return None
+                fps_split = avg_frame_rate.split("/")
+
+                if len(fps_split) == 2 and int(fps_split[1]) > 0:
+                    fps = float(fps_split[0]) / float(fps_split[1])
+                elif len(fps_split) == 1:
+
+                    fps = float(fps_split[0])
+                return {"fps": fps, "width": width, "height": height, "size": (width, height)}
+
+    except:
+        return None
 
 
 class VideoDecoder:
@@ -8,7 +35,11 @@ class VideoDecoder:
         self._max_dimension = max_dimension
         self._fps = fps
 
-        self._meta = iio.immeta(path)
+        self._meta = parse_meta_ffmpeg(path)
+        if self._meta is None:
+            # self._meta = ffmpeg.probe(path)
+            self._meta = iio.immeta(path, plugin="FFMPEG")
+
         self._size = self._meta.get("size")
 
         if self._fps is None:
@@ -17,7 +48,9 @@ class VideoDecoder:
     def __iter__(self):
 
         if self._max_dimension is not None:
+
             res = max(self._size[1], self._size[0])
+
             scale = min(self._max_dimension / res, 1)
             res = (round(self._size[0] * scale), round(self._size[1] * scale))
             video_reader = iio.imread(

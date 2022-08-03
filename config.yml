@@ -1,11 +1,9 @@
 data_dir: /data
 plugins:
   - plugin: video_to_audio
-    params:
-      data_dir: /data
+    params: {}
   - plugin: thumbnail_generator
-    params:
-      data_dir: /data
+    params: {}
   - plugin: audio_amp_analysis
     params: {}
   - plugin: audio_freq_analysis
