@@ -47,7 +47,9 @@ class TransnetShotdetection(
             device=self.model_device,
         )
 
-    def predict_frames(self, frames: np.ndarray):
+    def predict_frames(self, frames: np.ndarray, callbacks):
+        print(callbacks, flush=True)
+
         def input_iterator():
             # return windows of size 100 where the first/last 25 frames are from the previous/next batch
             # the first and last window must be padded by copies of the first and last frame of the video
@@ -63,12 +65,15 @@ class TransnetShotdetection(
             ptr = 0
             while ptr + 100 <= len(padded_inputs):
                 out = padded_inputs[ptr : ptr + 100]
+                progress = ptr / len(padded_inputs)
                 ptr += 50
-                yield out[np.newaxis]
+                yield progress, out[np.newaxis]
 
         predictions = []
-
-        for inp in input_iterator():
+        # max_iter = len(input_iterator())
+        for progress, inp in input_iterator():
+            # (131362, 27, 48, 3)
+            self.update_callbacks(callbacks, progress=progress)
 
             result = self.server({"data": inp}, ["single_frame_pred", "all_frames_pred"])
 
@@ -103,8 +108,8 @@ class TransnetShotdetection(
 
         return np.array(scenes, dtype=np.int32)
 
-    def call(self, inputs, parameters):
-
+    def call(self, inputs, parameters, callbacks=None):
+        self.update_callbacks(callbacks, progress=0.0)
         video_stream, err = (
             ffmpeg.input(inputs["video"].path)
             .output("pipe:", format="rawvideo", pix_fmt="rgb24", s="48x27")
@@ -116,7 +121,7 @@ class TransnetShotdetection(
 
         video = np.frombuffer(video_stream, np.uint8).reshape([-1, 27, 48, 3])
 
-        prediction, _ = self.predict_frames(video)
+        prediction, _ = self.predict_frames(video, callbacks)
 
         shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))
 
@@ -125,5 +130,7 @@ class TransnetShotdetection(
                 Shot(start=x[0].item() / video_decoder.fps(), end=x[1].item() / video_decoder.fps()) for x in shot_list
             ]
         )
+
+        self.update_callbacks(callbacks, progress=1.0)
 
         return {"shots": data}

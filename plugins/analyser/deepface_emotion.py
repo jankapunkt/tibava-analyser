@@ -48,7 +48,7 @@ class DeepfaceEmotion(
             model_name=self.model_name,
             host=self.host,
             port=self.port,
-            backend=Backend.ONNX, 
+            backend=Backend.ONNX,
             device=self.model_device,
             inputs=["input"],
             outputs=["dense_2"],
@@ -97,11 +97,14 @@ class DeepfaceEmotion(
 
         return img_pixels
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         predictions_dict = {}
         # time = []
         delta_time = None
-        for entry in inputs["images"].images:
+
+        for i, entry in enumerate(inputs["images"].images):
+
+            self.update_callbacks(callbacks, progress=i / len(inputs["images"].images))
             image = self.preprocess(entry.path)
 
             result = self.server({"data": image}, ["prob"])
@@ -133,4 +136,5 @@ class DeepfaceEmotion(
             index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
         )
 
+        self.update_callbacks(callbacks, progress=1.0)
         return {"probs": probs}

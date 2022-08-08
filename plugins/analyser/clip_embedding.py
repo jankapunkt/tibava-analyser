@@ -274,10 +274,12 @@ class ClipImageEmbedding(
         converted = image_resize(image_pad(img), size=crop_size)
         return converted
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         preds = []
         video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
+        num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
+            self.update_callbacks(callbacks, progress=i / num_frames)
             img_id = generate_id()
             img = frame.get("frame")
             img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
@@ -291,6 +293,8 @@ class ClipImageEmbedding(
                     delta_time=1 / parameters.get("fps"),
                 )
             )
+
+        self.update_callbacks(callbacks, progress=1.0)
         return {"embeddings": ImageEmbeddings(embeddings=preds)}
 
 
@@ -328,10 +332,12 @@ class ClipTextEmbedding(
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         text_id = generate_id()
         text = self.preprocess(parameters["search_term"])
         result = self.server({"data": text}, ["o"])
+
+        self.update_callbacks(callbacks, progress=1.0)
         return {
             "embeddings": TextEmbeddings(
                 embeddings=[TextEmbedding(text_id=text_id, text=parameters["search_term"], embedding=result["o"][0])]
@@ -373,7 +379,7 @@ class ClipProbs(
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         probs = []
         time = []
         delta_time = None
@@ -399,6 +405,8 @@ class ClipProbs(
             probs.append(prob[0, 0])
             time.append(embedding.time)
             delta_time = embedding.delta_time
+
+        self.update_callbacks(callbacks, progress=1.0)
         return {
             "probs": ScalarData(y=np.array(probs), time=time, delta_time=delta_time, name="image_text_similarities")
         }
@@ -416,6 +424,6 @@ class ClipProbs(
 #     def __init__(self, config=None):
 #         super().__init__(config)
 
-#     def call(self, inputs, parameters):
+#     def call(self, inputs, parameters, callbacks=None):
 #         # TODO
 #         return {}

@@ -126,7 +126,7 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
         response = stub.run_plugin(run_request)
-        print(response)
+
         if response.success:
             return response.id
 
@@ -153,6 +153,10 @@ class AnalyserClient:
                 if time.time() - start_time > timeout:
                     return None
             result = self.get_plugin_status(job_id)
+
+            if result.status == analyser_pb2.GetPluginStatusResponse.WAITING:
+                time.sleep(0.5)
+                continue
             if result.status == analyser_pb2.GetPluginStatusResponse.RUNNING:
                 time.sleep(0.5)
                 continue

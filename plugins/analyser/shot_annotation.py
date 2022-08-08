@@ -48,10 +48,10 @@ class ShotAnnotator(
 
         return mean_class_probs
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         annotations = []
 
-        for shot in inputs["shots"].shots:
+        for i, shot in enumerate(inputs["shots"].shots):
             mean_class_probs = self.mean_shot_probabilities(start=shot.start, end=shot.end, probs=inputs["probs"])
 
             max_mean_class_prob = parameters.get("threshold")
@@ -68,5 +68,7 @@ class ShotAnnotator(
                 annotations.append(
                     Annotation(start=shot.start, end=shot.end, labels=[max_label])
                 )  # Maybe store max_mean_class_prob as well?
+            self.update_callbacks(callbacks, progress=i / len(inputs["shots"].shots))
 
+        self.update_callbacks(callbacks, progress=1.0)
         return {"annotations": AnnotationData(annotations=annotations)}

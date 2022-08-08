@@ -19,6 +19,7 @@ ENV NUMBA_CACHE_DIR=/tmp/
 
 RUN python3 -m pip install imageio
 RUN python3 -m pip install "imageio[pyav]"
+RUN python3 -m pip install "imageio[ffmpeg]"
 RUN python3 -m pip install imageio-ffmpeg
 RUN python3 -m pip install msgpack
 RUN python3 -m pip install numpy
@@ -32,6 +33,8 @@ RUN python3 -m pip install msgpack-numpy
 # RUN python3 -m pip install scikit-image
 RUN python3 -m pip install librosa 
 RUN python3 -m pip install ffmpeg-python
+RUN python3 -m pip install av
+
 
 RUN python3 -m pip install ftfy
 RUN python3 -m pip install regex

@@ -12,6 +12,19 @@ from analyser.data import PluginData, VideoData, AudioData, ImageData
 from analyser import analyser_pb2
 
 
+class PluginCallback:
+    def update(self, **kwargs):
+        pass
+
+
+class ProgressCallback(PluginCallback):
+    def __init__(self, shared_memory) -> None:
+        self.shared_memory = shared_memory
+
+    def update(self, progress=0.0, **kwargs):
+        self.shared_memory["progress"] = progress
+
+
 class Plugin:
     @classmethod
     def __init_subclass__(
@@ -66,6 +79,13 @@ class Plugin:
         return cls.provides
 
     @classmethod
+    def update_callbacks(cls, callbacks, **kwargs):
+        if callbacks is None or not isinstance(callbacks, (list, set)):
+            return
+        for x in callbacks:
+            x.update(**kwargs)
+
+    @classmethod
     def serialize_class(cls):
         result = analyser_pb2.PluginInfo()
         result.name = cls._name
@@ -104,13 +124,15 @@ class Plugin:
 
         return result
 
-    def __call__(self, inputs: Dict[str, PluginData], parameters: Dict[str, Any] = None) -> Dict[str, PluginData]:
+    def __call__(
+        self, inputs: Dict[str, PluginData], parameters: Dict[str, Any] = None, callbacks: List[PluginCallback] = None
+    ) -> Dict[str, PluginData]:
         input_parameters = self._parameters
         if parameters is not None:
             input_parameters.update(parameters)
         logging.info(f"[Plugin] {self._name} starting")
         try:
-            result = self.call(inputs, input_parameters)
+            result = self.call(inputs, input_parameters, callbacks=callbacks)
 
         except Exception as e:
             logging.error(f"[Plugin] {self._name} {repr(e)}")

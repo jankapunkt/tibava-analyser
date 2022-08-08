@@ -42,10 +42,14 @@ class ShotTypeClassifier(
         self.image_resolution = self.config["image_resolution"]
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, device=self.model_device
+            model_file=self.model_file,
+            model_name=self.model_name,
+            host=self.host,
+            port=self.port,
+            device=self.model_device,
         )
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
         )
@@ -54,7 +58,11 @@ class ShotTypeClassifier(
 
         predictions = []
         time = []
+
+        num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
+
+            self.update_callbacks(callbacks, progress=i / num_frames)
             frame = image_pad(frame["frame"])
 
             result = self.server({"data": frame}, ["prob"])
@@ -71,4 +79,6 @@ class ShotTypeClassifier(
 
         # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
         # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
+
+        self.update_callbacks(callbacks, progress=1.0)
         return {"probs": probs}

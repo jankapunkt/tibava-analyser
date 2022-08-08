@@ -119,4 +119,5 @@ message GetPluginStatusResponse{
   }
   Status status = 1;
   repeated RunPluginData outputs = 2;
+  float progress = 3;
 }

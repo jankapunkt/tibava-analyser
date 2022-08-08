@@ -52,7 +52,11 @@ class PlacesClassifier(
         self.hierarchy = self.read_hierarchy(self.config["hierarchy_file"])
 
         self.server = InferenceServer(
-            model_file=self.model_file, model_name=self.model_name, host=self.host, port=self.port, device=self.model_device
+            model_file=self.model_file,
+            model_name=self.model_name,
+            host=self.host,
+            port=self.port,
+            device=self.model_device,
         )
 
     def read_classes(self, classes_file, hierarchy_file):
@@ -94,7 +98,7 @@ class PlacesClassifier(
 
         return {"places3": hierarchy_places3, "places16": hierarchy_places16}
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
         )
@@ -102,6 +106,7 @@ class PlacesClassifier(
         embeddings = []
         probs = {"places365": [], "places16": [], "places3": []}
         time = []
+        num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
             result = self.server({"data": image_pad(frame["frame"])}, ["embedding", "prob"])
             if result is not None:
@@ -128,6 +133,8 @@ class PlacesClassifier(
                 # store time
                 time.append(i / parameters.get("fps"))
 
+            self.update_callbacks(callbacks, progress=i / num_frames)
+
         probs_grpc = {}
         for level in probs.keys():
             probs_grpc[level] = ListData(
@@ -138,6 +145,7 @@ class PlacesClassifier(
                 index=self.classes[level],
             )
 
+        self.update_callbacks(callbacks, progress=1.0)
         return {
             "embeddings": ImageEmbeddings(embeddings=embeddings),
             "probs_places365": probs_grpc["places365"],

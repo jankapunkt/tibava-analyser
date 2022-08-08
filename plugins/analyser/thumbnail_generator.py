@@ -29,14 +29,17 @@ class ThumbnailGenerator(
     def __init__(self, config=None):
         super().__init__(config)
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
 
         video_decoder = VideoDecoder(
             path=inputs["video"].path, fps=parameters.get("fps"), max_dimension=parameters.get("max_dimension")
         )
 
         images = []
-        for frame in video_decoder:
+        num_frames = video_decoder.duration() * video_decoder.fps()
+        for i, frame in enumerate(video_decoder):
+
+            self.update_callbacks(callbacks, progress=i / num_frames)
             image_id = generate_id()
             output_path = create_data_path(self.config.get("data_dir"), image_id, "jpg")
             imageio.imwrite(output_path, frame.get("frame"))
@@ -44,4 +47,6 @@ class ThumbnailGenerator(
                 ImageData(id=image_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
             )
         data = ImagesData(images=images)
+
+        self.update_callbacks(callbacks, progress=1.0)
         return {"images": data}

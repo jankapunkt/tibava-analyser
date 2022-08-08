@@ -78,7 +78,7 @@ class AnalyserPluginManager(PluginManager):
                 if "register" in function_dir:
                     a.register(self)
 
-    def __call__(self, plugin, inputs, parameters=None):
+    def __call__(self, plugin, inputs, parameters=None, callbacks=None):
         if plugin not in self._plugins:
             return None
 
@@ -94,7 +94,7 @@ class AnalyserPluginManager(PluginManager):
         logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
         logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
         logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-        results = plugin_to_run(inputs, parameters)
+        results = plugin_to_run(inputs, parameters, callbacks)
         logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
         return results
 

@@ -9,6 +9,12 @@ def parse_meta_ffmpeg(path):
         streams = meta.get("streams", [])
         for s in streams:
             if s.get("codec_type") == "video":
+
+                duration = s.get("duration", None)
+                try:
+                    duration = float(duration)
+                except:
+                    duration = 1
                 avg_frame_rate = s.get("avg_frame_rate", None)
                 width = s.get("width", None)
                 height = s.get("height", None)
@@ -22,7 +28,7 @@ def parse_meta_ffmpeg(path):
                 elif len(fps_split) == 1:
 
                     fps = float(fps_split[0])
-                return {"fps": fps, "width": width, "height": height, "size": (width, height)}
+                return {"fps": fps, "width": width, "height": height, "size": (width, height), "duration": duration}
 
     except:
         return None
@@ -44,6 +50,8 @@ class VideoDecoder:
 
         if self._fps is None:
             self._fps = self._meta.get("fps")
+
+        self._duration = self._meta.get("duration")
 
     def __iter__(self):
 
@@ -75,3 +83,6 @@ class VideoDecoder:
 
     def fps(self):
         return self._fps
+
+    def duration(self):
+        return self._duration

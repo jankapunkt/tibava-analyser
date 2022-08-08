@@ -32,14 +32,16 @@ class ColorAnalyser(
     def __init__(self, config=None):
         super().__init__(config)
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=parameters.get("max_resolution"), fps=parameters.get("fps")
         )
 
         kcolors = []
         time = []
+        num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
+            self.update_callbacks(callbacks, progress=i / num_frames)
             image = frame["frame"]
             image = image.reshape((image.shape[0] * image.shape[1], 3))
             cls = KMeans(n_clusters=parameters.get("k"), max_iter=parameters.get("max_iter"))
@@ -47,6 +49,7 @@ class ColorAnalyser(
             kcolors.append(cls.cluster_centers_.tolist())
             time.append(i / parameters.get("fps"))
 
+        self.update_callbacks(callbacks, progress=1.0)
         return {
             "colors": ListData(
                 data=[

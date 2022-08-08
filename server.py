@@ -11,9 +11,11 @@ import yaml
 import copy
 import traceback
 from concurrent import futures
+import multiprocessing as mp
+
 
 from google.protobuf.json_format import MessageToJson
-from analyser.plugins import plugin
+from analyser.plugins.plugin import ProgressCallback
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
@@ -39,12 +41,13 @@ from analyser.data import DataManager
 
 
 def run_plugin(args):
-
     try:
         plugin_manager = globals().get("plugin_manager")
         data_manager = globals().get("data_manager")
         params = args.get("params")
-
+        shared = args.get("shared")
+        shared["progress"] = 0.0
+        shared["status"] = analyser_pb2.GetPluginStatusResponse.RUNNING
         plugin_inputs = {}
         if "inputs" in params:
             for data_in in params.get("inputs"):
@@ -62,7 +65,10 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
                 # data = data_manager.load(data_in.get("name"))
                 # plugin_inputs[data_in.get("name")] = data
-        results = plugin_manager(plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters)
+        callbacks = [ProgressCallback(shared)]
+        results = plugin_manager(
+            plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
+        )
 
         result_map = []
         for key, data in results.items():
@@ -103,7 +109,10 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def __init__(self, config):
         self.config = config
         self.managers = init_plugins(config)
-        self.process_pool = futures.ProcessPoolExecutor(max_workers=self.config.get('num_worker',1), initializer=init_process, initargs=(config,))
+        self.process_pool = futures.ProcessPoolExecutor(
+            max_workers=self.config.get("num_worker", 1), initializer=init_process, initargs=(config,)
+        )
+        self.shared_manager = mp.Manager()
         self.futures = []
 
         # self.max_results = config.get("Analyser", {}).get("max_results", 100)
@@ -142,8 +151,14 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             "future": None,
             "id": job_id,
         }
+        process_args = copy.deepcopy(variable)
 
-        future = self.process_pool.submit(run_plugin, copy.deepcopy(variable))
+        d = self.shared_manager.dict()
+        d["progress"] = 0.0
+        d["status"] = analyser_pb2.GetPluginStatusResponse.WAITING
+        variable["shared"] = d
+        process_args["shared"] = d
+        future = self.process_pool.submit(run_plugin, process_args)
         variable["future"] = future
         self.futures.append(variable)
 
@@ -156,28 +171,32 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             job_data = self.futures[futures_lut[request.id]]
             done = job_data["future"].done()
 
+            status = job_data["shared"].get("status", analyser_pb2.GetPluginStatusResponse.UNKNOWN)
+            response.status = status
+
+            progress = job_data["shared"].get("progress", 0.0)
+            response.progress = progress
             if not done:
-                response.status = analyser_pb2.GetPluginStatusResponse.RUNNING
                 return response
 
-            try:
-                results = job_data["future"].result()
+            # try:
+            results = job_data["future"].result()
 
-                if results is None:
-                    response.status = analyser_pb2.GetPluginStatusResponse.ERROR
-                    return response
-                for k in results:
-                    output = response.outputs.add()
-                    output.name = k["name"]
-                    output.id = k["id"]
-
-            except Exception as e:
-                logging.error(f"Analyser: {repr(e)}")
-                logging.error(traceback.format_exc())
-                logging.error(traceback.print_stack())
-
+            if results is None:
                 response.status = analyser_pb2.GetPluginStatusResponse.ERROR
                 return response
+            for k in results:
+                output = response.outputs.add()
+                output.name = k["name"]
+                output.id = k["id"]
+
+            # except Exception as e:
+            #     logging.error(f"Analyser: {repr(e)}")
+            #     logging.error(traceback.format_exc())
+            #     logging.error(traceback.print_stack())
+
+            #     response.status = analyser_pb2.GetPluginStatusResponse.ERROR
+            #     return response
 
             response.status = analyser_pb2.GetPluginStatusResponse.DONE
             return response

@@ -36,11 +36,11 @@ class InsightfaceFacesize(
         with open(self.config["model_file"], "rb") as pklfile:
             self.model = pickle.load(pklfile)
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
         facesizes_dict = {}
         delta_time = None
 
-        for bbox in inputs["bboxes"].bboxes:
+        for i, bbox in enumerate(inputs["bboxes"].bboxes):
             if bbox.time not in facesizes_dict:
                 facesizes_dict[bbox.time] = []
             facesizes_dict[bbox.time].append(bbox.w * bbox.h)
@@ -54,6 +54,7 @@ class InsightfaceFacesize(
         # predict shot size based on facesizes
         predictions = self.model.predict_proba(np.asarray(facesizes).reshape(-1, 1))
 
+        self.update_callbacks(callbacks, progress=1.0)
         return {
             "probs": ListData(
                 data=[

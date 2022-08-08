@@ -30,7 +30,7 @@ class AudioAmpAnalysis(
     def __init__(self, config=None):
         super().__init__(config)
 
-    def call(self, inputs, parameters):
+    def call(self, inputs, parameters, callbacks=None):
 
         y, sr = librosa.load(inputs.get("audio").path, sr=parameters.get("sr"))
 
