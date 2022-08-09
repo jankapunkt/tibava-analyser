@@ -1,47 +1,50 @@
 data_dir: /data
 plugins:
   - plugin: video_to_audio
-    params: 
+    params:
       host: analyser_redisai
   - plugin: thumbnail_generator
-    params: 
+    params:
       host: analyser_redisai
   - plugin: audio_amp_analysis
-    params: 
+    params:
       host: analyser_redisai
   - plugin: audio_freq_analysis
-    params: 
+    params:
       host: analyser_redisai
   - plugin: transnet_shotdetection
-    params: 
+    params:
+      host: analyser_redisai
+  - plugin: shot_density
+    params:
       host: analyser_redisai
   - plugin: insightface_detector
-    params: 
+    params:
       host: analyser_redisai
   - plugin: insightface_facesize
-    params: 
+    params:
       host: analyser_redisai
   - plugin: deepface_emotion
-    params: 
+    params:
       host: analyser_redisai
   - plugin: shot_type_classifier
-    params: 
+    params:
       host: analyser_redisai
   - plugin: color_analyser
-    params: 
+    params:
       host: analyser_redisai
   - plugin: clip_image_embedding
-    params: 
+    params:
       host: analyser_redisai
   - plugin: clip_text_embedding
-    params: 
+    params:
       host: analyser_redisai
   - plugin: clip_probs
-    params: 
+    params:
       host: analyser_redisai
   - plugin: places_classifier
-    params: 
+    params:
       host: analyser_redisai
   - plugin: shot_annotator
-    params: 
+    params:
       host: analyser_redisai
