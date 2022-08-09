@@ -641,10 +641,14 @@ class ScalarData(PluginData):
                 yield {"type": analyser_pb2.SCALAR_DATA, "data_encoded": chunk, "ext": self.ext}
 
     def dumps_to_web(self):
-        if hasattr(self.y, "tolist"):
-            return {"y": self.y.tolist(), "time": self.time, "delta_time": self.delta_time}
+        y = self.y
+        time = self.time
+        if hasattr(y, "tolist"):
+            y = y.tolist()
+        if hasattr(time, "tolist"):
+            time = time.tolist()
 
-        return {"y": self.y, "time": self.time, "delta_time": self.delta_time}
+        return {"y": y, "time": time, "delta_time": self.delta_time}
 
 
 @DataManager.export("RGBData", analyser_pb2.RGB_DATA)
