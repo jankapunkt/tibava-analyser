@@ -48,3 +48,6 @@ plugins:
   - plugin: shot_annotator
     params:
       host: analyser_redisai
+  - plugin: aggregate_scalar
+    params:
+      host: analyser_redisai
