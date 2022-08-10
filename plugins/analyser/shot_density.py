@@ -2,6 +2,7 @@ from analyser.plugins.manager import AnalyserPluginManager
 from analyser.data import Annotation, AnnotationData, ShotsData, ScalarData, ListData, generate_id
 from analyser.plugins import Plugin
 
+import math
 import numpy as np
 from sklearn.neighbors import KernelDensity
 
@@ -43,7 +44,7 @@ class ShotDensity(
 
             self.update_callbacks(callbacks, progress=i / len(inputs["shots"].shots))
 
-        time = np.linspace(0, last_shot_end, int(last_shot_end * parameters.get("fps")))[:, np.newaxis]
+        time = np.linspace(0, last_shot_end, math.ceil(last_shot_end * parameters.get("fps")) + 1)[:, np.newaxis]
         shots = np.asarray(shots).reshape(-1, 1)
         kde = KernelDensity(kernel=parameters.get("kernel"), bandwidth=parameters.get("bandwidth")).fit(shots)
         log_dens = kde.score_samples(time)
