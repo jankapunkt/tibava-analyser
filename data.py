@@ -832,6 +832,92 @@ class ListData(PluginData):
 
 
 @dataclass(kw_only=True, frozen=True)
+class KpsData(PluginData):
+    image_id: int = None
+    time: float = None
+    delta_time: float = field(default=None)
+    x: List[float] = None
+    y: List[float] = None
+
+
+@DataManager.export("KpssData", analyser_pb2.KPSS_DATA)
+@dataclass(kw_only=True, frozen=True)
+class KpssData(PluginData):
+    type: str = field(default="KpssData")
+    ext: str = field(default="msg")
+    kpss: List[KpsData] = field(default_factory=list)
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.debug(f"[KpssData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(
+                    msgpack.packb(
+                        {
+                            "kpss": [
+                                {
+                                    "x": kps.x,
+                                    "y": kps.y,
+                                    "time": kps.time,
+                                    "delta_time": kps.delta_time,
+                                }
+                                for kps in self.kpss
+                            ]
+                        },
+                        default=m.encode,
+                    )
+                )
+        except Exception as e:
+            logging.error(f"KpssData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.debug(f"[KpssData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            kpss = {"kpss": [KpsData(**kps) for kps in data.get("kpss")]}
+        return kpss
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.KPSS_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        if hasattr(self.kpss, "tolist"):
+            kpss = self.kpss.tolist()  # TODO
+        else:
+            kpss = self.kpss
+        return {"kpss": kpss}
+
+
+@dataclass(kw_only=True, frozen=True)
 class BboxData(PluginData):
     image_id: int = None
     time: float = None
@@ -840,6 +926,7 @@ class BboxData(PluginData):
     y: int = None
     w: int = None
     h: int = None
+    det_score: float = 1.0
 
 
 @DataManager.export("BboxesData", analyser_pb2.BBOXES_DATA)
@@ -862,6 +949,7 @@ class BboxesData(PluginData):
                                     "y": bbox.y,
                                     "w": bbox.w,
                                     "h": bbox.h,
+                                    "det_score": bbox.det_score,
                                     "time": bbox.time,
                                     "delta_time": bbox.delta_time,
                                 }
@@ -881,6 +969,7 @@ class BboxesData(PluginData):
         logging.debug(f"[BboxesData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            # TODO check for det_score
             bboxes = {"bboxes": [BboxData(**bbox) for bbox in data.get("bboxes")]}
         return bboxes
 

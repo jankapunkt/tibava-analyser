@@ -2,6 +2,7 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && 
 
 # download test file
 sudo docker compose exec analyser wget "https://tib.eu/cloud/s/ddsr9M9LD3NfGyc/download/xg_mascara.mp4" -O /media/test.mp4
+sudo docker compose exec analyser wget "https://tib.eu/cloud/s/xCCbgTFNz2JKQgM/download/test.jpg" -O /media/test.jpg
 
 # test each test_script.py
 FILES="$SCRIPT_DIR/*.py"

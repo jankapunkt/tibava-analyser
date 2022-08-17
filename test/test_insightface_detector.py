@@ -43,6 +43,13 @@ def main():
             bboxes_id = output.id
 
     logging.info(client.download_data(bboxes_id, args.output_path))
+
+    kpss_id = None
+    for output in result.outputs:
+        if output.name == "kpss":
+            kpss_id = output.id
+
+    logging.info(client.download_data(kpss_id, args.output_path))
     return 0
 
 

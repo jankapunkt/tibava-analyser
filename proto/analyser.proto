@@ -11,7 +11,8 @@ service Analyser {
   rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
-  rpc get_plugin_status(GetPluginStatusRequest) returns (GetPluginStatusResponse);
+  rpc get_plugin_status(GetPluginStatusRequest)
+      returns (GetPluginStatusResponse);
 }
 
 enum DataType {
@@ -43,6 +44,7 @@ enum PluginDataType {
   ANNOTATION_DATA = 12;
   IMAGE_EMBEDDING_DATA = 13;
   TEXT_EMBEDDING_DATA = 14;
+  KPSS_DATA = 15;
 }
 
 message PluginInfoData {
@@ -77,9 +79,7 @@ message UploadDataResponse {
   bool success = 2;
 }
 
-message DownloadDataRequest {
-  string id = 1;
-}
+message DownloadDataRequest { string id = 1; }
 
 message DownloadDataResponse {
   bytes data_encoded = 1;
@@ -93,22 +93,20 @@ message PluginParameter {
   DataType type = 3;
 }
 
-message RunPluginRequest{
+message RunPluginRequest {
   string plugin = 1;
   repeated RunPluginData inputs = 2;
   repeated PluginParameter parameters = 3;
 }
 
-message RunPluginResponse{
+message RunPluginResponse {
   string id = 1;
   bool success = 2;
 }
 
-message GetPluginStatusRequest{
-  string id = 1;
-}
+message GetPluginStatusRequest { string id = 1; }
 
-message GetPluginStatusResponse{
+message GetPluginStatusResponse {
 
   enum Status {
     UNKNOWN = 0;

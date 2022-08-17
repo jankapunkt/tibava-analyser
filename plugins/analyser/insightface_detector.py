@@ -1,6 +1,16 @@
 from analyser.plugins.manager import AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import BboxData, BboxesData, ImageData, ImagesData, VideoData, generate_id, create_data_path
+from analyser.data import (
+    BboxData,
+    BboxesData,
+    KpsData,
+    KpssData,
+    ImageData,
+    ImagesData,
+    VideoData,
+    generate_id,
+    create_data_path,
+)
 from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
 import cv2
@@ -27,10 +37,7 @@ requires = {
     "video": VideoData,
 }
 
-provides = {
-    "images": ImagesData,
-    "bboxes": BboxesData,
-}
+provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
 
 
 @AnalyserPluginManager.export("insightface_detector")
@@ -254,13 +261,17 @@ class InsightfaceDetector(
             det = det[bindex, :]
             if kpss is not None:
                 kpss = kpss[bindex, :]
-        # create bbox objects (added to original code)
-        predictions = []
-        for bbox in det:
-            x, y = int(max(0, bbox[0])), int(max(0, bbox[1]))
-            w, h = int(bbox[2] - x), int(bbox[3] - y)
-            # det_score = bbox[4]  # TODO: check if it is necessary to get the score
-            predictions.append(
+
+        # create bbox and kps objects (added to original code)
+        bbox_list = []
+        kps_list = []
+        for i in range(len(det)):
+            x, y = round(max(0, det[i][0])), round(max(0, det[i][1]))
+            w, h = round(det[i][2] - x), round(det[i][3] - y)
+            det_score = det[i][4]
+
+            # store bbox
+            bbox_list.append(
                 BboxData(
                     image_id=image_id,
                     time=frame.get("time"),
@@ -269,14 +280,31 @@ class InsightfaceDetector(
                     y=y / img.shape[0],
                     w=w / img.shape[1],
                     h=h / img.shape[0],
+                    det_score=det_score,
                 )
             )
-        return predictions
+
+            # store facial keypoints
+            # kpss_list = kpss.tolist()
+            # kpss =
+            print(kpss[i].shape)
+            kps_list.append(
+                KpsData(
+                    image_id=image_id,
+                    time=frame.get("time"),
+                    delta_time=1 / fps,
+                    x=[x.item() / img.shape[1] for x in kpss[i, :, 0]],
+                    y=[y.item() / img.shape[0] for y in kpss[i, :, 1]],
+                )
+            )
+
+        return bbox_list, kps_list
 
     def call(self, inputs, parameters, callbacks=None):
         try:
             images = []
             bboxes = []
+            kpss = []
             # decode video to extract bboxes per frame
             video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
             # iterate through frames to get images and bboxes
@@ -286,15 +314,18 @@ class InsightfaceDetector(
 
                 self.update_callbacks(callbacks, progress=i / num_frames)
                 image_id = generate_id()
-                frame_bboxes = self.detect(
+                frame_bboxes, frame_kpss = self.detect(
                     frame,
                     image_id,
                     parameters.get("input_size"),
                     det_thresh=parameters.get("det_thresh"),
                     nms_thresh=parameters.get("nms_thresh"),
+                    fps=parameters.get("fps"),
                 )
 
-                for bbox in frame_bboxes:
+                for i in range(len(frame_bboxes)):
+                    bbox = frame_bboxes[i]
+                    kps = frame_kpss[i]
                     # store image and bboxes
                     bbox_id = generate_id()
                     output_path = create_data_path(self.config.get("data_dir"), bbox_id, "jpg")
@@ -312,23 +343,15 @@ class InsightfaceDetector(
                         ImageData(id=bbox_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
                     )
 
-                # get bboxes
-                bboxes.extend(
-                    self.detect(
-                        frame,
-                        image_id,
-                        parameters.get("input_size"),
-                        det_thresh=parameters.get("det_thresh"),
-                        nms_thresh=parameters.get("nms_thresh"),
-                        fps=parameters.get("fps"),
-                    )
-                )
+                    bboxes.append(bbox)
+                    kpss.append(kps)
 
             images_data = ImagesData(images=images)
             bboxes_data = BboxesData(bboxes=bboxes)
+            kpss_data = KpssData(kpss=kpss)
             self.update_callbacks(callbacks, progress=1.0)
 
-            return {"images": images_data, "bboxes": bboxes_data}
+            return {"images": images_data, "bboxes": bboxes_data, "kpss": kpss_data}
 
         except Exception as e:
             logging.error(f"InsightfaceDetector: {repr(e)}")
