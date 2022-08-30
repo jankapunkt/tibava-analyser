@@ -18,7 +18,16 @@ plugins:
   - plugin: shot_density
     params:
       host: analyser_redisai
-  - plugin: insightface_detector
+  - plugin: insightface_video_detector
+    params:
+      host: analyser_redisai
+  - plugin: insightface_image_detector
+    params:
+      host: analyser_redisai
+  - plugin: insightface_video_feature_extractor
+    params:
+      host: analyser_redisai
+  - plugin: insightface_image_feature_extractor
     params:
       host: analyser_redisai
   - plugin: insightface_facesize
@@ -49,5 +58,8 @@ plugins:
     params:
       host: analyser_redisai
   - plugin: aggregate_scalar
+    params:
+      host: analyser_redisai
+  - plugin: cosine_similarity
     params:
       host: analyser_redisai

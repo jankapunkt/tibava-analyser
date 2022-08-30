@@ -29,8 +29,8 @@ def main():
     data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
-    job_id = client.run_plugin("insightface_detector", [{"id": data_id, "name": "video"}], [])
-    logging.info(f"Job insightface_detector started: {job_id}")
+    job_id = client.run_plugin("insightface_video_detector", [{"id": data_id, "name": "video"}], [])
+    logging.info(f"Job insightface_video_detector started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
     if result is None:

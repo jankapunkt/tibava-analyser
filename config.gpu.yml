@@ -18,9 +18,13 @@ plugins:
       model_device: gpu
       model_file: /models/transnet_shotdetection/transnet_gpu.pt
   - plugin: shot_density
-    params: 
+    params:
       host: analyser_redisai
-  - plugin: insightface_detector
+  - plugin: insightface_video_detector
+    params:
+      host: analyser_redisai
+      model_device: gpu
+  - plugin: insightface_image_detector
     params:
       host: analyser_redisai
       model_device: gpu
@@ -67,5 +71,8 @@ plugins:
     params:
       host: analyser_redisai
   - plugin: aggregate_scalar
+    params:
+      host: analyser_redisai
+  - plugin: cosine_similarity
     params:
       host: analyser_redisai

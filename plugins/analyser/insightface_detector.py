@@ -1,5 +1,5 @@
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.utils import VideoDecoder
+from analyser.utils import VideoDecoder, InferenceServer, Backend
 from analyser.data import (
     BboxData,
     BboxesData,
@@ -14,36 +14,14 @@ from analyser.data import (
 from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
 import cv2
-import imageio
+import imageio.v3 as iio
 import logging
 import numpy as np
 import sys
 import traceback
-from analyser.utils import InferenceServer, Backend, Device
 
 
-default_config = {
-    "data_dir": "/data/",
-    "host": "localhost",
-    "port": 6379,
-    "model_name": "insightface",
-    "model_device": "cpu",
-    "model_file": "/models/insightface_detector/scrfd_10g_bnkps.onnx",
-}
-
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
-
-requires = {
-    "video": VideoData,
-}
-
-provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
-
-
-@AnalyserPluginManager.export("insightface_detector")
-class InsightfaceDetector(
-    Plugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
-):
+class InsightfaceDetector(Plugin):
     def __init__(self, config=None):
         super().__init__(config)
         self.host = self.config["host"]
@@ -208,8 +186,6 @@ class InsightfaceDetector(
         frame,
         image_id,
         input_size=(640, 640),
-        max_num=0,
-        metric="default",
         det_thresh=0.5,
         nms_thresh=0.4,
         fps=10,
@@ -229,7 +205,6 @@ class InsightfaceDetector(
         det_img[:new_height, :new_width, :] = resized_img
         use_kps = True
         scores_list, bboxes_list, kpss_list = self.forward(det_img, det_thresh, use_kps)
-
         scores = np.vstack(scores_list)
         scores_ravel = scores.ravel()
         order = scores_ravel.argsort()[::-1]
@@ -245,22 +220,6 @@ class InsightfaceDetector(
             kpss = kpss[keep, :, :]
         else:
             kpss = None
-        if max_num > 0 and det.shape[0] > max_num:
-            area = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
-            img_center = img.shape[0] // 2, img.shape[1] // 2
-            offsets = np.vstack(
-                [(det[:, 0] + det[:, 2]) / 2 - img_center[1], (det[:, 1] + det[:, 3]) / 2 - img_center[0]]
-            )
-            offset_dist_squared = np.sum(np.power(offsets, 2.0), 0)
-            if metric == "max":
-                values = area
-            else:
-                values = area - offset_dist_squared * 2.0  # some extra weight on the centering
-            bindex = np.argsort(values)[::-1]  # some extra weight on the centering
-            bindex = bindex[0:max_num]
-            det = det[bindex, :]
-            if kpss is not None:
-                kpss = kpss[bindex, :]
 
         # create bbox and kps objects (added to original code)
         bbox_list = []
@@ -281,13 +240,11 @@ class InsightfaceDetector(
                     w=w / img.shape[1],
                     h=h / img.shape[0],
                     det_score=det_score,
+                    ref_id=frame.get("ref_id"),
                 )
             )
 
             # store facial keypoints
-            # kpss_list = kpss.tolist()
-            # kpss =
-            print(kpss[i].shape)
             kps_list.append(
                 KpsData(
                     image_id=image_id,
@@ -295,22 +252,20 @@ class InsightfaceDetector(
                     delta_time=1 / fps,
                     x=[x.item() / img.shape[1] for x in kpss[i, :, 0]],
                     y=[y.item() / img.shape[0] for y in kpss[i, :, 1]],
+                    ref_id=frame.get("ref_id"),
                 )
             )
 
         return bbox_list, kps_list
 
-    def call(self, inputs, parameters, callbacks=None):
+    def predict_faces(self, iterator, num_frames, parameters, callbacks):
         try:
             images = []
             bboxes = []
             kpss = []
-            # decode video to extract bboxes per frame
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
-            # iterate through frames to get images and bboxes
 
-            num_frames = video_decoder.duration() * video_decoder.fps()
-            for i, frame in enumerate(video_decoder):
+            # iterate through images to get face_images and bboxes
+            for i, frame in enumerate(iterator):
 
                 self.update_callbacks(callbacks, progress=i / num_frames)
                 image_id = generate_id()
@@ -331,18 +286,24 @@ class InsightfaceDetector(
                     output_path = create_data_path(self.config.get("data_dir"), bbox_id, "jpg")
                     frame_image = frame.get("frame")
                     h, w = frame_image.shape[:2]
-                    imageio.imwrite(
-                        output_path,
-                        frame_image[
-                            int(bbox.y * h + 0.5) : int((bbox.y + bbox.h) * h + 0.5),
-                            int(bbox.x * w + 0.5) : int((bbox.x + bbox.w) * w + 0.5),
-                            :,
-                        ],
-                    )
+
+                    # draw kps
+                    # for i in range(len(kps.x)):
+                    #     x = round(kps.x[i] * w)
+                    #     y = round(kps.y[i] * h)
+                    #     frame_image[y - 1 : y + 1, x - 1 : x + 1, :] = [0, 255, 0]
+                    # write faceimg
+                    face_image = frame_image[
+                        round(bbox.y * h) : round((bbox.y + bbox.h) * h),
+                        round(bbox.x * w) : round((bbox.x + bbox.w) * w),
+                        :,
+                    ]
+                    iio.imwrite(output_path, face_image)
+
                     images.append(
                         ImageData(id=bbox_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
                     )
-
+                    # store bboxes and kpss
                     bboxes.append(bbox)
                     kpss.append(kps)
 
@@ -355,6 +316,122 @@ class InsightfaceDetector(
 
         except Exception as e:
             logging.error(f"InsightfaceDetector: {repr(e)}")
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+
+            traceback.print_exception(
+                exc_type,
+                exc_value,
+                exc_traceback,
+                limit=2,
+                file=sys.stdout,
+            )
+        return {}
+
+
+default_config = {
+    "data_dir": "/data/",
+    "host": "localhost",
+    "port": 6379,
+    "model_name": "insightface",
+    "model_device": "cpu",
+    "model_file": "/models/insightface_detector/scrfd_10g_bnkps.onnx",
+}
+
+default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+
+requires = {
+    "video": VideoData,
+}
+
+provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
+
+
+@AnalyserPluginManager.export("insightface_video_detector")
+class InsightfaceVideoDetector(
+    InsightfaceDetector,
+    Plugin,
+    config=default_config,
+    parameters=default_parameters,
+    version="0.1",
+    requires=requires,
+    provides=provides,
+):
+    def __init__(self, config=None):
+        super().__init__(config)
+
+    def call(self, inputs, parameters, callbacks=None):
+        try:
+            # decode video to extract bboxes per frame
+            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
+            num_frames = video_decoder.duration() * video_decoder.fps()
+
+            return self.predict_faces(
+                iterator=video_decoder, num_frames=num_frames, parameters=parameters, callbacks=callbacks
+            )
+
+        except Exception as e:
+            logging.error(f"InsightfaceVideoDetector: {repr(e)}")
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+
+            traceback.print_exception(
+                exc_type,
+                exc_value,
+                exc_traceback,
+                limit=2,
+                file=sys.stdout,
+            )
+        return {}
+
+
+default_config = {
+    "data_dir": "/data/",
+    "host": "localhost",
+    "port": 6379,
+    "model_name": "insightface",
+    "model_device": "cpu",
+    "model_file": "/models/insightface_detector/scrfd_10g_bnkps.onnx",
+}
+
+default_parameters = {"fps": 1, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+
+requires = {
+    "images": ImagesData,
+}
+
+provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
+
+
+@AnalyserPluginManager.export("insightface_image_detector")
+class InsightfaceImageDetector(
+    InsightfaceDetector,
+    Plugin,
+    config=default_config,
+    parameters=default_parameters,
+    version="0.1",
+    requires=requires,
+    provides=provides,
+):
+    def __init__(self, config=None):
+        super().__init__(config)
+
+    def call(self, inputs, parameters, callbacks=None):
+        try:
+
+            image_paths = [
+                create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
+            ]
+
+            def image_generator(image_paths):
+                for image_path in image_paths:
+                    yield {"frame": iio.imread(image_path), "time": 0, "ref_id": image_path}
+
+            images = image_generator(image_paths)
+            return self.predict_faces(
+                iterator=images, num_frames=len(image_paths), parameters=parameters, callbacks=callbacks
+            )
+
+        except Exception as e:
+            logging.error(f"InsightfaceImageDetector: {repr(e)}")
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(

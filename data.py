@@ -834,6 +834,7 @@ class ListData(PluginData):
 @dataclass(kw_only=True, frozen=True)
 class KpsData(PluginData):
     image_id: int = None
+    ref_id: str = None
     time: float = None
     delta_time: float = field(default=None)
     x: List[float] = None
@@ -860,6 +861,7 @@ class KpssData(PluginData):
                                     "y": kps.y,
                                     "time": kps.time,
                                     "delta_time": kps.delta_time,
+                                    "ref_id": kps.ref_id,
                                 }
                                 for kps in self.kpss
                             ]
@@ -920,6 +922,7 @@ class KpssData(PluginData):
 @dataclass(kw_only=True, frozen=True)
 class BboxData(PluginData):
     image_id: int = None
+    ref_id: str = None
     time: float = None
     delta_time: float = field(default=None)
     x: int = None
@@ -952,6 +955,7 @@ class BboxesData(PluginData):
                                     "det_score": bbox.det_score,
                                     "time": bbox.time,
                                     "delta_time": bbox.delta_time,
+                                    "ref_id": bbox.ref_id,
                                 }
                                 for bbox in self.bboxes
                             ]

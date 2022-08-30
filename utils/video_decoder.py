@@ -79,7 +79,7 @@ class VideoDecoder:
             )
 
         for i, frame in enumerate(video_reader):
-            yield {"time": i / self._fps, "index": i, "frame": frame}
+            yield {"time": i / self._fps, "index": i, "frame": frame, "ref_id": self._path}
 
     def fps(self):
         return self._fps
