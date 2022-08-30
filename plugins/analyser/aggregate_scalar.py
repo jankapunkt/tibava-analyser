@@ -12,7 +12,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"aggregation": "mean"}
+default_parameters = {"aggregation": "prod"}
 
 requires = {
     "timelines": ListData,
@@ -32,7 +32,7 @@ class AggregateScalar(
         self.host = self.config["host"]
         self.port = self.config["port"]
 
-    def aggregate_probs(self, probs, times, interp_time, aggregation="mean"):
+    def aggregate_probs(self, probs, times, interp_time, aggregation="prod"):
         probs_interp = []
         for i in range(len(probs)):
             prob_interp = np.interp(x=interp_time, xp=times[i], fp=probs[i])
@@ -42,6 +42,8 @@ class AggregateScalar(
 
         if aggregation == "mean":
             return np.mean(probs_interp, axis=0)
+        if aggregation == "prod":
+            return np.prod(probs_interp, axis=0)
         else:
             logging.error("Unknown aggregation method. Using <mean> instead.")
 
