@@ -38,9 +38,10 @@ def parse_args():
 
 
 class AnalyserClient:
-    def __init__(self, host, port):
+    def __init__(self, host, port, manager=None):
         self.host = host
         self.port = port
+        self.manager = manager
 
     def list_plugins(self):
         channel = grpc.insecure_channel(f"{self.host}:{self.port}")
@@ -59,8 +60,10 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(channel)
 
         def generate_requests(data, chunk_size=128 * 1024):
-
-            data_manager = DataManager()
+            if self.manager is None:
+                data_manager = DataManager()
+            else:
+                data_manager = self.manager
             print(data_manager.data_dir)
             data_manager.save(data)
             data = data_manager.load(data.id)

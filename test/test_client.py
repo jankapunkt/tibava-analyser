@@ -3,7 +3,10 @@ import argparse
 import logging
 
 from analyser.client import AnalyserClient
-from analyser.data import ShotsData, Shot
+from analyser.data import ShotsData, Shot, ImageData, ImagesData, DataManager
+from analyser.data import generate_id, create_data_path
+import numpy as np
+import imageio.v3 as iio
 
 
 def parse_args():
@@ -32,6 +35,21 @@ def main():
 
     logging.info(f"Downloading: {data_id}")
     logging.info(client.download_data(data_id, args.output_path))
+
+    manager = DataManager()
+
+    images = []
+    for x in range(10):
+        image_id = generate_id()
+        output_path = create_data_path(manager.data_dir, image_id, "jpg")
+        image = (np.random.rand(256, 256, 3) * 255).astype(np.uint8)
+        iio.imwrite(output_path, image)
+        images.append(ImageData(id=image_id, ext="jpg"))
+    data = ImagesData(images=images)
+    client = AnalyserClient("localhost", 50051, manager=manager)
+    logging.info(f"Start uploading")
+    data_id = client.upload_data(data)
+    logging.info(f"Upload done: {data_id}")
 
     return 0
 
