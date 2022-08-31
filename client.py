@@ -42,10 +42,11 @@ class AnalyserClient:
         self.host = host
         self.port = port
         self.manager = manager
+        self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
 
     def list_plugins(self):
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.list_plugins(analyser_pb2.ListPluginsRequest())
         result = {}
@@ -56,15 +57,14 @@ class AnalyserClient:
         return result
 
     def upload_data(self, data):
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(data, chunk_size=128 * 1024):
             if self.manager is None:
                 data_manager = DataManager()
             else:
                 data_manager = self.manager
-            print(data_manager.data_dir)
             data_manager.save(data)
             data = data_manager.load(data.id)
             """Lazy function (generator) to read a file piece by piece.
@@ -84,8 +84,8 @@ class AnalyserClient:
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(file_object, chunk_size=128 * 1024):
             """Lazy function (generator) to read a file piece by piece.
@@ -125,8 +125,8 @@ class AnalyserClient:
             if isinstance(i.get("value"), str):
                 x.type = analyser_pb2.STRING_TYPE
 
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.run_plugin(run_request)
 
@@ -140,8 +140,8 @@ class AnalyserClient:
 
         get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=job_id)
 
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.get_plugin_status(get_plugin_request)
 
@@ -175,8 +175,8 @@ class AnalyserClient:
 
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
         data = DataManager(output_path).load_from_stream(response)
@@ -186,8 +186,8 @@ class AnalyserClient:
 
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
-        channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        stub = analyser_pb2_grpc.AnalyserStub(channel)
+        
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
         with open(os.path.join(output_path, f"{data_id}.bin"), "wb") as f:
