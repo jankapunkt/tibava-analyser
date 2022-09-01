@@ -45,8 +45,9 @@ class ColorAnalyser(
             image = frame["frame"]
             image = image.reshape((image.shape[0] * image.shape[1], 3))
             cls = KMeans(n_clusters=parameters.get("k"), max_iter=parameters.get("max_iter"))
-            cls.fit(image)
-            kcolors.append(cls.cluster_centers_.tolist())
+            labels = cls.fit_predict(image)
+            colors = cls.cluster_centers_.tolist()
+            kcolors.append([colors[x] for x in np.argsort(np.bincount(labels))])
             time.append(i / parameters.get("fps"))
 
         self.update_callbacks(callbacks, progress=1.0)
