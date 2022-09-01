@@ -133,7 +133,7 @@ class InferenceServer:
         ok = self.con.modelrun(self.model_name, input_keys, output_keys)
 
         for k in input_keys:
-            self.con.delete(f"{k}_{job_id}")
+            self.con.delete(k)
         if ok != "OK":
             return None
 
