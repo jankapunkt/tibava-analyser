@@ -13,7 +13,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"aggregation": "max"}
+default_parameters = {"aggregation": "max", "normalize": 0, "normalize_min_val": None, "normalize_max_val": None}
 
 requires = {
     "query_features": ImageEmbeddings,
@@ -71,5 +71,13 @@ class CosineSimilarity(
 
         unique_times = list(unique_times)
         cossim_t = np.squeeze(np.asarray(cossim_t))
+
+        if parameters.get("normalize") > 0:
+            if parameters.get("normalize_min_val") and parameters.get("normalize_max_val"):
+                cossim_t = (cossim_t - parameters.get("normalize_min_val")) / (
+                    parameters.get("normalize_max_val") - parameters.get("normalize_min_val")
+                )
+            else:
+                cossim_t = (cossim_t - np.min(cossim_t)) / (np.max(cossim_t) - np.min(cossim_t))
 
         return {"probs": ScalarData(y=np.squeeze(cossim), time=list(unique_times), delta_time=delta_time)}
