@@ -33,7 +33,6 @@ class ShotDensity(
         self.port = self.config["port"]
 
     def call(self, inputs, parameters, callbacks=None):
-        print(inputs)
         last_shot_end = 0
         shots = []
         for i, shot in enumerate(inputs["shots"].shots):
