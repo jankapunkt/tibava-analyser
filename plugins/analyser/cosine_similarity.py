@@ -39,9 +39,11 @@ class CosineSimilarity(
         query_features = inputs["query_features"].embeddings
         target_features = inputs["target_features"].embeddings
 
+        unique_times = set()
         times = []
         tfs = []
         for tf in target_features:
+            unique_times.add(tf.time)
             times.append(tf.time)
             tfs.append(tf.embedding)
             delta_time = tf.delta_time
@@ -52,14 +54,21 @@ class CosineSimilarity(
         qfs = np.asarray(qfs)
 
         cossim = 1 - cdist(tfs, qfs, "cosine")
+        cossim = (cossim + 1) / 2
 
-        if parameters.get("aggregration") == "max":
+        # aggregation over query faces
+        if parameters.get("aggregation") == "max":
             cossim = np.max(cossim, axis=-1)
         else:
             logging.error("Unknown aggregation method. Using max instead ...")
             cossim = np.max(cossim, axis=-1)
 
-        print(np.squeeze(cossim))
-        print(times)
-        print(delta_time)
-        return {"probs": ScalarData(y=np.squeeze(cossim), time=times, delta_time=delta_time)}
+        # aggregation over time, its sufficient if the query face features match one face in the video
+        cossim_t = []
+        for t in unique_times:
+            cossim_t.append(np.max(cossim[np.asarray(times) == t]))
+
+        unique_times = list(unique_times)
+        cossim_t = np.squeeze(np.asarray(cossim_t))
+
+        return {"probs": ScalarData(y=np.squeeze(cossim), time=list(unique_times), delta_time=delta_time)}
