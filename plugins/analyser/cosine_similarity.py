@@ -56,14 +56,15 @@ class CosineSimilarity(
         cossim = 1 - cdist(tfs, qfs, "cosine")
         cossim = (cossim + 1) / 2
 
-        # aggregation over query faces
+        # aggregation over available features at a given time t
         if parameters.get("aggregation") == "max":
             cossim = np.max(cossim, axis=-1)
         else:
             logging.error("Unknown aggregation method. Using max instead ...")
             cossim = np.max(cossim, axis=-1)
 
-        # aggregation over time, its sufficient if the query face features match one face in the video
+        # aggregation over time using max
+        # NOTE: Its sufficient if a query feature vector match one vector at a specific time in the target video
         cossim_t = []
         for t in unique_times:
             cossim_t.append(np.max(cossim[np.asarray(times) == t]))
