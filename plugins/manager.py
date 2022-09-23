@@ -79,18 +79,19 @@ class AnalyserPluginManager(PluginManager):
                     a.register(self)
 
     def __call__(self, plugin, inputs, parameters=None, callbacks=None):
+
+        run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
             return None
 
         plugin_to_run = None
         for plugin_candidate in self.plugin_list:
-
             if plugin_candidate.get("plugin").name == plugin:
                 plugin_to_run = plugin_candidate["plugin"]
         if plugin_to_run is None:
+            logging.error(f"[AnalyserPluginManager] {run_id} plugin: {plugin} not found")
             return None
-        
-        run_id = uuid.uuid4().hex[:4]
+
         logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
         logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
         logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")

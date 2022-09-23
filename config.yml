@@ -63,3 +63,9 @@ plugins:
   - plugin: cosine_similarity
     params:
       host: analyser_redisai
+  - plugin: audio_rms_analysis
+    params:
+      host: analyser_redisai
+  - plugin: color_brightness_analyser
+    params:
+      host: analyser_redisai

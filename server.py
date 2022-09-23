@@ -69,6 +69,9 @@ def run_plugin(args):
         results = plugin_manager(
             plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
         )
+        if results is None:
+            logging.error(f"Analyser: {params.get('plugin')} without results")
+            return []
 
         result_map = []
         for key, data in results.items():

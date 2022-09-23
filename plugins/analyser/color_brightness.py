@@ -1,18 +1,16 @@
 from analyser.plugins.manager import AnalyserPluginManager
-from analyser.data import VideoData, ListData, RGBData
+from analyser.data import ScalarData, VideoData, ListData, RGBData
 from analyser.plugins import Plugin
 from analyser.utils import VideoDecoder
-from sklearn.cluster import KMeans
 import numpy as np
+import cv2
 
 default_config = {"data_dir": "/data/"}
 
 
 default_parameters = {
-    "k": 1,
     "fps": 5,
-    "max_iter": 10,
-    "max_resolution": 48,
+    "normalize": True,
 }
 
 requires = {
@@ -20,12 +18,12 @@ requires = {
 }
 
 provides = {
-    "colors": ListData,
+    "brightness": ScalarData,
 }
 
 
-@AnalyserPluginManager.export("color_analyser")
-class ColorAnalyser(
+@AnalyserPluginManager.export("color_brightness_analyser")
+class ColorBrightnessAnalyser(
     Plugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
 ):
     def __init__(self, config=None):
@@ -36,25 +34,26 @@ class ColorAnalyser(
             inputs["video"].path, max_dimension=parameters.get("max_resolution"), fps=parameters.get("fps")
         )
 
-        kcolors = []
+        values = []
         time = []
         num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
             self.update_callbacks(callbacks, progress=i / num_frames)
             image = frame["frame"]
-            image = image.reshape((image.shape[0] * image.shape[1], 3))
-            cls = KMeans(n_clusters=parameters.get("k"), max_iter=parameters.get("max_iter"))
-            labels = cls.fit_predict(image)
-            colors = cls.cluster_centers_.tolist()
-            kcolors.append([colors[x] for x in np.argsort(np.bincount(labels))])
+            hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+            value = np.mean(hsv[:, :, 2])
+            values.append(value)
             time.append(i / parameters.get("fps"))
+        
+        y = np.stack(values)
 
+        if parameters.get("normalize"):
+            y = (y - np.min(y)) / (np.max(y) - np.min(y))
         self.update_callbacks(callbacks, progress=1.0)
         return {
-            "colors": ListData(
-                data=[
-                    RGBData(colors=np.asarray(colors) / 255, time=time, delta_time=1 / parameters.get("fps"))
-                    for colors in zip(*kcolors)
-                ]
+            "brightness": ScalarData(
+                y=y,
+                time=time,
+                delta_time=1 / parameters.get("fps"),
             )
         }
