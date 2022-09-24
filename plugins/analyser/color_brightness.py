@@ -44,7 +44,7 @@ class ColorBrightnessAnalyser(
             value = np.mean(hsv[:, :, 2])
             values.append(value)
             time.append(i / parameters.get("fps"))
-        
+
         y = np.stack(values)
 
         if parameters.get("normalize"):

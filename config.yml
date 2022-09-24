@@ -69,3 +69,6 @@ plugins:
   - plugin: color_brightness_analyser
     params:
       host: analyser_redisai
+  - plugin: shot_scalar_annotator
+    params:
+      host: analyser_redisai
