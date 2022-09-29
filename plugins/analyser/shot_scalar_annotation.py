@@ -40,20 +40,15 @@ class ShotScalarAnnotator(
         y = np.asarray(inputs["scalar"].y)
         time = np.asarray(inputs["scalar"].time)
         for i, shot in enumerate(inputs["shots"].shots):
-            print("###########")
-            print(f"{shot.start} {shot.end}")
             shot_y_data = y[np.logical_and(time >= shot.start, time <= shot.end)]
-            print(f"{shot_y_data}")
 
             if len(shot_y_data) <= 0:
                 continue
 
             y_mean = np.mean(shot_y_data)
-            print(y_mean, flush=True)
             annotations.append(
                 Annotation(start=shot.start, end=shot.end, labels=[str(y_mean)])
             )  # Maybe store max_mean_class_prob as well?
-            print(annotations, flush=True)
             self.update_callbacks(callbacks, progress=i / len(inputs["shots"].shots))
 
         self.update_callbacks(callbacks, progress=1.0)

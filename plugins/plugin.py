@@ -110,9 +110,7 @@ class Plugin:
             elif v == ImageData:
                 r.type = analyser_pb2.IMAGE_DATA
             else:
-                print(v)
-
-            print(f"WTF {r} {r.type == analyser_pb2.VIDEO_DATA}")
+                pass
 
         for k, v in cls._provides.items():
             r = result.provides.add()

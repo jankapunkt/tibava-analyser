@@ -44,6 +44,5 @@ class AudioFreqAnalysis(
             S_db = (S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db))
 
         S_db = np.transpose(S_db)
-        # print(S_db.shape)
 
         return {"freq": HistData(hist=S_db, time=(np.arange(S_db.shape[0]) * t_delta).tolist(), delta_time=1 / sr)}

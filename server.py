@@ -25,20 +25,6 @@ from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 from analyser.data import DataManager
 
-# class RunPlugin:
-#     def __init__(self, config=None):
-#         if config is not None:
-#             self.init_worker(config)
-
-#     @classmethod
-#     def init(cls, config):
-#         print("[RunPlugin] init")
-
-#         manager = AnalyserPluginManager(configs=config.get("image_text", []))
-#         manager.find()
-
-#         setattr(cls, "manager", manager)
-
 
 def run_plugin(args):
     try:
@@ -70,7 +56,7 @@ def run_plugin(args):
             plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
         )
         if results is None:
-            logging.error(f"Analyser: {params.get('plugin')} without results")
+            logging.error(f"[Analyser] {params.get('plugin')} without results")
             return []
 
         result_map = []
@@ -80,7 +66,7 @@ def run_plugin(args):
 
         return result_map
     except Exception as e:
-        logging.error(f"Analyser: {repr(e)}")
+        logging.error(f"[Analyser] {repr(e)}")
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         traceback.print_exception(
@@ -129,18 +115,17 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
         return reply
 
     def upload_data(self, request_iterator, context):
-        # try:
-        data = self.managers["data_manager"].load_from_stream(request_iterator)
+        try:
+            data = self.managers["data_manager"].load_from_stream(request_iterator)
 
-        return analyser_pb2.UploadDataResponse(success=True, id=data.id)
+            return analyser_pb2.UploadDataResponse(success=True, id=data.id)
 
-        # except Exception as e:
-        #     logging.error(f"copy_video: {repr(e)}")
-        #     logging.error(traceback.format_exc())
-        #     # context.set_code(grpc.StatusCode.UNAVAILABLE)
-        #     # context.set_details(f"Error transferring video with id {req.video_id}")
-
-        return analyser_pb2.UploadDataResponse(success=False)
+        except Exception as e:
+            logging.error(f"[Analyser] {repr(e)}")
+            logging.error(traceback.format_exc())
+            context.set_code(grpc.StatusCode.DATA_LOSS)
+            context.set_details(f"Error transferring data with id {data.id}")
+            return analyser_pb2.UploadDataResponse(success=False)
 
     def run_plugin(self, request, context):
 
@@ -182,24 +167,24 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             if not done:
                 return response
 
-            # try:
-            results = job_data["future"].result()
+            try:
+                results = job_data["future"].result()
 
-            if results is None:
+                if results is None:
+                    response.status = analyser_pb2.GetPluginStatusResponse.ERROR
+                    return response
+                for k in results:
+                    output = response.outputs.add()
+                    output.name = k["name"]
+                    output.id = k["id"]
+
+            except Exception as e:
+                logging.error(f"[Analyser] {repr(e)}")
+                logging.error(traceback.format_exc())
+                logging.error(traceback.print_stack())
+
                 response.status = analyser_pb2.GetPluginStatusResponse.ERROR
                 return response
-            for k in results:
-                output = response.outputs.add()
-                output.name = k["name"]
-                output.id = k["id"]
-
-            # except Exception as e:
-            #     logging.error(f"Analyser: {repr(e)}")
-            #     logging.error(traceback.format_exc())
-            #     logging.error(traceback.print_stack())
-
-            #     response.status = analyser_pb2.GetPluginStatusResponse.ERROR
-            #     return response
 
             response.status = analyser_pb2.GetPluginStatusResponse.DONE
             return response
@@ -215,11 +200,11 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
                 yield analyser_pb2.DownloadDataResponse(type=x["type"], data_encoded=x["data_encoded"])
 
         except Exception as e:
-            logging.error(f"download_data: {repr(e)}")
+            logging.error(f"[Analyser] {repr(e)}")
             logging.error(traceback.format_exc())
+            context.set_code(grpc.StatusCode.DATA_LOSS)
+            context.set_details(f"Error transferring data with id {request.id}")
             return analyser_pb2.DownloadDataResponse()
-            # context.set_code(grpc.StatusCode.UNAVAILABLE)
-            # context.set_details(f"Error transferring video with id {req.video_id}")
 
 
 class Server:
@@ -255,8 +240,6 @@ class Server:
             while True:
                 num_jobs = len(self.commune.futures)
                 num_jobs_done = len([x for x in self.commune.futures if x["future"].done()])
-                # print(num_jobs)
-                # print(num_jobs_done)
                 time.sleep(10)
         except KeyboardInterrupt:
             self.server.stop(0)
@@ -265,7 +248,6 @@ class Server:
 def read_config(path):
     with open(path, "r") as f:
         return yaml.safe_load(f)
-    return {}
 
 
 def parse_args():

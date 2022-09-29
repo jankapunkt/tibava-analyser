@@ -45,19 +45,14 @@ class AnalyserClient:
         self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
 
     def list_plugins(self):
-        
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.list_plugins(analyser_pb2.ListPluginsRequest())
-        result = {}
 
-        # for plugin in response.plugins:
-        #     print(MessageToJson(plugin))
-
-        return result
+        return response
 
     def upload_data(self, data):
-        
+
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(data, chunk_size=128 * 1024):
@@ -84,7 +79,7 @@ class AnalyserClient:
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
-        
+
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(file_object, chunk_size=128 * 1024):
@@ -125,7 +120,6 @@ class AnalyserClient:
             if isinstance(i.get("value"), str):
                 x.type = analyser_pb2.STRING_TYPE
 
-        
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.run_plugin(run_request)
@@ -140,7 +134,6 @@ class AnalyserClient:
 
         get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=job_id)
 
-        
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.get_plugin_status(get_plugin_request)
@@ -152,7 +145,6 @@ class AnalyserClient:
         start_time = time.time()
         while True:
             if timeout:
-                print(time.time() - start_time)
                 if time.time() - start_time > timeout:
                     return None
             result = self.get_plugin_status(job_id)
@@ -175,7 +167,6 @@ class AnalyserClient:
 
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
-        
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
@@ -186,7 +177,6 @@ class AnalyserClient:
 
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
-        
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)

@@ -48,9 +48,7 @@ class AudioRMSAnalysis(
                 y = np.interp(t_target, t, y)
                 sr = target_sr
 
-        print(y.shape, flush=True)
         y = librosa.feature.rms(y=y, hop_length=parameters.get("hop_length")).squeeze()
-        print(y.shape, flush=True)
         if parameters.get("normalize"):
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
 

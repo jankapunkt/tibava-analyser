@@ -48,8 +48,6 @@ class TransnetShotdetection(
         )
 
     def predict_frames(self, frames: np.ndarray, callbacks):
-        print(callbacks, flush=True)
-
         def input_iterator():
             # return windows of size 100 where the first/last 25 frames are from the previous/next batch
             # the first and last window must be padded by copies of the first and last frame of the video
