@@ -41,9 +41,9 @@ def compute_shot_segments(client, video_id, output_path):
         if output.name == "shots":
             shots_id = output.id
 
-    client.download_data(shots_id, output_path)
+    data = client.download_data(shots_id, output_path)
 
-    return shots_id
+    return data.id
 
 
 def compute_face_emotions(client, video_id, output_path):
@@ -78,9 +78,9 @@ def compute_face_emotions(client, video_id, output_path):
         if output.name == "probs":
             output_id = output.id
 
-    client.download_data(output_id, output_path)
+    data = client.download_data(output_id, output_path)
 
-    return output_id
+    return data.id
 
 
 def compute_face_emotions_annotation(client, shots_id, face_emotions_id, output_path):
@@ -102,7 +102,7 @@ def compute_face_emotions_annotation(client, shots_id, face_emotions_id, output_
         return
 
     result_annotations = client.download_data(annotation_id, output_path)
-    return annotation_id
+    return result_annotations.id
 
 
 def compute_shot_sizes(client, video_id, output_path):
@@ -122,9 +122,9 @@ def compute_shot_sizes(client, video_id, output_path):
         if output.name == "probs":
             output_id = output.id
 
-    client.download_data(output_id, output_path)
+    data = client.download_data(output_id, output_path)
 
-    return output_id
+    return data.id
 
 
 def compute_shot_sizes_annotation(client, shots_id, shot_size_id, output_path):
@@ -146,7 +146,7 @@ def compute_shot_sizes_annotation(client, shots_id, shot_size_id, output_path):
         return
 
     result_annotations = client.download_data(annotation_id, output_path)
-    return annotation_id
+    return result_annotations.id
 
 
 def compute_places(client, video_id, output_path):
@@ -175,11 +175,11 @@ def compute_places(client, video_id, output_path):
         if output.name == "probs_places3":
             places3_id = output.id
 
-    client.download_data(places365_id, output_path)
-    client.download_data(places16_id, output_path)
-    client.download_data(places3_id, output_path)
+    places365_data = client.download_data(places365_id, output_path)
+    places16_data = client.download_data(places16_id, output_path)
+    places3_data = client.download_data(places3_id, output_path)
 
-    return places365_id, places16_id, places3_id
+    return places365_data.id, places16_data.id, places3_data.id
 
 
 def compute_places_annotation(client, shots_id, places365_id, places16_id, places3_id, output_path):
@@ -202,7 +202,7 @@ def compute_places_annotation(client, shots_id, places365_id, places16_id, place
         if annotation_id is None:
             return
         result_annotations = client.download_data(annotation_id, output_path)
-        results.append(annotation_id)
+        results.append(result_annotations.id)
     return results
 
 
