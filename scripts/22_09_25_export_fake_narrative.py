@@ -47,8 +47,11 @@ def main():
             tier_id = "shots"
             eaf.add_tier(tier_id=tier_id)
             for i, s in enumerate(data.shots):
+                print(s)
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(tier_id, start=start_time, end=end_time, value=str(i))
 
         LABEL_LUT = {
@@ -67,6 +70,8 @@ def main():
             for i, s in enumerate(data.annotations):
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(
                     tier_id, start=start_time, end=end_time, value=",".join(LABEL_LUT[x] for x in s.labels)
                 )
@@ -78,6 +83,8 @@ def main():
             for i, s in enumerate(data.annotations):
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(tier_id, start=start_time, end=end_time, value=",".join(s.labels))
             data = data_manager.load(v["places_annotaion"]["places16_annotation_id"])
             tier_id = "places 16"
@@ -85,6 +92,8 @@ def main():
             for i, s in enumerate(data.annotations):
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(tier_id, start=start_time, end=end_time, value=",".join(s.labels))
             data = data_manager.load(v["places_annotaion"]["places3_annotation_id"])
             tier_id = "places 3"
@@ -92,6 +101,8 @@ def main():
             for i, s in enumerate(data.annotations):
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(tier_id, start=start_time, end=end_time, value=",".join(s.labels))
 
         LABEL_LUT = {
@@ -108,6 +119,8 @@ def main():
             for i, s in enumerate(data.annotations):
                 start_time = int(s.start * 1000)
                 end_time = int(s.end * 1000)
+                if(start_time == end_time):
+                    continue
                 eaf.add_annotation(
                     tier_id, start=start_time, end=end_time, value=",".join(LABEL_LUT[x] for x in s.labels)
                 )

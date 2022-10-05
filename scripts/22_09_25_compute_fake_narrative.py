@@ -43,7 +43,7 @@ def compute_shot_segments(client, video_id, output_path):
 
     data = client.download_data(shots_id, output_path)
 
-    return data.id
+    return data.id, shots_id
 
 
 def compute_face_emotions(client, video_id, output_path):
@@ -80,7 +80,7 @@ def compute_face_emotions(client, video_id, output_path):
 
     data = client.download_data(output_id, output_path)
 
-    return data.id
+    return data.id, output_id
 
 
 def compute_face_emotions_annotation(client, shots_id, face_emotions_id, output_path):
@@ -102,7 +102,7 @@ def compute_face_emotions_annotation(client, shots_id, face_emotions_id, output_
         return
 
     result_annotations = client.download_data(annotation_id, output_path)
-    return result_annotations.id
+    return result_annotations.id, annotation_id
 
 
 def compute_shot_sizes(client, video_id, output_path):
@@ -124,7 +124,7 @@ def compute_shot_sizes(client, video_id, output_path):
 
     data = client.download_data(output_id, output_path)
 
-    return data.id
+    return data.id, output_id
 
 
 def compute_shot_sizes_annotation(client, shots_id, shot_size_id, output_path):
@@ -146,7 +146,7 @@ def compute_shot_sizes_annotation(client, shots_id, shot_size_id, output_path):
         return
 
     result_annotations = client.download_data(annotation_id, output_path)
-    return result_annotations.id
+    return result_annotations.id, annotation_id
 
 
 def compute_places(client, video_id, output_path):
@@ -179,11 +179,12 @@ def compute_places(client, video_id, output_path):
     places16_data = client.download_data(places16_id, output_path)
     places3_data = client.download_data(places3_id, output_path)
 
-    return places365_data.id, places16_data.id, places3_data.id
+    return places365_data.id, places16_data.id, places3_data.id, places365_id, places16_id, places3_id
 
 
 def compute_places_annotation(client, shots_id, places365_id, places16_id, places3_id, output_path):
     results = []
+    remote_results = []
     for places_id in [places365_id, places16_id, places3_id]:
         job_id = client.run_plugin(
             "shot_annotator", [{"id": shots_id, "name": "shots"}, {"id": places_id, "name": "probs"}], []
@@ -203,7 +204,8 @@ def compute_places_annotation(client, shots_id, places365_id, places16_id, place
             return
         result_annotations = client.download_data(annotation_id, output_path)
         results.append(result_annotations.id)
-    return results
+        remote_results.append(annotation_id)
+    return [*results, *remote_results]
 
 
 def main():
@@ -257,64 +259,78 @@ def main():
                 existing.append(line)
 
     client = AnalyserClient(args.host, args.port)
-
     with open(os.path.join(args.output_path, "prediction.jsonl"), "w") as f:
         for line in existing:
             f.write(line)
 
         for input_file in input_files:
 
-            logging.info(f"Start uploading")
+            logging.info(f"Start uploading {input_file}")
             video_id = client.upload_file(input_file)
             logging.info(f"Upload done: {video_id}")
 
             if input_file not in existing_shot_data:
-                shots_id = compute_shot_segments(client, video_id, output_path=args.output_path)
+                shots_id, server_shots_id = compute_shot_segments(client, video_id, output_path=args.output_path)
                 f.write(
                     json.dumps(
                         {
                             "video_id": input_file,
                             "type": "shot",
                             "shots_id": shots_id,
+                            "server_shots_id": server_shots_id,
                         }
                     )
                     + "\n"
                 )
             else:
                 shots_id = existing_shot_data[input_file]["shots_id"]
+                server_shots_id = existing_shot_data[input_file]["server_shots_id"]
 
             if input_file not in existing_face_emotions_data:
-                face_emotions_id = compute_face_emotions(client, video_id, output_path=args.output_path)
+                face_emotions_id, server_face_emotions_id = compute_face_emotions(
+                    client, video_id, output_path=args.output_path
+                )
                 f.write(
                     json.dumps(
                         {
                             "video_id": input_file,
                             "type": "face_emotions",
                             "face_emotions_id": face_emotions_id,
+                            "server_face_emotions_id": server_face_emotions_id,
                         }
                     )
                     + "\n"
                 )
             else:
                 face_emotions_id = existing_face_emotions_data[input_file]["face_emotions_id"]
+                server_face_emotions_id = existing_face_emotions_data[input_file]["server_face_emotions_id"]
 
             if input_file not in existing_shot_size_data:
-                shot_size_id = compute_shot_sizes(client, video_id, output_path=args.output_path)
+                shot_size_id, server_shot_size_id = compute_shot_sizes(client, video_id, output_path=args.output_path)
                 f.write(
                     json.dumps(
                         {
                             "video_id": input_file,
                             "type": "shot_size",
                             "shot_size_id": shot_size_id,
+                            "server_shot_size_id": server_shot_size_id,
                         }
                     )
                     + "\n"
                 )
             else:
                 shot_size_id = existing_shot_size_data[input_file]["shot_size_id"]
+                server_shot_size_id = existing_shot_size_data[input_file]["server_shot_size_id"]
 
             if input_file not in existing_places_data:
-                places365_id, places16_id, places3_id = compute_places(client, video_id, output_path=args.output_path)
+                (
+                    places365_id,
+                    places16_id,
+                    places3_id,
+                    server_places365_id,
+                    server_places16_id,
+                    server_places3_id,
+                ) = compute_places(client, video_id, output_path=args.output_path)
                 f.write(
                     json.dumps(
                         {
@@ -323,6 +339,9 @@ def main():
                             "places365_id": places365_id,
                             "places16_id": places16_id,
                             "places3_id": places3_id,
+                            "server_places365_id": server_places365_id,
+                            "server_places16_id": server_places16_id,
+                            "server_places3_id": server_places3_id,
                         }
                     )
                     + "\n"
@@ -332,10 +351,13 @@ def main():
                 places365_id = existing_places_data[input_file]["places365_id"]
                 places16_id = existing_places_data[input_file]["places16_id"]
                 places3_id = existing_places_data[input_file]["places3_id"]
+                server_places365_id = existing_places_data[input_file]["server_places365_id"]
+                server_places16_id = existing_places_data[input_file]["server_places16_id"]
+                server_places3_id = existing_places_data[input_file]["server_places3_id"]
 
             if input_file not in existing_face_emotions_annotaion_data:
-                face_emotions_annotation_id = compute_face_emotions_annotation(
-                    client, shots_id, face_emotions_id, output_path=args.output_path
+                face_emotions_annotation_id, server_face_emotions_annotation_id = compute_face_emotions_annotation(
+                    client, server_shots_id, server_face_emotions_id, output_path=args.output_path
                 )
                 f.write(
                     json.dumps(
@@ -343,6 +365,7 @@ def main():
                             "video_id": input_file,
                             "type": "face_emotions_annotaion",
                             "face_emotions_annotation_id": face_emotions_annotation_id,
+                            "server_face_emotions_annotation_id": server_face_emotions_annotation_id,
                         }
                     )
                     + "\n"
@@ -351,10 +374,13 @@ def main():
                 face_emotions_annotation_id = existing_face_emotions_annotaion_data[input_file][
                     "face_emotions_annotation_id"
                 ]
+                server_face_emotions_annotation_id = existing_face_emotions_annotaion_data[input_file][
+                    "server_face_emotions_annotation_id"
+                ]
 
             if input_file not in existing_shot_size_annotaion_data:
-                shot_size_annotation_id = compute_shot_sizes_annotation(
-                    client, shots_id, shot_size_id, output_path=args.output_path
+                shot_size_annotation_id, server_shot_size_annotation_id = compute_shot_sizes_annotation(
+                    client, server_shots_id, server_shot_size_id, output_path=args.output_path
                 )
                 f.write(
                     json.dumps(
@@ -362,16 +388,32 @@ def main():
                             "video_id": input_file,
                             "type": "shot_size_annotaion",
                             "shot_size_annotation_id": shot_size_annotation_id,
+                            "server_shot_size_annotation_id": server_shot_size_annotation_id,
                         }
                     )
                     + "\n"
                 )
             else:
                 shot_size_annotation_id = existing_shot_size_annotaion_data[input_file]["shot_size_annotation_id"]
+                server_shot_size_annotation_id = existing_shot_size_annotaion_data[input_file][
+                    "server_shot_size_annotation_id"
+                ]
 
             if input_file not in existing_places_annotaion_data:
-                places365_annotation_id, places16_annotation_id, places3_annotation_id = compute_places_annotation(
-                    client, shots_id, places365_id, places16_id, places3_id, output_path=args.output_path
+                (
+                    places365_annotation_id,
+                    places16_annotation_id,
+                    places3_annotation_id,
+                    server_places365_annotation_id,
+                    server_places16_annotation_id,
+                    server_places3_annotation_id,
+                ) = compute_places_annotation(
+                    client,
+                    server_shots_id,
+                    server_places365_id,
+                    server_places16_id,
+                    server_places3_id,
+                    output_path=args.output_path,
                 )
                 f.write(
                     json.dumps(
@@ -381,6 +423,9 @@ def main():
                             "places365_annotation_id": places365_annotation_id,
                             "places16_annotation_id": places16_annotation_id,
                             "places3_annotation_id": places3_annotation_id,
+                            "server_places365_annotation_id": server_places365_annotation_id,
+                            "server_places16_annotation_id": server_places16_annotation_id,
+                            "server_places3_annotation_id": server_places3_annotation_id,
                         }
                     )
                     + "\n"
@@ -389,6 +434,15 @@ def main():
                 places365_annotation_id = existing_places_annotaion_data[input_file]["places365_annotation_id"]
                 places16_annotation_id = existing_places_annotaion_data[input_file]["places16_annotation_id"]
                 places3_annotation_id = existing_places_annotaion_data[input_file]["places3_annotation_id"]
+                server_places365_annotation_id = existing_places_annotaion_data[input_file][
+                    "server_places365_annotation_id"
+                ]
+                server_places16_annotation_id = existing_places_annotaion_data[input_file][
+                    "server_places16_annotation_id"
+                ]
+                server_places3_annotation_id = existing_places_annotaion_data[input_file][
+                    "server_places3_annotation_id"
+                ]
 
     return 0
 
