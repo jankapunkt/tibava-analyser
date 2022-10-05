@@ -206,6 +206,8 @@ class VideoData(PluginData):
             for x in stream:
                 f.write(x.data_encoded)
 
+            f.flush()
+
         return cls(id=data_id, ext=ext, data_dir=data_dir)
 
     def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
@@ -284,10 +286,14 @@ class ImagesData(PluginData):
         for x in stream:
             unpacker.feed(x.data_encoded)
             for image in unpacker:
+                if not isinstance(image, dict):
+                    logging.error(f"[ImagesData::load_from_stream] data_encoded should be a dict {image}")
+                    return None
                 image_id = generate_id()
                 image_path = create_data_path(data_dir, image_id, image.get("ext"))
                 with open(image_path, "wb") as f:
                     f.write(image.get("image"))
+                    f.flush()
                 images.append(
                     ImageData(
                         data_dir=data_dir,
@@ -381,6 +387,8 @@ class ShotsData(PluginData):
             for x in stream:
                 f.write(x.data_encoded)
 
+            f.flush()
+
         data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
 
         return cls(**data_args, **cls.load_blob_args(data_args))
@@ -431,6 +439,8 @@ class AudioData(PluginData):
             f.write(firstpkg.data_encoded)
             for x in stream:
                 f.write(x.data_encoded)
+
+            f.flush()
 
         return cls(id=data_id, ext=ext, data_dir=data_dir)
 
@@ -489,6 +499,8 @@ class HistData(PluginData):
             f.write(firstpkg.data_encoded)
             for x in stream:
                 f.write(x.data_encoded)
+
+            f.flush()
 
         data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
 
@@ -568,6 +580,8 @@ class AnnotationData(PluginData):
             for x in stream:
                 f.write(x.data_encoded)
 
+            f.flush()
+
         data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
 
         return cls(**data_args, **cls.load_blob_args(data_args))
@@ -626,6 +640,8 @@ class ScalarData(PluginData):
             f.write(firstpkg.data_encoded)
             for x in stream:
                 f.write(x.data_encoded)
+
+            f.flush()
 
         data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
 
@@ -696,6 +712,8 @@ class RGBData(PluginData):
             f.write(firstpkg.data_encoded)
             for x in stream:
                 f.write(x.data_encoded)
+
+            f.flush()
 
         data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
 
