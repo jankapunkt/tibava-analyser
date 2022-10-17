@@ -46,6 +46,7 @@ class InferenceServer:
         port: int = 6379,
         inputs: Union[AnyStr, List[AnyStr]] = None,
         outputs: Union[AnyStr, List[AnyStr]] = None,
+        batch: int = 16,
     ):
         try:
             import redisai as rai
@@ -57,6 +58,7 @@ class InferenceServer:
         self.model_file = model_file
         self.host = host
         self.port = port
+        self.batch = batch
 
         self.con = None
         start_time = time.time()
@@ -102,7 +104,7 @@ class InferenceServer:
                     backend=self.backend_lut[backend],
                     device=self.device_lut[device],
                     data=model,
-                    batch=16,
+                    batch=self.batch,
                     inputs=inputs,
                     outputs=outputs,
                 )
