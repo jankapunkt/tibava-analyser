@@ -256,6 +256,7 @@ def parse_args():
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-d", "--debug", action="store_true", help="debug output")
     parser.add_argument("-c", "--config", help="config path")
+    parser.add_argument("--port", type=int, help="port")
     args = parser.parse_args()
     return args
 
@@ -276,7 +277,9 @@ def main():
     else:
         config = {}
 
-    time.sleep(1)  # TODO
+    if args.port:
+        config["grpc"]["port"] = args.port
+
     server = Server(config)
     server.run()
     return 0
