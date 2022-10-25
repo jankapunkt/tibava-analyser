@@ -39,40 +39,39 @@ def main():
 
     dst_data_manager = DataManager(data_dir=args.output_path)
     for k, v in video_data.items():
-        print(k)
         if "shot" in v:
             data = src_data_manager.load(v["shot"]["shots_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
 
         if "face_emotions" in v:
             data = src_data_manager.load(v["face_emotions"]["face_emotions_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
         if "shot_size" in v:
             data = src_data_manager.load(v["shot_size"]["shot_size_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
         if "places" in v:
             data = src_data_manager.load(v["places"]["places365_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
             data = src_data_manager.load(v["places"]["places16_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
             data = src_data_manager.load(v["places"]["places3_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
 
         if "face_emotions_annotaion" in v:
             data = src_data_manager.load(v["face_emotions_annotaion"]["face_emotions_annotation_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
 
         if "places_annotaion" in v:
             data = src_data_manager.load(v["places_annotaion"]["places365_annotation_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
             data = src_data_manager.load(v["places_annotaion"]["places16_annotation_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
             data = src_data_manager.load(v["places_annotaion"]["places3_annotation_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
 
         if "shot_size_annotaion" in v:
             data = src_data_manager.load(v["shot_size_annotaion"]["shot_size_annotation_id"])
-            print(dst_data_manager.save(data))
+            dst_data_manager.save(data)
 
     return 0
 

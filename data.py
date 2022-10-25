@@ -78,6 +78,15 @@ class DataManager:
     def dump_to_stream(self, data: PluginData):
         return data.dump_to_stream()
 
+    def check(self, data_id: str, data_dir: str = None) -> PluginData:
+        if not data_dir:
+            data_dir = self.data_dir
+        try:
+            data = PluginData.load(data_dir=data_dir, id=data_id, load_blob=False)
+            return data
+        except:
+            return None
+
     @classmethod
     def _load(self, data_dir: str, data_id: str) -> PluginData:
         data = PluginData.load(data_dir=data_dir, id=data_id, load_blob=False)

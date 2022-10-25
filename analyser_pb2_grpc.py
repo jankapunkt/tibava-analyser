@@ -29,6 +29,11 @@ class AnalyserStub(object):
             request_serializer=analyser__pb2.DownloadDataRequest.SerializeToString,
             response_deserializer=analyser__pb2.DownloadDataResponse.FromString,
         )
+        self.check_data = channel.stream_unary(
+            "/tibava.analyser.Analyser/check_data",
+            request_serializer=analyser__pb2.CheckDataRequest.SerializeToString,
+            response_deserializer=analyser__pb2.CheckDataResponse.FromString,
+        )
         self.run_plugin = channel.unary_unary(
             "/tibava.analyser.Analyser/run_plugin",
             request_serializer=analyser__pb2.RunPluginRequest.SerializeToString,
@@ -57,6 +62,12 @@ class AnalyserServicer(object):
         raise NotImplementedError("Method not implemented!")
 
     def download_data(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def check_data(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -91,6 +102,11 @@ def add_AnalyserServicer_to_server(servicer, server):
             servicer.download_data,
             request_deserializer=analyser__pb2.DownloadDataRequest.FromString,
             response_serializer=analyser__pb2.DownloadDataResponse.SerializeToString,
+        ),
+        "check_data": grpc.stream_unary_rpc_method_handler(
+            servicer.check_data,
+            request_deserializer=analyser__pb2.CheckDataRequest.FromString,
+            response_serializer=analyser__pb2.CheckDataResponse.SerializeToString,
         ),
         "run_plugin": grpc.unary_unary_rpc_method_handler(
             servicer.run_plugin,
@@ -188,6 +204,35 @@ class Analyser(object):
             "/tibava.analyser.Analyser/download_data",
             analyser__pb2.DownloadDataRequest.SerializeToString,
             analyser__pb2.DownloadDataResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def check_data(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            "/tibava.analyser.Analyser/check_data",
+            analyser__pb2.CheckDataRequest.SerializeToString,
+            analyser__pb2.CheckDataResponse.FromString,
             options,
             channel_credentials,
             insecure,

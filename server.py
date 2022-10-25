@@ -15,12 +15,12 @@ import multiprocessing as mp
 
 
 from google.protobuf.json_format import MessageToJson
-from analyser.plugins.plugin import ProgressCallback
+from analyser.plugins.analyser import AnalyserProgressCallback
 
 import analyser_pb2, analyser_pb2_grpc
 import grpc
 
-from analyser.plugins.manager import AnalyserPluginManager
+from analyser.plugins.analyser import AnalyserPluginManager
 from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 from analyser.data import DataManager
@@ -51,7 +51,7 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
                 # data = data_manager.load(data_in.get("name"))
                 # plugin_inputs[data_in.get("name")] = data
-        callbacks = [ProgressCallback(shared)]
+        callbacks = [AnalyserProgressCallback(shared)]
         results = plugin_manager(
             plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
         )
@@ -126,6 +126,18 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             context.set_code(grpc.StatusCode.DATA_LOSS)
             context.set_details(f"Error transferring data with id {data.id}")
             return analyser_pb2.UploadDataResponse(success=False)
+
+    def check_data(self, request, context):
+        try:
+            data = self.managers["data_manager"].checkdata(request.data.id)
+            if data is not None:
+                return analyser_pb2.CheckDataResponse(exists=True)
+            return analyser_pb2.CheckDataResponse(exists=False)
+
+        except Exception as e:
+            logging.error(f"[Analyser] {repr(e)}")
+            logging.error(traceback.format_exc())
+            return analyser_pb2.CheckDataResponse(exists=False)
 
     def run_plugin(self, request, context):
 

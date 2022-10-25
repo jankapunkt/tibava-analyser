@@ -10,6 +10,7 @@ service Analyser {
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply);
   rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
+  rpc check_data(stream CheckDataRequest) returns (CheckDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
   rpc get_plugin_status(GetPluginStatusRequest)
       returns (GetPluginStatusResponse);
@@ -77,6 +78,7 @@ message UploadDataRequest {
 message UploadDataResponse {
   string id = 1;
   bool success = 2;
+  string hash = 3;
 }
 
 message DownloadDataRequest { string id = 1; }
@@ -85,6 +87,13 @@ message DownloadDataResponse {
   bytes data_encoded = 1;
   PluginDataType type = 2;
   string ext = 3;
+  string hash = 4;
+}
+
+message CheckDataRequest { string id = 1; }
+message CheckDataResponse {
+  bool exists = 1;
+  string hash = 2;
 }
 
 message PluginParameter {

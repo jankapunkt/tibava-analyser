@@ -266,6 +266,7 @@ def main():
         for input_file in input_files:
 
             logging.info(f"Start uploading {input_file}")
+            logging.info(input_file)
             video_id = client.upload_file(input_file)
             logging.info(f"Upload done: {video_id}")
 
