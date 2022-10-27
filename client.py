@@ -85,7 +85,6 @@ class AnalyserClient:
 
         class RequestGenerator:
             def __init__(self, path, chunk_size=128 * 1024):
-                print("BAR")
                 self.chunk_size = chunk_size
                 self.path = path
                 self.hash_stream = None
@@ -98,20 +97,22 @@ class AnalyserClient:
                         if not data:
                             break
                         self.hash_stream.update(data)
-                        print(f"Data {len(data)}")
                         yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
 
             def hash(self):
                 return self.hash_stream.hexdigest()
 
-        generator = RequestGenerator(path)
+        try_count = 3
+        while try_count > 0:
+            generator = RequestGenerator(path)
 
-        response = stub.upload_data(generator())
-        print(generator.hash())
-        if response.success:
-            print(response.hash)
-            return response.id
-        print(response.hash)
+            response = stub.upload_data(generator())
+
+            if response.hash == generator.hash() and response.success:
+                return response.id
+
+            logging.warning("Retry to upload the data again ...")
+            try_count -= 1
 
         logging.error("Error while copying data ...")
         return None
