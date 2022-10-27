@@ -10,7 +10,7 @@ service Analyser {
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply);
   rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
-  rpc check_data(stream CheckDataRequest) returns (CheckDataResponse);
+  rpc check_data(CheckDataRequest) returns (CheckDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
   rpc get_plugin_status(GetPluginStatusRequest)
       returns (GetPluginStatusResponse);

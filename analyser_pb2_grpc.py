@@ -29,7 +29,7 @@ class AnalyserStub(object):
             request_serializer=analyser__pb2.DownloadDataRequest.SerializeToString,
             response_deserializer=analyser__pb2.DownloadDataResponse.FromString,
         )
-        self.check_data = channel.stream_unary(
+        self.check_data = channel.unary_unary(
             "/tibava.analyser.Analyser/check_data",
             request_serializer=analyser__pb2.CheckDataRequest.SerializeToString,
             response_deserializer=analyser__pb2.CheckDataResponse.FromString,
@@ -67,7 +67,7 @@ class AnalyserServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def check_data(self, request_iterator, context):
+    def check_data(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -103,7 +103,7 @@ def add_AnalyserServicer_to_server(servicer, server):
             request_deserializer=analyser__pb2.DownloadDataRequest.FromString,
             response_serializer=analyser__pb2.DownloadDataResponse.SerializeToString,
         ),
-        "check_data": grpc.stream_unary_rpc_method_handler(
+        "check_data": grpc.unary_unary_rpc_method_handler(
             servicer.check_data,
             request_deserializer=analyser__pb2.CheckDataRequest.FromString,
             response_serializer=analyser__pb2.CheckDataResponse.SerializeToString,
@@ -216,7 +216,7 @@ class Analyser(object):
 
     @staticmethod
     def check_data(
-        request_iterator,
+        request,
         target,
         options=(),
         channel_credentials=None,
@@ -227,8 +227,8 @@ class Analyser(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.stream_unary(
-            request_iterator,
+        return grpc.experimental.unary_unary(
+            request,
             target,
             "/tibava.analyser.Analyser/check_data",
             analyser__pb2.CheckDataRequest.SerializeToString,

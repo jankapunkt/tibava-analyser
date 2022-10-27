@@ -129,7 +129,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def check_data(self, request, context):
         try:
-            data = self.managers["data_manager"].checkdata(request.data.id)
+            data = self.managers["data_manager"].check(request.id)
             if data is not None:
                 return analyser_pb2.CheckDataResponse(exists=True)
             return analyser_pb2.CheckDataResponse(exists=False)

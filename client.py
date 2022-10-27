@@ -116,6 +116,15 @@ class AnalyserClient:
         logging.error("Error while copying data ...")
         return None
 
+    def check_data(self, data_id):
+
+        run_request = analyser_pb2.CheckDataRequest(id=data_id)
+
+        stub = analyser_pb2_grpc.AnalyserStub(self.channel)
+
+        response = stub.check_data(run_request)
+        return response.exists
+
     def run_plugin(self, plugin, inputs, parameters):
 
         run_request = analyser_pb2.RunPluginRequest()

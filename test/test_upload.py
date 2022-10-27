@@ -34,6 +34,9 @@ def main():
     data_id = client.upload_file(args.input_path)
     logging.info(f"Upload done: {data_id}")
 
+    exists = client.check_data(data_id)
+    print(exists)
+
     # logging.info(f"Downloading: {data_id}")
     # logging.info(client.download_data(data_id, args.output_path))
 
