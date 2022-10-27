@@ -5,6 +5,7 @@ import logging
 import uuid
 import json
 import tempfile
+import hashlib
 import traceback
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -56,9 +57,13 @@ class DataManager:
         datastream = iter(data)
         firstpkg = next(datastream)
 
+        hash_stream = hashlib.sha1()
         def data_generator():
             yield firstpkg
+
+            hash_stream.update(firstpkg.data_encoded)
             for x in datastream:
+                hash_stream.update(x.data_encoded)
                 yield x
 
         data = None
@@ -70,7 +75,7 @@ class DataManager:
             with open(create_data_path(data_dir, data.id, "json"), "w") as f:
                 f.write(json.dumps(data.dumps(), indent=2))
 
-        return data
+        return data, hash_stream.hexdigest()
 
     def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
         return self._load_from_stream(self.data_dir, data, save_meta)
@@ -217,8 +222,10 @@ class VideoData(PluginData):
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
+            print(len(firstpkg.data_encoded))
             f.write(firstpkg.data_encoded)
             for x in stream:
+                print(len(x.data_encoded))
                 f.write(x.data_encoded)
 
             f.flush()
@@ -251,10 +258,9 @@ class ImagesData(PluginData):
     ext: str = field(default="msg")
     type: str = field(default="ImagesData")
 
-
     def to_dict(self) -> dict:
         meta = super().to_dict()
-        return {**meta, "images" : [image.to_dict() for image in self.images]}
+        return {**meta, "images": [image.to_dict() for image in self.images]}
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[ImagesData::save_blob]")
@@ -368,7 +374,7 @@ class Shot:
     end: float
 
     def to_dict(self) -> dict:
-        return {"start" : self.start, "end" : self.end}
+        return {"start": self.start, "end": self.end}
 
 
 @DataManager.export("ShotsData", analyser_pb2.SHOTS_DATA)
@@ -380,7 +386,7 @@ class ShotsData(PluginData):
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
-        return {**meta, "shots" : [shot.to_dict() for shot in self.shots]}
+        return {**meta, "shots": [shot.to_dict() for shot in self.shots]}
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[ShotsData::save_blob]")
@@ -493,7 +499,6 @@ class HistData(PluginData):
     delta_time: float = field(default=None)
     name: str = field(default=None)
 
-
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {**meta, "hist": self.hist, "time": self.time, "delta_time": self.delta_time}
@@ -571,10 +576,9 @@ class AnnotationData(PluginData):
     ext: str = field(default="msg")
     annotations: List[Annotation] = field(default_factory=list)
 
-
     def to_dict(self) -> dict:
         meta = super().to_dict()
-        return {**meta, "annotations" : [ann.to_dict() for ann in self.annotations]}
+        return {**meta, "annotations": [ann.to_dict() for ann in self.annotations]}
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[AnnotationData::save_blob]")
@@ -649,7 +653,6 @@ class ScalarData(PluginData):
     delta_time: float = field(default=None)
     name: str = field(default=None)
 
-    
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {**meta, "y": self.y, "time": self.time, "delta_time": self.delta_time}
@@ -916,12 +919,12 @@ class KpsData(PluginData):
 
     def to_dict(self) -> dict:
         return {
-                "x": self.x,
-                "y": self.y,
-                "time": self.time,
-                "delta_time": self.delta_time,
-                "ref_id": self.ref_id,
-                }
+            "x": self.x,
+            "y": self.y,
+            "time": self.time,
+            "delta_time": self.delta_time,
+            "ref_id": self.ref_id,
+        }
 
 
 @DataManager.export("KpssData", analyser_pb2.KPSS_DATA)
@@ -933,7 +936,7 @@ class KpssData(PluginData):
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
-        return {**meta, "kpss" : [kps.to_dict() for kps in self.kpss]}
+        return {**meta, "kpss": [kps.to_dict() for kps in self.kpss]}
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[KpssData::save_blob]")
@@ -1018,20 +1021,18 @@ class BboxData(PluginData):
     h: int = None
     det_score: float = 1.0
 
-
     def to_dict(self) -> dict:
         return {
-        "x": self.x,
-        "y": self.y,
-        "w": self.w,
-        "h": self.h,
-        "det_score": self.det_score,
-        "time": self.time,
-        "delta_time": self.delta_time,
-        "ref_id": self.ref_id,
-        "image_id" : self.image_id
+            "x": self.x,
+            "y": self.y,
+            "w": self.w,
+            "h": self.h,
+            "det_score": self.det_score,
+            "time": self.time,
+            "delta_time": self.delta_time,
+            "ref_id": self.ref_id,
+            "image_id": self.image_id,
         }
-        
 
 
 @DataManager.export("BboxesData", analyser_pb2.BBOXES_DATA)
@@ -1125,7 +1126,8 @@ class StringData(PluginData):
     text: str = None
 
     def to_dict(self) -> dict:
-        return {"text" : self.text}
+        return {"text": self.text}
+
 
 @dataclass(kw_only=True, frozen=True)
 class ImageEmbedding(PluginData):
@@ -1135,8 +1137,12 @@ class ImageEmbedding(PluginData):
     embedding: npt.NDArray = field(default_factory=np.ndarray)
 
     def to_dict(self) -> dict:
-        return {"image_id": self.image_id, "time" : self.time, "delta_time": self.delta_time, "embedding": self.embedding}
-
+        return {
+            "image_id": self.image_id,
+            "time": self.time,
+            "delta_time": self.delta_time,
+            "embedding": self.embedding,
+        }
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -1146,7 +1152,11 @@ class TextEmbedding(PluginData):
     embedding: npt.NDArray = field(default_factory=np.ndarray)
 
     def to_dict(self) -> dict:
-        return {"text_id": self.text_id, "text" : self.text, "embedding": self.embedding,}
+        return {
+            "text_id": self.text_id,
+            "text": self.text,
+            "embedding": self.embedding,
+        }
 
 
 @DataManager.export("ImageEmbeddings", analyser_pb2.IMAGE_EMBEDDING_DATA)
@@ -1159,7 +1169,6 @@ class ImageEmbeddings(PluginData):
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {**meta, "image_embeddings": [emb.to_dict() for emb in self.embeddings]}
-
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[ImageEmbeddings::save_blob]")

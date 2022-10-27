@@ -3,6 +3,7 @@ import sys
 import re
 import argparse
 import logging
+import hashlib
 import mimetypes
 from typing import Iterator, Any
 
@@ -82,20 +83,35 @@ class AnalyserClient:
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
-        def generate_requests(file_object, chunk_size=128 * 1024):
-            """Lazy function (generator) to read a file piece by piece.
-            Default chunk size: 1k"""
-            with open(file_object, "rb") as bytestream:
-                while True:
-                    data = bytestream.read(chunk_size)
-                    if not data:
-                        break
-                    yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
+        class RequestGenerator:
+            def __init__(self, path, chunk_size=128 * 1024):
+                print("BAR")
+                self.chunk_size = chunk_size
+                self.path = path
+                self.hash_stream = None
 
-        response = stub.upload_data(generate_requests(path))
+            def __call__(self):
+                self.hash_stream = hashlib.sha1()
+                with open(self.path, "rb") as f:
+                    while True:
+                        data = f.read(self.chunk_size)
+                        if not data:
+                            break
+                        self.hash_stream.update(data)
+                        print(f"Data {len(data)}")
+                        yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
 
+            def hash(self):
+                return self.hash_stream.hexdigest()
+
+        generator = RequestGenerator(path)
+
+        response = stub.upload_data(generator())
+        print(generator.hash())
         if response.success:
+            print(response.hash)
             return response.id
+        print(response.hash)
 
         logging.error("Error while copying data ...")
         return None
