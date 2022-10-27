@@ -186,7 +186,7 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
-        data = DataManager(output_path).load_from_stream(response)
+        data, hash = DataManager(output_path).load_from_stream(response)
         return data
 
     def download_data_to_blob(self, data_id, output_path):
