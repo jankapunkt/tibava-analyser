@@ -61,7 +61,7 @@ class VideoDecoder:
 
             scale = min(self._max_dimension / res, 1)
             res = (round(self._size[0] * scale), round(self._size[1] * scale))
-            video_reader = iio.imread(
+            video_reader = iio.imiter(
                 self._path,
                 plugin="pyav",
                 filter_sequence=[
@@ -70,7 +70,7 @@ class VideoDecoder:
                 ],
             )
         else:
-            video_reader = iio.imread(
+            video_reader = iio.imiter(
                 self._path,
                 plugin="pyav",
                 filter_sequence=[
