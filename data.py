@@ -882,7 +882,8 @@ class ListData(PluginData):
 
         data = []
         while not yielder.empty:
-            data.append(DataManager._load_from_stream(data_dir, yielder))
+            d, h = DataManager._load_from_stream(data_dir, yielder)
+            data.append(d)
 
         data_obj = cls(
             data_dir=data_dir,
