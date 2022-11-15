@@ -35,6 +35,8 @@ RUN python3 -m pip install librosa
 RUN python3 -m pip install ffmpeg-python
 RUN python3 -m pip install av
 
+RUN python3 -m pip install pytest
+
 
 RUN python3 -m pip install ftfy
 RUN python3 -m pip install regex

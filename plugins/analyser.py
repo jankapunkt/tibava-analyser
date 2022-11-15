@@ -11,7 +11,7 @@ from numpy import require
 
 import numpy.typing as npt
 
-from analyser.plugins.plugin import Manager
+from analyser.plugins.plugin import Plugin, Manager
 from analyser.utils import convert_name
 from analyser.data import PluginData, VideoData, AudioData, ImageData
 from analyser import analyser_pb2
@@ -30,20 +30,16 @@ class AnalyserProgressCallback(AnalyserPluginCallback):
         self.shared_memory["progress"] = progress
 
 
-class AnalyserPlugin:
+class AnalyserPlugin(Plugin):
     @classmethod
     def __init_subclass__(
         cls,
-        config: Dict[str, Any] = None,
         parameters: Dict[str, Any] = None,
-        version: str = None,
         requires: Dict[str, Type[PluginData]] = None,
         provides: Dict[str, Type[PluginData]] = None,
         **kwargs,
     ):
         super().__init_subclass__(**kwargs)
-        cls._default_config = config
-        cls._version = version
         cls._requires = requires
         cls._provides = provides
         cls._parameters = parameters
@@ -53,25 +49,6 @@ class AnalyserPlugin:
         self._config = self._default_config
         if config is not None:
             self._config.update(config)
-
-    @property
-    def config(self):
-        return self._config
-
-    @classmethod
-    @property
-    def default_config(cls):
-        return cls._default_config
-
-    @classmethod
-    @property
-    def version(cls):
-        return cls._version
-
-    @classmethod
-    @property
-    def name(cls):
-        return cls._name
 
     @classmethod
     @property
