@@ -30,6 +30,10 @@ class RedisDatabase(Database, config=default_config, version="0.1"):
         tag = self.config.get("tag")
         self.r.set(f"{tag}:{id}", packed)
 
+    def delete(self, id: str) -> bool:
+        tag = self.config.get("tag")
+        return self.r.delete(f"{tag}:{id}")
+
     def get(self, id: str) -> Any:
         tag = self.config.get("tag")
         packed = self.r.get(f"{tag}:{id}")
@@ -40,22 +44,18 @@ class RedisDatabase(Database, config=default_config, version="0.1"):
         start = len(f"{tag}:")
         keys = self.r.scan_iter(f"{tag}:*", 500)
 
-        print([x for x in Batcher(keys, 2)])
+        # print([x for x in Batcher(keys, 2)])
         return [key[start:].decode("utf-8") for key in keys]
 
     def __iter__(self) -> Iterator:
-        # class Iterator:
-        #     def __init__(self):
-        #         pass
-
-        #     def __next__(self):
-        #         pass
 
         tag = self.config.get("tag")
         start = len(f"{tag}:")
-        keys = self.r.scan_iter(f"{tag}:*", 500)
-        return [key[start:].decode("utf-8") for key in keys]
+        keys = list(self.r.scan_iter(f"{tag}:*", 500))
+        while len(keys) > 0:
+            batch_keys = keys[:500]
+            keys = keys[500:]
 
-        # for x in range(10):
-        #     r.
-        #     yield x
+            values = self.r.mget(batch_keys)
+            for k, v in zip(batch_keys, values):
+                yield k[start:].decode("utf-8"), msgpack.unpackb(v)

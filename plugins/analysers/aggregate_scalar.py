@@ -48,6 +48,10 @@ class AggregateScalar(
             return np.mean(probs_interp, axis=0)
         if aggregation == "prod":
             return np.prod(probs_interp, axis=0)
+        if aggregation == "or":
+            return 1 - np.prod(1 - probs_interp, axis=0)
+        if aggregation == "and":
+            return np.prod(probs_interp, axis=0)
         else:
             logging.error("Unknown aggregation method. Using <mean> instead.")
 

@@ -10,5 +10,5 @@ for f in $FILES
 do
     fname=$(basename "$f")
     echo "#### sudo docker-compose exec analyser python3 /app/analyser/test/$fname -v"
-    sudo docker compose exec analyser python3 /app/analyser/test/$fname -v
+    sudo docker compose exec analyser python3 /app/analyser/examples/$fname -v
 done

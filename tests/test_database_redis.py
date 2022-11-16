@@ -17,9 +17,16 @@ def test_check_data():
     assert data.get("data_id") == original_data.get("data_id")
     assert data.get("last_access") == original_data.get("last_access")
 
-    print(database.keys())
     assert data_id in database.keys()
 
-    for x in database:
-        print(x)
-    assert False
+    founded = False
+    for k, v in database:
+        if k == data_id:
+            assert v.get("data_id") == original_data.get("data_id")
+            assert v.get("last_access") == original_data.get("last_access")
+            founded = True
+
+    assert founded
+
+    assert not database.delete(generate_id())
+    assert database.delete(data_id)
