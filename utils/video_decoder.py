@@ -64,6 +64,7 @@ class VideoDecoder:
             video_reader = iio.imiter(
                 self._path,
                 plugin="pyav",
+                format="rgb24",
                 filter_sequence=[
                     ("fps", {"fps": f"{self._fps}", "round": "up"}),
                     ("scale", {"width": f"{res[0]}", "height": f"{res[1]}"}),
@@ -73,6 +74,7 @@ class VideoDecoder:
             video_reader = iio.imiter(
                 self._path,
                 plugin="pyav",
+                format="rgb24",
                 filter_sequence=[
                     ("fps", {"fps": f"{self._fps}", "round": "up"}),
                 ],
