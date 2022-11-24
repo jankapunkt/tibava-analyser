@@ -30,6 +30,12 @@ plugins:
   - plugin: insightface_image_feature_extractor
     params:
       host: analyser_redisai
+  - plugin: insightface_video_gender_age_calculator
+    params:
+      host: analyser_redisai
+  - plugin: insightface_image_gender_age_calculator
+    params:
+      host: analyser_redisai
   - plugin: insightface_facesize
     params:
       host: analyser_redisai
