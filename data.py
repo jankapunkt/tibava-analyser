@@ -58,6 +58,7 @@ class DataManager:
         firstpkg = next(datastream)
 
         hash_stream = hashlib.sha1()
+
         def data_generator():
             yield firstpkg
 
@@ -243,12 +244,13 @@ class VideoData(PluginData):
 
 @dataclass(kw_only=True, frozen=True)
 class ImageData(PluginData):
+    ref_id: str = None
     time: float = None
     delta_time: float = field(default=None)
     ext: str = field(default="jpg")
 
     def to_dict(self) -> dict:
-        return {"time": self.time, "delta_time": self.delta_time, "ext": self.ext}
+        return {"ref_id": self.ref_id, "time": self.time, "delta_time": self.delta_time, "ext": self.ext}
 
 
 @DataManager.export("ImagesData", analyser_pb2.IMAGES_DATA)
@@ -271,7 +273,13 @@ class ImagesData(PluginData):
                     msgpack.packb(
                         {
                             "images": [
-                                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "id": image.id}
+                                {
+                                    "ref_id": image.ref_id,
+                                    "time": image.time,
+                                    "delta_time": image.delta_time,
+                                    "ext": image.ext,
+                                    "id": image.id,
+                                }
                                 for image in self.images
                             ]
                         }
@@ -293,6 +301,7 @@ class ImagesData(PluginData):
                         time=x["time"],
                         delta_time=x["delta_time"],
                         id=x["id"],
+                        ref_id=x["ref_id"],
                         ext=x["ext"],
                         data_dir=data.get("data_dir"),
                     )
@@ -327,6 +336,7 @@ class ImagesData(PluginData):
                     ImageData(
                         data_dir=data_dir,
                         id=image_id,
+                        ref_id=image.get("ref_id"),
                         ext=image.get("ext"),
                         time=image.get("time"),
                         delta_time=image.get("delta_time"),
@@ -344,7 +354,13 @@ class ImagesData(PluginData):
             with open(create_data_path(self.data_dir, image.id, image.ext), "rb") as f:
                 image_raw = f.read()
             dump = msgpack.packb(
-                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "image": image_raw}
+                {
+                    "time": image.time,
+                    "delta_time": image.delta_time,
+                    "ext": image.ext,
+                    "image": image_raw,
+                    "ref_id": image.ref_id,
+                }
             )
             buffer.write(dump)
 
@@ -362,7 +378,13 @@ class ImagesData(PluginData):
     def dumps_to_web(self):
         return {
             "images": [
-                {"time": image.time, "delta_time": image.delta_time, "ext": image.ext, "id": image.id}
+                {
+                    "time": image.time,
+                    "delta_time": image.delta_time,
+                    "ext": image.ext,
+                    "id": image.id,
+                    "ref_id": image.ref_id,
+                }
                 for image in self.images
             ]
         }
@@ -648,6 +670,7 @@ class AnnotationData(PluginData):
 class ScalarData(PluginData):
     type: str = field(default="ScalarData")
     ext: str = field(default="msg")
+    ref_id: str = None
     y: npt.NDArray = field()
     time: List[float] = field(default_factory=list)
     delta_time: float = field(default=None)
@@ -655,14 +678,17 @@ class ScalarData(PluginData):
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
-        return {**meta, "y": self.y, "time": self.time, "delta_time": self.delta_time}
+        return {**meta, "ref_id": self.ref_id, "y": self.y, "time": self.time, "delta_time": self.delta_time}
 
     def save_blob(self, data_dir=None, path=None):
         logging.debug(f"[ScalarData::save_blob]")
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
-                    msgpack.packb({"y": self.y, "time": self.time, "delta_time": self.delta_time}, default=m.encode)
+                    msgpack.packb(
+                        {"ref_id": self.ref_id, "y": self.y, "time": self.time, "delta_time": self.delta_time},
+                        default=m.encode,
+                    )
                 )
         except Exception as e:
             logging.error(f"ScalarData::save_blob {e}")
@@ -715,7 +741,7 @@ class ScalarData(PluginData):
         if hasattr(time, "tolist"):
             time = time.tolist()
 
-        return {"y": y, "time": time, "delta_time": self.delta_time}
+        return {"ref_id": self.ref_id, "y": y, "time": time, "delta_time": self.delta_time}
 
 
 @DataManager.export("RGBData", analyser_pb2.RGB_DATA)
@@ -1011,6 +1037,92 @@ class KpssData(PluginData):
 
 
 @dataclass(kw_only=True, frozen=True)
+class FaceData(PluginData):
+    bbox_id: str = None
+    kps_id: str = None
+    img_id: str = None
+
+    def to_dict(self) -> dict:
+        return {"bbox_id": self.bbox_id, "kps_id": self.kps_id, "img_id": self.img_id}
+
+
+@DataManager.export("FacesData", analyser_pb2.FACES_DATA)
+@dataclass(kw_only=True, frozen=True)
+class FacesData(PluginData):
+    type: str = field(default="FacesData")
+    ext: str = field(default="msg")
+    faces: List[FaceData] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        meta = super().to_dict()
+        return {**meta, "faces": [face.to_dict() for face in self.faces]}
+
+    def save_blob(self, data_dir=None, path=None):
+        logging.debug(f"[FacesData::save_blob]")
+        try:
+            with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
+                f.write(
+                    msgpack.packb(
+                        {
+                            "faces": [
+                                {"bbox_id": face.bbox_id, "kps_id": face.kps_id, "img_id": face.img_id}
+                                for face in self.faces
+                            ]
+                        },
+                        default=m.encode,
+                    )
+                )
+        except Exception as e:
+            logging.error(f"FacesData::save_blob {e}")
+            return False
+        return True
+
+    @classmethod
+    def load_blob_args(cls, data: dict) -> dict:
+        logging.debug(f"[FacesData::load_blob_args]")
+        with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
+            data = msgpack.unpackb(f.read(), object_hook=m.decode)
+            faces = {"faces": [FaceData(**face) for face in data.get("faces")]}
+        return faces
+
+    @classmethod
+    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+        firstpkg = next(stream)
+        if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
+            ext = firstpkg.ext
+        else:
+            ext = "msg"
+
+        data_id = generate_id()
+        path = create_data_path(data_dir, data_id, ext)
+
+        with open(path, "wb") as f:
+            f.write(firstpkg.data_encoded)
+            for x in stream:
+                f.write(x.data_encoded)
+
+        data_args = {"id": data_id, "ext": ext, "data_dir": data_dir}
+
+        return cls(**data_args, **cls.load_blob_args(data_args))
+
+    def dump_to_stream(self, chunk_size=1024) -> Iterator[dict]:
+        self.save(self.data_dir)
+        with open(create_data_path(self.data_dir, self.id, "msg"), "rb") as bytestream:
+            while True:
+                chunk = bytestream.read(chunk_size)
+                if not chunk:
+                    break
+                yield {"type": analyser_pb2.FACES_DATA, "data_encoded": chunk, "ext": self.ext}
+
+    def dumps_to_web(self):
+        if hasattr(self.faces, "tolist"):
+            faces = self.faces.tolist()  # TODO
+        else:
+            faces = self.faces
+        return {"faces": faces}
+
+
+@dataclass(kw_only=True, frozen=True)
 class BboxData(PluginData):
     image_id: int = None
     ref_id: str = None
@@ -1133,6 +1245,7 @@ class StringData(PluginData):
 @dataclass(kw_only=True, frozen=True)
 class ImageEmbedding(PluginData):
     image_id: int = None
+    ref_id: str = None
     time: float = None
     delta_time: float = field(default=None)
     embedding: npt.NDArray = field(default_factory=np.ndarray)
@@ -1140,6 +1253,7 @@ class ImageEmbedding(PluginData):
     def to_dict(self) -> dict:
         return {
             "image_id": self.image_id,
+            "ref_id": self.ref_id,
             "time": self.time,
             "delta_time": self.delta_time,
             "embedding": self.embedding,

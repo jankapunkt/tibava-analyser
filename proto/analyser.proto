@@ -46,6 +46,7 @@ enum PluginDataType {
   IMAGE_EMBEDDING_DATA = 13;
   TEXT_EMBEDDING_DATA = 14;
   KPSS_DATA = 15;
+  FACES_DATA = 16;
 }
 
 message PluginInfoData {

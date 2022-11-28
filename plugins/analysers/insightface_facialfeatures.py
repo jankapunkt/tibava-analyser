@@ -3,6 +3,7 @@ from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
 from analyser.data import (
     KpssData,
+    FacesData,
     ImagesData,
     ImageEmbedding,
     ImageEmbeddings,
@@ -144,6 +145,7 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
 
                 features.append(
                     ImageEmbedding(
+                        ref_id=face.get("face_id"),
                         embedding=self.get_feat(aimg).flatten(),
                         time=kps.time,
                         delta_time=1 / parameters.get("fps"),
@@ -180,7 +182,7 @@ default_config = {
 
 default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
 
-requires = {"video": VideoData, "kpss": KpssData}
+requires = {"video": VideoData, "kpss": KpssData, "faces": FacesData}
 provides = {"features": ImageEmbeddings}
 
 
@@ -199,13 +201,17 @@ class InsightfaceVideoFeatureExtractor(
 
     def call(self, inputs, parameters, callbacks=None):
         try:
+            faces = inputs["faces"].faces
             kpss = inputs["kpss"].kpss
             fps = 1 / kpss[0].delta_time
             assert len(kpss) > 0
 
-            # decode video to extract bboxes for frames with detected faces
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)
+            faceid_lut = {}
+            for face in faces:
+                faceid_lut[face.kps_id] = face.id
 
+            # decode video to extract kps for frames with detected faces
+            video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)
             kps_dict = {}
             num_faces = 0
             for kps in kpss:
@@ -221,7 +227,8 @@ class InsightfaceVideoFeatureExtractor(
                     t = frame["time"]
                     if t in kps_dict:
                         for kps in kps_dict[t]:
-                            yield {"frame": frame["frame"], "kps": kps}
+                            face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
+                            yield {"frame": frame["frame"], "kps": kps, "face_id": face_id}
 
             iterator = get_iterator(video_decoder, kps_dict)
             return self.get_facial_features(
@@ -272,8 +279,13 @@ class InsightfaceImageFeatureExtractor(
 
     def call(self, inputs, parameters, callbacks=None):
         try:
+            faces = inputs["faces"].faces
             kpss = inputs["kpss"].kpss
             assert len(kpss) > 0
+
+            faceid_lut = {}
+            for face in faces:
+                faceid_lut[face.kps_id] = face.id
 
             image_paths = [
                 create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
@@ -296,7 +308,8 @@ class InsightfaceImageFeatureExtractor(
                     image = iio.imread(image_path)
 
                     for kps in kps_dict[image_path]:
-                        yield {"frame": image, "kps": kps}
+                        face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
+                        yield {"frame": image, "kps": kps, "face_id": face_id}
 
             iterator = get_iterator(kps_dict)
             return self.get_facial_features(

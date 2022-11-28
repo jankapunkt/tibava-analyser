@@ -47,9 +47,12 @@ def main():
         return
 
     target_kpss_id = None
+    target_faces_id = None
     for output in result.outputs:
         if output.name == "kpss":
             target_kpss_id = output.id
+        if output.name == "faces":
+            target_faces_id = output.id
 
     target_kpss_data = client.download_data(target_kpss_id, args.output_path)
     logging.info(target_kpss_data)
@@ -59,7 +62,11 @@ def main():
     """
     job_id = client.run_plugin(
         "insightface_video_feature_extractor",
-        [{"id": data_id, "name": "video"}, {"id": target_kpss_id, "name": "kpss"}],
+        [
+            {"id": data_id, "name": "video"},
+            {"id": target_kpss_id, "name": "kpss"},
+            {"id": target_faces_id, "name": "faces"},
+        ],
         [],
     )
     logging.info(f"Job insightface_video_feature_extractor started: {job_id}")
@@ -102,9 +109,12 @@ def main():
         return
 
     query_kpss_id = None
+    query_faces_id = None
     for output in result.outputs:
         if output.name == "kpss":
             query_kpss_id = output.id
+        if output.name == "faces":
+            query_faces_id = output.id
 
     query_kpss_data = client.download_data(query_kpss_id, args.output_path)
     logging.info(query_kpss_data)
@@ -114,7 +124,11 @@ def main():
     """
     job_id = client.run_plugin(
         "insightface_image_feature_extractor",
-        [{"id": query_image_ids, "name": "images"}, {"id": query_kpss_id, "name": "kpss"}],
+        [
+            {"id": query_image_ids, "name": "images"},
+            {"id": query_kpss_id, "name": "kpss"},
+            {"id": query_faces_id, "name": "faces"},
+        ],
         [],
     )
     logging.info(f"Job insightface_image_feature_extractor started: {job_id}")

@@ -18,9 +18,7 @@ default_config = {
 
 default_parameters = {"threshold": 0.5, "reduction": "max"}
 
-requires = {
-    "images": ImagesData,
-}
+requires = {"images": ImagesData, "faces": ListData}
 
 provides = {
     "probs": ListData,
@@ -102,9 +100,13 @@ class DeepfaceEmotion(
         return img_pixels
 
     def call(self, inputs, parameters, callbacks=None):
-        predictions_dict = {}
-        # time = []
-        delta_time = None
+        time = []
+        ref_ids = []
+        predictions = []
+
+        faceid_lut = {}
+        for face in inputs["faces"].faces:
+            faceid_lut[face.img_id] = face.id
 
         for i, entry in enumerate(inputs["images"].images):
 
@@ -112,33 +114,21 @@ class DeepfaceEmotion(
             image = self.preprocess(entry.path)
 
             result = self.server({"data": image}, ["prob"])
-            if result:
-                prediction = result.get(f"prob")[0]
+            prediction = result.get(f"prob")[0] if result else None
+            face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
 
-            # self.con.tensorset(f"data_{job_id}", image)
-
-            # # modelname, input, output
-            # _ = self.con.modelrun(self.model_name, f"data_{job_id}", f"prob_{job_id}")
-            # prediction = self.con.tensorget(f"prob_{job_id}")[0]
-
-            if entry.time not in predictions_dict:
-                predictions_dict[entry.time] = []
-
-            predictions_dict[entry.time].append(prediction)
-            delta_time = entry.delta_time
-
-        if parameters.get("reduction") == "max":
-            predictions = [np.max(np.stack(x, axis=0), axis=0).tolist() for x in predictions_dict.values()]
-        else:  # parameters.get("reduction") == "mean":
-            predictions = [np.mean(np.stack(x, axis=0), axis=0).tolist() for x in predictions_dict.values()]
-
-        probs = ListData(
-            data=[
-                ScalarData(y=np.asarray(y), time=list(predictions_dict.keys()), delta_time=delta_time)
-                for y in zip(*predictions)
-            ],
-            index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
-        )
+            time.append(entry.time)
+            ref_ids.append(face_id)
+            predictions.append(prediction.tolist())
+            delta_time = entry.delta_time  # same for all examples
 
         self.update_callbacks(callbacks, progress=1.0)
-        return {"probs": probs}
+        return {
+            "probs": ListData(
+                data=[
+                    ScalarData(y=np.asarray(y), time=time, delta_time=delta_time, ref_id=ref_ids)
+                    for y in zip(*predictions)
+                ],
+                index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
+            )
+        }

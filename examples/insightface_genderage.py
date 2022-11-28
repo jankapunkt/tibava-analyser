@@ -43,9 +43,16 @@ def main():
     for output in result.outputs:
         if output.name == "bboxes":
             bboxes_id = output.id
+        if output.name == "faces":
+            faces_id = output.id
+
     logging.info(bboxes_id)
     # gender/age calculation
-    job_id = client.run_plugin("insightface_video_gender_age_calculator", [{"id": data_id, "name": "video"}, {"id": bboxes_id, "name": "bboxes"}], [])
+    job_id = client.run_plugin(
+        "insightface_video_gender_age_calculator",
+        [{"id": data_id, "name": "video"}, {"id": bboxes_id, "name": "bboxes"}, {"id": faces_id, "name": "faces"}],
+        [],
+    )
     logging.info(f"Job insightface_video_gender_age_calculator started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
@@ -54,12 +61,16 @@ def main():
         return
 
     # get gender/age prediction
-    output_id_gender_ages = None
+    output_id_ages = None
+    output_id_genders = None
     for output in result.outputs:
-        if output.name == "gender_ages":
-            output_id_gender_ages = output.id
+        if output.name == "ages":
+            output_id_ages = output.id
+        if output.name == "genders":
+            output_id_genders = output.id
 
-    logging.info(client.download_data(output_id_gender_ages, args.output_path))
+    logging.info(client.download_data(output_id_ages, args.output_path))
+    logging.info(client.download_data(output_id_genders, args.output_path))
 
     return 0
 
