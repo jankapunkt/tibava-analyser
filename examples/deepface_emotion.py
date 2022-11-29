@@ -66,6 +66,22 @@ def main():
 
     logging.info(client.download_data(output_id, args.output_path))
 
+    # TODO aggregate emotions per frame (multiple faces and thus emotions are depicted)
+    job_id = client.run_plugin("aggregate_scalar_per_time", [{"id": output_id, "name": "timeline"}], [])
+    logging.info(f"Job aggregate_scalar_per_time started: {job_id}")
+
+    result = client.get_plugin_results(job_id=job_id)
+    if result is None:
+        logging.error("Job is crashing")
+        return
+
+    output_id = None
+    for output in result.outputs:
+        if output.name == "aggregated_timeline":
+            output_id = output.id
+
+    logging.info(client.download_data(output_id, args.output_path))
+
     return 0
 
 

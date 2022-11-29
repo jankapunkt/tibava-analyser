@@ -66,6 +66,9 @@ plugins:
   - plugin: aggregate_scalar
     params:
       host: analyser_redisai
+  - plugin: aggregate_scalar_per_time
+    params:
+      host: analyser_redisai
   - plugin: cosine_similarity
     params:
       host: analyser_redisai
