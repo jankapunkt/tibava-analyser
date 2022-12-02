@@ -1,0 +1,243 @@
+- pipeline: audio_amp_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: video_to_audio
+      requires:
+        video: video
+      provides:
+        audio: audio
+    - plugin: audio_amp_analysis
+      parameters:
+        sr: 8000
+        max_samples: 200000
+        normalize: 1
+      requires:
+        audio: audio
+      provides:
+        amp: amp
+  outputs:
+    - amp
+- pipeline: audio_freq_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: video_to_audio
+      requires:
+        video: video
+      provides:
+        audio: audio
+    - plugin: audio_freq_analysis
+      parameters:
+        sr: 8000
+        max_samples: 100000
+        normalize: 1
+        n_fft: 256
+      requires:
+        audio: audio
+      provides:
+        freq: freq
+  outputs:
+    - freq
+- pipeline: audio_rms_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: video_to_audio
+      requires:
+        video: video
+      provides:
+        audio: audio
+    - plugin: audio_rms_analysis
+      parameters:
+        sr: 8000
+        max_samples: null
+        hop_length: 512
+        normalize: 1
+      requires:
+        audio: audio
+      provides:
+        rms: rms
+  outputs:
+    - rms
+- pipeline: clip_image_embeddings
+  inputs:
+    - video
+  plugins:
+    - plugin: clip_image_embedding
+      parameters:
+        fps: 5
+        crop_size: [224, 224]
+      requires:
+        video: video
+      provides:
+        embeddings: embeddings
+  outputs:
+    - embeddings
+- pipeline: color_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: color_analyser
+      parameters:
+        fps: 5
+        k: 1
+        max_iter: 10
+        max_resolution: 48
+      requires:
+        video: video
+      provides:
+        colors: colors
+  outputs:
+    - colors
+- pipeline: brightness_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: color_brightness_analyser
+      parameters:
+        fps: 5
+        normalize: 1
+      requires:
+        video: video
+      provides:
+        brightness: brightness
+  outputs:
+    - brightness
+- pipeline: face_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: insightface_video_detector
+      parameters:
+        fps: 5
+        det_thresh: 0.5
+        nms_thresh: 0.4
+        input_size: [640, 640]
+      requires:
+        video: video
+      provides:
+        images: images
+        bboxes: bboxes
+        kpss: kpss
+        faces: faces
+    - plugin: deepface_emotion
+      requires:
+        images: images
+      provides:
+        probs: emotions
+    - plugin: insightface_video_feature_extractor
+      requires:
+        video: video
+        kpss: kpss
+        faces: faces
+      provides:
+        features: facialfeatures
+    - plugin: insightface_video_gender_age_calculator
+      requires:
+        video: video
+        bboxes: bboxes
+        faces: faces
+      provides:
+        ages: ages
+        genders: genders
+  outputs:
+    - faces
+    - bboxes
+    - kpss
+    - facialfeatures
+    - emotions
+    - ages
+    - genders
+- pipeline: face_to_camera_size
+  inputs:
+    - video
+  plugins:
+    - plugin: insightface_video_detector
+      parameters:
+        fps: 5
+        det_thresh: 0.5
+        nms_thresh: 0.4
+        input_size: [640, 640]
+      requires:
+        video: video
+      provides:
+        bboxes: bboxes
+    - plugin: insightface_facesize
+      parameters:
+        reduction: max
+      requires:
+        bboxes: bboxes
+      provides:
+        probs: camerasize_probs
+        facesizes: facessizes
+  outputs:
+    - facessizes
+    - camerasize_probs
+- pipeline: place_classification
+  inputs:
+    - video
+  plugins:
+    - plugin: places_classifier
+      parameters:
+        fps: 5
+      requires:
+        video: video
+      provides:
+        embedding: place_embeddings
+        probs_places365: probs_places365
+        probs_places16: probs_places16
+        probs_places3: probs_places3
+  outputs:
+    - place_embeddings
+    - probs_places365
+    - probs_places16
+    - probs_places3
+- pipeline: shot_density
+  inputs:
+    - video
+  plugins:
+    - plugin: transnet_shotdetection
+      parameters:
+        threshold: 0.5
+      requires:
+        video: video
+      provides:
+        shots: shots
+    - plugin: shot_density
+      parameters:
+        fps: 10
+        kernel: gaussian
+        bandwidth: 30.0
+      requires:
+        shots: shots
+      provides:
+        shot_density: shot_density
+  outputs:
+    - shot_density
+- pipeline: camera_size_classification
+  inputs:
+    - video
+  plugins:
+    - plugin: shot_type_classifier
+      parameters:
+        fps: 5
+      requires:
+        video: video
+      provides:
+        probs: camera_size_probs
+  outputs:
+    - camera_size_probs: camera_size_probs
+- pipeline: transnet_shotdetection
+  inputs:
+    - video
+  plugins:
+    - plugin: transnet_shotdetection
+      parameters:
+        threshold: 0.5
+      requires:
+        video: video
+      provides:
+        shots: shots
+  outputs:
+    - shots: shots

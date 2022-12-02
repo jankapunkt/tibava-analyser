@@ -1,0 +1,20 @@
+- pipeline: audio_amp_analysis
+  inputs:
+    - video
+  plugins:
+    - plugin: video_to_audio
+      requires:
+        video: video
+      provides:
+        audio: audio
+    - plugin: audio_amp_analysis
+      parameters:
+        sr: 8000
+        max_samples: 200000
+        normalize: True
+      requires:
+        audio: audio
+      provides:
+        amp: amp
+  outputs:
+    - amp
