@@ -351,13 +351,13 @@ default_config = {
     "model_file": "/models/insightface_detector/scrfd_10g_bnkps.onnx",
 }
 
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {"fps": 2, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
 
 requires = {
     "video": VideoData,
 }
 
-provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
+provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData, "faces": FacesData}
 
 
 @AnalyserPluginManager.export("insightface_video_detector")
@@ -412,7 +412,7 @@ requires = {
     "images": ImagesData,
 }
 
-provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData}
+provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData, "faces": FacesData}
 
 
 @AnalyserPluginManager.export("insightface_image_detector")
