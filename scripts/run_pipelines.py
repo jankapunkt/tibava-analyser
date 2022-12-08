@@ -133,7 +133,10 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
         # TODO FIXME
         download_data = {}
         for k, v in data.items():
-            download_data[k] = download_lut[v]
+            if v in download_lut:
+                download_data[k] = download_lut[v]
+            else:
+                download_data[k] = v
 
         filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
         store_output_ids(pipeline, download_data, filename)
