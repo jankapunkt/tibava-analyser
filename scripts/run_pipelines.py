@@ -118,7 +118,10 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             for output in result.outputs:
                 if output.name in plugin["provides"].keys():
                     plugin_results[plugin["provides"][output.name]] = output.id
-                    client.download_data(output.id, output_path)
+                    downloaded_data = client.download_data(output.id, output_path)
+
+                    # TODO FIXME
+                    plugin_results[plugin["provides"][output.name]] = downloaded_data.id
 
             cache[plugin_hash] = plugin_results
             data = {**data, **plugin_results}
