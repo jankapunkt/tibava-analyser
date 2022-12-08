@@ -4,10 +4,10 @@ import json
 import logging
 import os
 from pathlib import Path
-import pickle
 import subprocess
 import yaml
 
+from analyser.data import DataManager
 from analyser.client import AnalyserClient
 
 
@@ -118,6 +118,7 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             for output in result.outputs:
                 if output.name in plugin["provides"].keys():
                     plugin_results[plugin["provides"][output.name]] = output.id
+                    client.download_data(output.id, output_path)
 
             cache[plugin_hash] = plugin_results
             data = {**data, **plugin_results}
@@ -125,14 +126,14 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: DONE!")
 
         # store results
-        filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.pkl")
-        store_output_as_pkl(client, pipeline, data, filename)
-        logging.info(f"{pipeline['pipeline']}: DONE! Written to {filename}")
+        filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
+        store_output_ids(pipeline, data, filename)
+        logging.info(f"{pipeline['pipeline']}: DONE! Output IDs written to {filename}")
 
     return True
 
 
-def store_output_as_pkl(client: AnalyserClient, pipeline: dict, data: dict, filename: str):
+def store_output_ids(pipeline: dict, data: dict, filename: str):
 
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
@@ -144,18 +145,15 @@ def store_output_as_pkl(client: AnalyserClient, pipeline: dict, data: dict, file
             outputs[out] = {}
             continue
 
-        outputs[out] = client.download_data(data[out], os.path.dirname(filename)).to_dict()
-
-    # TODO: combine outputs with ref_ids that match an output id (e.g., facial features and faces)
-    # TODO: save data in a format that is better to read (e.g., ListData)
+        outputs[out] = data[out]
 
     pipeline["outputs"] = [{key: val} for key, val in outputs.items()]
     logging.debug(f"{pipeline['pipeline']}: {pipeline}")
 
-    with open(filename, "wb") as f:
+    with open(filename, "w") as f:
         pipeline["video_file"] = data["video_file"]
         pipeline["video_id"] = data["video_id"]
-        pickle.dump(pipeline, f)
+        yaml.dump(pipeline, f)
 
 
 def get_git_revisions_hash():
@@ -164,11 +162,11 @@ def get_git_revisions_hash():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run analyser plugins and store them in pickled dictionaries.")
+    parser = argparse.ArgumentParser(description="Run analyser plugins and store output ids to the results.")
 
     parser.add_argument("-v", "--videos", type=str, nargs="+", help="Path to video file(s)")
     parser.add_argument("-p", "--pipelines", type=str, help="Path to .yml file defining the pipelines to run")
-    parser.add_argument("-o", "--output_path", type=str, help="Path to the output folder for .pkl files")
+    parser.add_argument("-o", "--output_path", type=str, help="Path to the output folder")
 
     parser.add_argument("--host", default="localhost", help="host name")
     parser.add_argument("--port", default=50051, help="port number")
@@ -194,7 +192,7 @@ def main():
         pipelines = yaml.safe_load(f)
 
     # start client and get available plugins
-    client = AnalyserClient(host=args.host, port=args.port)
+    client = AnalyserClient(host=args.host, port=args.port, manager=DataManager(data_dir=args.output_path))
     available_plugins = set()
     for plugin in client.list_plugins().plugins:
         available_plugins.add(plugin.name)
