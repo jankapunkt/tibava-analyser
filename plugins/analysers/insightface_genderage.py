@@ -167,10 +167,9 @@ default_config = {
     "model_file": "/models/insightface_genderage/genderage.onnx",
 }
 
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640), "softmax_temp": 0.1}
+default_parameters = {"input_size": (640, 640), "softmax_temp": 0.1}
 
 requires = {"video": VideoData, "bboxes": BboxesData}
-# provides = {"gender_ages": ListData}
 provides = {"ages": ListData, "genders": ListData}
 
 
@@ -190,7 +189,7 @@ class InsightfaceVideoGenderAgeCalculator(
     def call(self, inputs, parameters, callbacks=None):
         try:
             bboxes = inputs["bboxes"].bboxes
-            fps = 1 / bboxes[0].delta_time
+            parameters["fps"] = 1 / bboxes[0].delta_time
             assert len(bboxes) > 0
 
             faceid_lut = {}
@@ -198,7 +197,7 @@ class InsightfaceVideoGenderAgeCalculator(
                 faceid_lut[bbox.id] = bbox.ref_id
 
             # decode video to extract bboxes for frames with detected faces
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)
+            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
 
             bbox_dict = {}
             num_faces = 0
@@ -246,7 +245,7 @@ default_config = {
     "model_file": "/models/insightface_genderage/genderage.onnx",
 }
 
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {"input_size": (640, 640), "softmax_temp": 0.1}
 
 requires = {"images": ImagesData, "bboxes": BboxesData}
 provides = {"ages": ListData, "genders": ListData}

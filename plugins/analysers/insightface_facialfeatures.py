@@ -180,7 +180,7 @@ default_config = {
     "model_file": "/models/insightface_feature_extraction/w600k_r50.onnx",
 }
 
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {"input_size": (640, 640)}
 
 requires = {"video": VideoData, "kpss": KpssData}
 provides = {"features": ImageEmbeddings}
@@ -202,7 +202,7 @@ class InsightfaceVideoFeatureExtractor(
     def call(self, inputs, parameters, callbacks=None):
         try:
             kpss = inputs["kpss"].kpss
-            fps = 1 / kpss[0].delta_time
+            parameters["fps"] = 1 / kpss[0].delta_time
             assert len(kpss) > 0
 
             faceid_lut = {}
@@ -210,7 +210,7 @@ class InsightfaceVideoFeatureExtractor(
                 faceid_lut[kps.id] = kps.ref_id
 
             # decode video to extract kps for frames with detected faces
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)
+            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
             kps_dict = {}
             num_faces = 0
             for kps in kpss:
@@ -257,7 +257,7 @@ default_config = {
     "model_file": "/models/insightface_feature_extraction/w600k_r50.onnx",
 }
 
-default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {"input_size": (640, 640)}
 
 requires = {"images": ImagesData, "kpss": KpssData}
 provides = {"features": ImageEmbeddings}
