@@ -1,10 +1,10 @@
 - pipeline: audio_amp_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: video_to_audio
       requires:
-        video: video
+        video: video_id
       provides:
         audio: audio
     - plugin: audio_amp_analysis

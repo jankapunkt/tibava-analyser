@@ -124,6 +124,8 @@ class PluginData:
                 object.__setattr__(self, "path", create_data_path(self.data_dir, self.id, self.ext))
 
     def to_dict(self) -> dict:
+        if isinstance(self.last_access, float):
+            return {"id": self.id, "last_access": self.last_access}
         return {"id": self.id, "last_access": self.last_access.timestamp()}
 
     def dumps(self):
@@ -250,7 +252,8 @@ class ImageData(PluginData):
     ext: str = field(default="jpg")
 
     def to_dict(self) -> dict:
-        return {"ref_id": self.ref_id, "time": self.time, "delta_time": self.delta_time, "ext": self.ext}
+        meta = super().to_dict()
+        return {**meta, "ref_id": self.ref_id, "time": self.time, "delta_time": self.delta_time, "ext": self.ext}
 
 
 @DataManager.export("ImagesData", analyser_pb2.IMAGES_DATA)
@@ -269,22 +272,7 @@ class ImagesData(PluginData):
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 # TODO use dump
-                f.write(
-                    msgpack.packb(
-                        {
-                            "images": [
-                                {
-                                    "ref_id": image.ref_id,
-                                    "time": image.time,
-                                    "delta_time": image.delta_time,
-                                    "ext": image.ext,
-                                    "id": image.id,
-                                }
-                                for image in self.images
-                            ]
-                        }
-                    )
-                )
+                f.write(msgpack.packb({"images": [image.to_dict() for image in self.images]}))
         except Exception as e:
             logging.error(f"ImagesData::save_blob {e}")
             return False
@@ -415,7 +403,7 @@ class ShotsData(PluginData):
         try:
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 # TODO use dump
-                f.write(msgpack.packb({"shots": [{"start": x.start, "end": x.end} for x in self.shots]}))
+                f.write(msgpack.packb({"shots": [x.to_dict() for x in self.shots]}))
         except Exception as e:
             logging.error(f"ScalarData::save_blob {e}")
             return False
@@ -945,7 +933,9 @@ class KpsData(PluginData):
     y: List[float] = None
 
     def to_dict(self) -> dict:
+        meta = super().to_dict()
         return {
+            **meta,
             "x": self.x,
             "y": self.y,
             "time": self.time,
@@ -971,18 +961,7 @@ class KpssData(PluginData):
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
                     msgpack.packb(
-                        {
-                            "kpss": [
-                                {
-                                    "x": kps.x,
-                                    "y": kps.y,
-                                    "time": kps.time,
-                                    "delta_time": kps.delta_time,
-                                    "ref_id": kps.ref_id,
-                                }
-                                for kps in self.kpss
-                            ]
-                        },
+                        {"kpss": [kps.to_dict() for kps in self.kpss]},
                         default=m.encode,
                     )
                 )
@@ -1038,12 +1017,7 @@ class KpssData(PluginData):
 
 @dataclass(kw_only=True, frozen=True)
 class FaceData(PluginData):
-    bbox_id: str = None
-    kps_id: str = None
-    img_id: str = None
-
-    def to_dict(self) -> dict:
-        return {"bbox_id": self.bbox_id, "kps_id": self.kps_id, "img_id": self.img_id}
+    pass
 
 
 @DataManager.export("FacesData", analyser_pb2.FACES_DATA)
@@ -1063,12 +1037,7 @@ class FacesData(PluginData):
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
                     msgpack.packb(
-                        {
-                            "faces": [
-                                {"bbox_id": face.bbox_id, "kps_id": face.kps_id, "img_id": face.img_id}
-                                for face in self.faces
-                            ]
-                        },
+                        {"faces": [face.to_dict() for face in self.faces]},
                         default=m.encode,
                     )
                 )
@@ -1135,7 +1104,9 @@ class BboxData(PluginData):
     det_score: float = 1.0
 
     def to_dict(self) -> dict:
+        meta = super().to_dict()
         return {
+            **meta,
             "x": self.x,
             "y": self.y,
             "w": self.w,
@@ -1165,21 +1136,7 @@ class BboxesData(PluginData):
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
                     msgpack.packb(
-                        {
-                            "bboxes": [
-                                {
-                                    "x": bbox.x,
-                                    "y": bbox.y,
-                                    "w": bbox.w,
-                                    "h": bbox.h,
-                                    "det_score": bbox.det_score,
-                                    "time": bbox.time,
-                                    "delta_time": bbox.delta_time,
-                                    "ref_id": bbox.ref_id,
-                                }
-                                for bbox in self.bboxes
-                            ]
-                        },
+                        {"bboxes": [bbox.to_dict() for bbox in self.bboxes]},
                         default=m.encode,
                     )
                 )
@@ -1251,25 +1208,13 @@ class ImageEmbedding(PluginData):
     embedding: npt.NDArray = field(default_factory=np.ndarray)
 
     def to_dict(self) -> dict:
+        meta = super().to_dict()
         return {
+            **meta,
             "image_id": self.image_id,
             "ref_id": self.ref_id,
             "time": self.time,
             "delta_time": self.delta_time,
-            "embedding": self.embedding,
-        }
-
-
-@dataclass(kw_only=True, frozen=True)
-class TextEmbedding(PluginData):
-    text_id: int = None
-    text: str = None
-    embedding: npt.NDArray = field(default_factory=np.ndarray)
-
-    def to_dict(self) -> dict:
-        return {
-            "text_id": self.text_id,
-            "text": self.text,
             "embedding": self.embedding,
         }
 
@@ -1291,17 +1236,7 @@ class ImageEmbeddings(PluginData):
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
                     msgpack.packb(
-                        {
-                            "embeddings": [
-                                {
-                                    "image_id": embd.image_id,
-                                    "time": embd.time,
-                                    "delta_time": embd.delta_time,
-                                    "embedding": embd.embedding,
-                                }
-                                for embd in self.embeddings
-                            ]
-                        },
+                        {"embeddings": [embd.to_dict() for embd in self.embeddings]},
                         default=m.encode,
                     )
                 )
@@ -1355,6 +1290,20 @@ class ImageEmbeddings(PluginData):
         return {"embeddings": embeddings}
 
 
+@dataclass(kw_only=True, frozen=True)
+class TextEmbedding(PluginData):
+    text_id: int = None
+    text: str = None
+    embedding: npt.NDArray = field(default_factory=np.ndarray)
+
+    def to_dict(self) -> dict:
+        return {
+            "text_id": self.text_id,
+            "text": self.text,
+            "embedding": self.embedding,
+        }
+
+
 @DataManager.export("TextEmbeddings", analyser_pb2.TEXT_EMBEDDING_DATA)
 @dataclass(kw_only=True, frozen=True)
 class TextEmbeddings(PluginData):
@@ -1372,16 +1321,7 @@ class TextEmbeddings(PluginData):
             with open(create_data_path(data_dir, self.id, "msg"), "wb") as f:
                 f.write(
                     msgpack.packb(
-                        {
-                            "embeddings": [
-                                {
-                                    "text_id": embd.text_id,
-                                    "text": embd.text,
-                                    "embedding": embd.embedding,
-                                }
-                                for embd in self.embeddings
-                            ]
-                        },
+                        {"embeddings": [embd.to_dict() for embd in self.embeddings]},
                         default=m.encode,
                     )
                 )

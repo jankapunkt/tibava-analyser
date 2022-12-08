@@ -18,7 +18,7 @@ default_config = {
 
 default_parameters = {"threshold": 0.5, "reduction": "max"}
 
-requires = {"images": ImagesData, "faces": ListData}
+requires = {"images": ImagesData}
 
 provides = {
     "probs": ListData,
@@ -105,12 +105,13 @@ class DeepfaceEmotion(
         predictions = []
 
         faceid_lut = {}
-        for face in inputs["faces"].faces:
-            faceid_lut[face.img_id] = face.id
+        faceimages = inputs["images"].images
+        for faceimage in faceimages:
+            faceid_lut[faceimage.id] = faceimage.ref_id
 
-        for i, entry in enumerate(inputs["images"].images):
+        for i, entry in enumerate(faceimages):
 
-            self.update_callbacks(callbacks, progress=i / len(inputs["images"].images))
+            self.update_callbacks(callbacks, progress=i / len(faceimages))
             image = self.preprocess(entry.path)
 
             result = self.server({"data": image}, ["prob"])

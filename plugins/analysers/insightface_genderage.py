@@ -169,7 +169,7 @@ default_config = {
 
 default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640), "softmax_temp": 0.1}
 
-requires = {"video": VideoData, "bboxes": BboxesData, "faces": FacesData}
+requires = {"video": VideoData, "bboxes": BboxesData}
 # provides = {"gender_ages": ListData}
 provides = {"ages": ListData, "genders": ListData}
 
@@ -189,14 +189,13 @@ class InsightfaceVideoGenderAgeCalculator(
 
     def call(self, inputs, parameters, callbacks=None):
         try:
-            faces = inputs["faces"].faces
             bboxes = inputs["bboxes"].bboxes
             fps = 1 / bboxes[0].delta_time
             assert len(bboxes) > 0
 
             faceid_lut = {}
-            for face in faces:
-                faceid_lut[face.bbox_id] = face.id
+            for bbox in bboxes:
+                faceid_lut[bbox.id] = bbox.ref_id
 
             # decode video to extract bboxes for frames with detected faces
             video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)

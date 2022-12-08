@@ -225,38 +225,31 @@ class InsightfaceDetector(AnalyserPlugin):
         # create bbox, kps, and face objects (added to original code)
         bbox_list = []
         kps_list = []
-        faces_list = []
         for i in range(len(det)):
             x, y = round(max(0, det[i][0])), round(max(0, det[i][1]))
             w, h = round(det[i][2] - x), round(det[i][3] - y)
             det_score = det[i][4]
 
             # store bbox
-            bbox = BboxData(
-                ref_id=frame.get("ref_id"),
-                x=x / img.shape[1],
-                y=y / img.shape[0],
-                w=w / img.shape[1],
-                h=h / img.shape[0],
-                det_score=det_score,
-                time=frame.get("time"),
-                delta_time=1 / fps,
-            )
+            bbox = {
+                "x": x / img.shape[1],
+                "y": y / img.shape[0],
+                "w": w / img.shape[1],
+                "h": h / img.shape[0],
+                "det_score": det_score,
+                "time": frame.get("time"),
+                "delta_time": 1 / fps,
+            }
             bbox_list.append(bbox)
 
             # store facial keypoints (kps)
-            kps = KpsData(
-                ref_id=frame.get("ref_id"),
-                x=[x.item() / img.shape[1] for x in kpss[i, :, 0]],
-                y=[y.item() / img.shape[0] for y in kpss[i, :, 1]],
-                time=frame.get("time"),
-                delta_time=1 / fps,
-            )
+            kps = {
+                "x": [x.item() / img.shape[1] for x in kpss[i, :, 0]],
+                "y": [y.item() / img.shape[0] for y in kpss[i, :, 1]],
+                "time": frame.get("time"),
+                "delta_time": 1 / fps,
+            }
             kps_list.append(kps)
-
-            # # store faces containing bbox and kps
-            # face = FaceData(bbox_id=bbox.id, kps_id=kps.id)
-            # faces_list.append(face)
 
         return bbox_list, kps_list
 
@@ -280,18 +273,17 @@ class InsightfaceDetector(AnalyserPlugin):
                 )
 
                 for i in range(len(frame_bboxes)):
-                    bbox = frame_bboxes[i]
-                    kps = frame_kpss[i]
-
-                    faceimg_id = generate_id()
-                    face = FaceData(bbox_id=bbox.id, kps_id=kps.id, img_id=faceimg_id)
-
                     # store bboxes, kpss, and faces
+                    face = FaceData()
+                    bbox = BboxData(**frame_bboxes[i], ref_id=face.id)
+                    kps = KpsData(**frame_kpss[i], ref_id=face.id)
+
+                    faces.append(face)
                     bboxes.append(bbox)
                     kpss.append(kps)
-                    faces.append(face)
 
                     # store face image
+                    faceimg_id = generate_id()
                     output_path = create_data_path(self.config.get("data_dir"), faceimg_id, "jpg")
                     frame_image = frame.get("frame")
                     h, w = frame_image.shape[:2]
@@ -312,10 +304,10 @@ class InsightfaceDetector(AnalyserPlugin):
 
                     image = ImageData(
                         id=faceimg_id,
-                        ref_id=face.id,
                         ext="jpg",
                         time=frame.get("time"),
                         delta_time=1 / parameters.get("fps"),
+                        ref_id=face.id,
                     )
 
                     images.append(image)

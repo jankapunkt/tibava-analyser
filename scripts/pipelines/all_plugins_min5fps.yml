@@ -1,10 +1,10 @@
 - pipeline: audio_amp_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: video_to_audio
       requires:
-        video: video
+        video: video_id
       provides:
         audio: audio
     - plugin: audio_amp_analysis
@@ -20,11 +20,11 @@
     - amp
 - pipeline: audio_freq_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: video_to_audio
       requires:
-        video: video
+        video: video_id
       provides:
         audio: audio
     - plugin: audio_freq_analysis
@@ -41,11 +41,11 @@
     - freq
 - pipeline: audio_rms_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: video_to_audio
       requires:
-        video: video
+        video: video_id
       provides:
         audio: audio
     - plugin: audio_rms_analysis
@@ -62,21 +62,21 @@
     - rms
 - pipeline: clip_image_embeddings
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: clip_image_embedding
       parameters:
         fps: 5
         crop_size: [224, 224]
       requires:
-        video: video
+        video: video_id
       provides:
         embeddings: embeddings
   outputs:
     - embeddings
 - pipeline: color_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: color_analyser
       parameters:
@@ -85,28 +85,28 @@
         max_iter: 10
         max_resolution: 48
       requires:
-        video: video
+        video: video_id
       provides:
         colors: colors
   outputs:
     - colors
 - pipeline: brightness_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: color_brightness_analyser
       parameters:
         fps: 5
         normalize: 1
       requires:
-        video: video
+        video: video_id
       provides:
         brightness: brightness
   outputs:
     - brightness
 - pipeline: face_analysis
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: insightface_video_detector
       parameters:
@@ -115,27 +115,28 @@
         nms_thresh: 0.4
         input_size: [640, 640]
       requires:
-        video: video
+        video: video_id
       provides:
-        images: images
+        images: faceimages
         bboxes: bboxes
         kpss: kpss
         faces: faces
     - plugin: deepface_emotion
       requires:
-        images: images
+        images: faceimages
+        faces: faces
       provides:
         probs: emotions
     - plugin: insightface_video_feature_extractor
       requires:
-        video: video
+        video: video_id
         kpss: kpss
         faces: faces
       provides:
         features: facialfeatures
     - plugin: insightface_video_gender_age_calculator
       requires:
-        video: video
+        video: video_id
         bboxes: bboxes
         faces: faces
       provides:
@@ -151,7 +152,7 @@
     - genders
 - pipeline: face_to_camera_size
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: insightface_video_detector
       parameters:
@@ -160,7 +161,7 @@
         nms_thresh: 0.4
         input_size: [640, 640]
       requires:
-        video: video
+        video: video_id
       provides:
         bboxes: bboxes
     - plugin: insightface_facesize
@@ -176,15 +177,15 @@
     - camerasize_probs
 - pipeline: place_classification
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: places_classifier
       parameters:
         fps: 5
       requires:
-        video: video
+        video: video_id
       provides:
-        embedding: place_embeddings
+        embeddings: place_embeddings
         probs_places365: probs_places365
         probs_places16: probs_places16
         probs_places3: probs_places3
@@ -195,13 +196,13 @@
     - probs_places3
 - pipeline: shot_density
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: transnet_shotdetection
       parameters:
         threshold: 0.5
       requires:
-        video: video
+        video: video_id
       provides:
         shots: shots
     - plugin: shot_density
@@ -217,27 +218,27 @@
     - shot_density
 - pipeline: camera_size_classification
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: shot_type_classifier
       parameters:
         fps: 5
       requires:
-        video: video
+        video: video_id
       provides:
         probs: camera_size_probs
   outputs:
-    - camera_size_probs: camera_size_probs
+    - camera_size_probs
 - pipeline: transnet_shotdetection
   inputs:
-    - video
+    - video_id
   plugins:
     - plugin: transnet_shotdetection
       parameters:
         threshold: 0.5
       requires:
-        video: video
+        video: video_id
       provides:
         shots: shots
   outputs:
-    - shots: shots
+    - shots

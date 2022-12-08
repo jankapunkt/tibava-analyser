@@ -182,7 +182,7 @@ default_config = {
 
 default_parameters = {"fps": 1.0, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
 
-requires = {"video": VideoData, "kpss": KpssData, "faces": FacesData}
+requires = {"video": VideoData, "kpss": KpssData}
 provides = {"features": ImageEmbeddings}
 
 
@@ -201,14 +201,13 @@ class InsightfaceVideoFeatureExtractor(
 
     def call(self, inputs, parameters, callbacks=None):
         try:
-            faces = inputs["faces"].faces
             kpss = inputs["kpss"].kpss
             fps = 1 / kpss[0].delta_time
             assert len(kpss) > 0
 
             faceid_lut = {}
-            for face in faces:
-                faceid_lut[face.kps_id] = face.id
+            for kps in kpss:
+                faceid_lut[kps.id] = kps.ref_id
 
             # decode video to extract kps for frames with detected faces
             video_decoder = VideoDecoder(path=inputs["video"].path, fps=fps)
@@ -279,13 +278,12 @@ class InsightfaceImageFeatureExtractor(
 
     def call(self, inputs, parameters, callbacks=None):
         try:
-            faces = inputs["faces"].faces
             kpss = inputs["kpss"].kpss
             assert len(kpss) > 0
 
             faceid_lut = {}
-            for face in faces:
-                faceid_lut[face.kps_id] = face.id
+            for kps in kpss:
+                faceid_lut[kps.id] = kps.ref_id
 
             image_paths = [
                 create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images

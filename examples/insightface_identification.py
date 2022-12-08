@@ -47,12 +47,9 @@ def main():
         return
 
     target_kpss_id = None
-    target_faces_id = None
     for output in result.outputs:
         if output.name == "kpss":
             target_kpss_id = output.id
-        if output.name == "faces":
-            target_faces_id = output.id
 
     target_kpss_data = client.download_data(target_kpss_id, args.output_path)
     logging.info(target_kpss_data)
@@ -65,7 +62,6 @@ def main():
         [
             {"id": data_id, "name": "video"},
             {"id": target_kpss_id, "name": "kpss"},
-            {"id": target_faces_id, "name": "faces"},
         ],
         [],
     )
@@ -109,12 +105,9 @@ def main():
         return
 
     query_kpss_id = None
-    query_faces_id = None
     for output in result.outputs:
         if output.name == "kpss":
             query_kpss_id = output.id
-        if output.name == "faces":
-            query_faces_id = output.id
 
     query_kpss_data = client.download_data(query_kpss_id, args.output_path)
     logging.info(query_kpss_data)
@@ -127,7 +120,6 @@ def main():
         [
             {"id": query_image_ids, "name": "images"},
             {"id": query_kpss_id, "name": "kpss"},
-            {"id": query_faces_id, "name": "faces"},
         ],
         [],
     )

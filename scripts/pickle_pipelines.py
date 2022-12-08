@@ -5,6 +5,7 @@ import logging
 import os
 from pathlib import Path
 import pickle
+import subprocess
 import yaml
 
 from analyser.client import AnalyserClient
@@ -43,9 +44,7 @@ def get_hash_for_plugin(plugin, parameters=[], inputs=[]):
     ).hexdigest()
 
 
-def analyse_video(
-    client: AnalyserClient, video_path: Path, output_path: Path, pipelines: dict, available_plugins: list
-):
+def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, pipelines: dict, available_plugins: set):
     """Runs all plugins and computes their preconditions if necessary for a given video and an established client.
     Results will be saved as a pickled dictionary.
 
@@ -54,11 +53,13 @@ def analyse_video(
         video_path (Path): The path of the video to be analysed.
         output_path (Path): The destination for results.
         pipelines (dict): Pipeline dictionary containing the plugins to run and their parameters.
-        available_plugins (list): List of available analyser plugins.
+        available_plugins (set): Set of available analyser plugins.
     """
     # Upload Video
     logging.info("Uploading file...")
     video = client.upload_file(video_path)  # NOTE must match the input of the pipeline
+    video_file = os.path.basename(video_path)
+    video_fname = os.path.splitext(video_file)[0]
     logging.info(f"Done! ID: {video}")
 
     cache = {}
@@ -66,17 +67,21 @@ def analyse_video(
         logging.info(f"{pipeline['pipeline']}: STARTED!")
         logging.debug(pipeline)
 
-        data = {"video": video}
+        data = {
+            "video_file": video_file,
+            "video_name": video_fname,
+            "video_id": video,  # first requirement for all plugins
+        }
 
         for entry in pipeline["inputs"]:
             if entry not in data:
                 logging.error("input data missing!")
 
         for plugin in pipeline["plugins"]:
-            # TODO check if plugin is available
-            # if plugin["plugin"] not in available_plugins:  # TODO
-            #     logging.warning(f"Unknown plugin: {plugin}")
-            #     break
+            # check if plugin is available
+            if plugin["plugin"] not in available_plugins:
+                logging.error(f"{pipeline['pipeline']}/{plugin['plugin']}: Unknown plugin")
+                continue
 
             logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: RUNNING ...")
             logging.debug(plugin)
@@ -84,7 +89,11 @@ def analyse_video(
             # create parameters and inputs
             inputs = []
             if "requires" in plugin:
-                inputs = [{"name": key, "id": data[value]} for key, value in plugin["requires"].items()]
+                try:
+                    inputs = [{"name": key, "id": data[value]} for key, value in plugin["requires"].items()]
+                except Exception as e:
+                    logging.error(f"{pipeline['pipeline']}/{plugin['plugin']}: Missing requirement to run plugin! {e}")
+                    continue
 
             parameters = []
             if "parameters" in plugin:
@@ -104,32 +113,54 @@ def analyse_video(
                 logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: No result!")
                 continue
 
+            # store plugin results
             plugin_results = {}
             for output in result.outputs:
                 if output.name in plugin["provides"].keys():
                     plugin_results[plugin["provides"][output.name]] = output.id
 
-            # store plugin results
             cache[plugin_hash] = plugin_results
             data = {**data, **plugin_results}
 
             logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: DONE!")
 
         # store results
-        filename = os.path.join(output_path, video, f"{pipeline['pipeline']}.pkl")
-        store_output_as_pkl(filename, data)
-        logging.info(f"{pipeline['pipeline']}: DONE!")
+        filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.pkl")
+        store_output_as_pkl(client, pipeline, data, filename)
+        logging.info(f"{pipeline['pipeline']}: DONE! Written to {filename}")
 
     return True
 
 
-def store_output_as_pkl(filename, data):
+def store_output_as_pkl(client: AnalyserClient, pipeline: dict, data: dict, filename: str):
 
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
 
+    outputs = {}
+
+    for out in pipeline["outputs"]:
+        if out not in data:
+            outputs[out] = {}
+            continue
+
+        outputs[out] = client.download_data(data[out], os.path.dirname(filename)).to_dict()
+
+    # TODO: combine outputs with ref_ids that match an output id (e.g., facial features and faces)
+    # TODO: save data in a format that is better to read (e.g., ListData)
+
+    pipeline["outputs"] = [{key: val} for key, val in outputs.items()]
+    logging.debug(f"{pipeline['pipeline']}: {pipeline}")
+
     with open(filename, "wb") as f:
-        pickle.dump(data, f)
+        pipeline["video_file"] = data["video_file"]
+        pipeline["video_id"] = data["video_id"]
+        pickle.dump(pipeline, f)
+
+
+def get_git_revisions_hash():
+    commits = ["HEAD", "HEAD^"]
+    return [subprocess.check_output(["git", "rev-parse", "{}".format(x)]) for x in commits]
 
 
 def parse_args():
@@ -164,11 +195,10 @@ def main():
 
     # start client and get available plugins
     client = AnalyserClient(host=args.host, port=args.port)
-    available_plugins = client.list_plugins()  # TODO
-    for plugin in available_plugins:
-        print(plugin)
-    print(available_plugins)
-    return
+    available_plugins = set()
+    for plugin in client.list_plugins().plugins:
+        available_plugins.add(plugin.name)
+
     logging.debug(available_plugins)
 
     # analyse videos

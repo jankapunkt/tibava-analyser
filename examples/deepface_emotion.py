@@ -40,17 +40,12 @@ def main():
 
     # get facial images from facedetection
     images_id = None
-    faces_id = None
     for output in result.outputs:
         if output.name == "images":
             images_id = output.id
-        if output.name == "faces":
-            faces_id = output.id
 
     # deepface_emotion
-    job_id = client.run_plugin(
-        "deepface_emotion", [{"id": images_id, "name": "images"}, {"id": faces_id, "name": "faces"}], []
-    )
+    job_id = client.run_plugin("deepface_emotion", [{"id": images_id, "name": "images"}], [])
     logging.info(f"Job deepface_emotion started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)

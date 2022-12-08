@@ -43,14 +43,12 @@ def main():
     for output in result.outputs:
         if output.name == "bboxes":
             bboxes_id = output.id
-        if output.name == "faces":
-            faces_id = output.id
 
     logging.info(bboxes_id)
     # gender/age calculation
     job_id = client.run_plugin(
         "insightface_video_gender_age_calculator",
-        [{"id": data_id, "name": "video"}, {"id": bboxes_id, "name": "bboxes"}, {"id": faces_id, "name": "faces"}],
+        [{"id": data_id, "name": "video"}, {"id": bboxes_id, "name": "bboxes"}],
         [],
     )
     logging.info(f"Job insightface_video_gender_age_calculator started: {job_id}")
