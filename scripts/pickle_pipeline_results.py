@@ -117,7 +117,6 @@ def color_analysis_pkl(outputs: dict) -> dict:
         colors.append(entry["colors"])
 
     colors = np.stack(colors, axis=0)
-    print(colors.shape)
 
     return {
         "id": outputs["colors"]["id"],
@@ -327,6 +326,7 @@ def write_pkl(pipeline: dict, outputs: dict, output_path: str):
     }
 
     if pipeline["pipeline"] in writer_f:
+        logging.info(f"Writing results for pipeline {pipeline['pipeline']}")
         pkl_output = writer_f[pipeline["pipeline"]](outputs)
 
         output_file = os.path.join(
