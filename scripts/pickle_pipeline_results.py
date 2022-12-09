@@ -130,6 +130,7 @@ def color_analysis_pkl(outputs: dict) -> dict:
 
 def face_analysis_pkl(outputs: dict) -> list:
     """
+    TODO: this needs to be changed to an output dict, e.g. "faces": list
     output -> list [faces]:
         id - str
         time - float
