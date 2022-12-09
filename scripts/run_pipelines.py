@@ -10,6 +10,8 @@ import yaml
 from analyser.data import DataManager
 from analyser.client import AnalyserClient
 
+import copy
+
 
 def flat_dict(data_dict, parse_json=False):
     result_map = {}
@@ -64,6 +66,7 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
 
     cache = {}
     for pipeline in pipelines:
+        # print(pipeline["outputs"])
         logging.info(f"{pipeline['pipeline']}: STARTED!")
         logging.debug(pipeline)
 
@@ -139,7 +142,7 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
                 download_data[k] = v
 
         filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
-        store_output_ids(pipeline, download_data, filename)
+        store_output_ids(copy.deepcopy(pipeline), download_data, filename)
         logging.info(f"{pipeline['pipeline']}: DONE! Output IDs written to {filename}")
 
     return True
@@ -153,6 +156,8 @@ def store_output_ids(pipeline: dict, data: dict, filename: str):
     outputs = {}
 
     for out in pipeline["outputs"]:
+
+        # print(out)
         if out not in data:
             outputs[out] = {}
             continue
