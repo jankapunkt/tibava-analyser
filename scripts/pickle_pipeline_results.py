@@ -229,26 +229,36 @@ def color_analysis_pkl(outputs: dict) -> dict:
     return output_dict
 
 
-def face_analysis_pkl(outputs: dict) -> list:
+def face_analysis_pkl(outputs: dict) -> dict:
+    """Converts outputs from the TIB-AV-A pipeline face_analysis
+
+    Args:
+        outputs (dict): dictionary in TIB-AV-A data.py format
+
+    Returns:
+        dict: dictionary ready to write in a .pkl
+            faces (dict): dictionary containing a list of faces
+                id (str): hash id of the data package in TIB-AV-A
+                time (list): t time values (length t)
+                delta_time (float): time duration for which a certain value is created (equals 1 / fps)
+                bbox (dict): dictionary containing the bounding box for the face
+                    x (float): x-coordinate of the face normalized by the image width
+                    y (float): y-coordinate of the face normalized by the image height
+                    w (float): width of the face normalized by the image width
+                    h (float): height of the face normalized by the image height
+                    det_score (float): likelihood of the bounding box beeing a face
+                kps (np.ndarray): 5 keypoints with x, y location in the image (shape 5, 2)
+                embedding (np.ndarray): 512-dimensional facial feature vector (shape 512,)
+                emotion (np.ndarray): probability p for 7 facial emotions (shape 7,)
+                    ("p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral")
+                age (np.ndarray): estimated age / 100 (shape 1,)
+                gender (np.ndarray): probabilities for female and male (shape 2,)
     """
-    TODO: this needs to be changed to an output dict, e.g. "faces": list
-    output -> list [faces]:
-        id - str
-        time - float
-        delta_time - float
-        bbox
-            x - float
-            y - float
-            w - float
-            h - float
-            score - float
-        kpss - 5x2 (float)
-        embedding 512x1 (float)
-        emotion - 7x1 (float)
-        age - float
-        gender - 2x1 (float)
-    """
-    logging.debug(outputs)
+    logging.debug("#### Input dict")
+    for dkey in ["faces", "bboxes", "kpss", "facialfeatures", "emotions", "ages", "genders"]:
+        for key, val in outputs[dkey].items():
+            print_data_info(key, val)
+
     faces = {}
     for face in outputs["faces"]["faces"]:
         faces[face["id"]] = {"id": face["id"]}
@@ -285,7 +295,12 @@ def face_analysis_pkl(outputs: dict) -> list:
         for face in faces.values():
             face[key[:-1]] = np.asarray(face[key[:-1]])
 
-    return [face for face in faces.values()]
+    logging.debug("#### Output dict")
+    output_dict = {"faces": [face for face in faces.values()]}
+    for key, val in output_dict["faces"][0].items():
+        print_data_info(key, val)
+
+    return [output_dict]
 
 
 def face_to_camera_size_pkl(outputs: dict) -> dict:
