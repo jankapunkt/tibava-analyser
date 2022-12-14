@@ -52,7 +52,7 @@ class DataManager:
         return export_helper
 
     @classmethod
-    def _load_from_stream(cls, data_dir: str, data: Iterator[Any], save_meta=True) -> PluginData:
+    def _load_from_stream(cls, data_dir: str, data: Iterator[Any], data_id: str, save_meta=True) -> PluginData:
         logging.debug(f"data.py (load_from_stream): {data}")
         datastream = iter(data)
         firstpkg = next(datastream)
@@ -70,7 +70,9 @@ class DataManager:
         data = None
         if firstpkg.type not in cls._data_enum_lut:
             return None
-        data = cls._data_enum_lut[firstpkg.type].load_from_stream(data_dir=data_dir, stream=data_generator())
+        data = cls._data_enum_lut[firstpkg.type].load_from_stream(
+            data_dir=data_dir, data_id=data_id, stream=data_generator()
+        )
 
         if save_meta and data is not None:
             with open(create_data_path(data_dir, data.id, "json"), "w") as f:
@@ -78,8 +80,10 @@ class DataManager:
 
         return data, hash_stream.hexdigest()
 
-    def load_from_stream(self, data: Iterator[Any], save_meta=True) -> PluginData:
-        return self._load_from_stream(self.data_dir, data, save_meta)
+    def load_from_stream(self, data: Iterator[Any], data_id: str = None, save_meta=True) -> PluginData:
+        if not data_id:
+            data_id = generate_id()
+        return self._load_from_stream(self.data_dir, data, data_id, save_meta)
 
     def dump_to_stream(self, data: PluginData):
         return data.dump_to_stream()
@@ -185,8 +189,8 @@ class PluginData:
         return {}
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
-        return cls(data_dir=data_dir)
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
+        return cls(data_dir=data_dir, id=data_id)
 
 
 @DataManager.export("VideoData", analyser_pb2.VIDEO_DATA)
@@ -214,14 +218,13 @@ class VideoData(PluginData):
         return {}
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "mp4"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -299,7 +302,7 @@ class ImagesData(PluginData):
         return dictdata
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
@@ -331,7 +334,7 @@ class ImagesData(PluginData):
                     )
                 )
 
-        data = cls(images=images)
+        data = cls(images=images, id=data_id)
         data.save_blob(data_dir=data_dir)
         return data
 
@@ -418,14 +421,13 @@ class ShotsData(PluginData):
         return data
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -471,14 +473,13 @@ class AudioData(PluginData):
         return {}
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "mp3"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -535,14 +536,13 @@ class HistData(PluginData):
         return data
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -622,14 +622,13 @@ class AnnotationData(PluginData):
         return data
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -691,14 +690,13 @@ class ScalarData(PluginData):
         return data
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -767,14 +765,13 @@ class RGBData(PluginData):
         return data
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -851,7 +848,7 @@ class ListData(PluginData):
         }
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         class DataYielder:
             def __init__(self, stream):
                 self.cache = []
@@ -896,10 +893,11 @@ class ListData(PluginData):
 
         data = []
         while not yielder.empty:
-            d, h = DataManager._load_from_stream(data_dir, yielder)
+            d, h = DataManager._load_from_stream(data_dir, yielder, data_id=generate_id())
             data.append(d)
 
         data_obj = cls(
+            id=data_id,
             data_dir=data_dir,
             data=data,
             index=list(map(lambda x: x[1], sorted(yielder.index.items(), key=lambda x: x[0]))),
@@ -979,14 +977,13 @@ class KpssData(PluginData):
         return kpss
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -1055,14 +1052,13 @@ class FacesData(PluginData):
         return faces
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -1155,14 +1151,13 @@ class BboxesData(PluginData):
         return bboxes
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -1254,14 +1249,13 @@ class ImageEmbeddings(PluginData):
         return embeddings
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
@@ -1339,14 +1333,13 @@ class TextEmbeddings(PluginData):
         return embeddings
 
     @classmethod
-    def load_from_stream(cls, data_dir: str, stream: Iterator[bytes]) -> PluginData:
+    def load_from_stream(cls, data_dir: str, data_id: str, stream: Iterator[bytes]) -> PluginData:
         firstpkg = next(stream)
         if hasattr(firstpkg, "ext") and len(firstpkg.ext) > 0:
             ext = firstpkg.ext
         else:
             ext = "msg"
 
-        data_id = generate_id()
         path = create_data_path(data_dir, data_id, ext)
 
         with open(path, "wb") as f:
