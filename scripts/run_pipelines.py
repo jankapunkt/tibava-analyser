@@ -80,8 +80,6 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             if entry not in data:
                 logging.error("input data missing!")
 
-        download_lut = {}
-
         for plugin in pipeline["plugins"]:
             # check if plugin is available
             if plugin["plugin"] not in available_plugins:
@@ -123,9 +121,7 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             for output in result.outputs:
                 if output.name in plugin["provides"].keys():
                     plugin_results[plugin["provides"][output.name]] = output.id
-                    downloaded_data = client.download_data(output.id, output_path)
-                    # TODO FIXME
-                    download_lut[output.id] = downloaded_data.id
+                    client.download_data(output.id, output_path)
 
             cache[plugin_hash] = plugin_results
             data = {**data, **plugin_results}
@@ -133,16 +129,8 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: DONE!")
 
         # store results
-        # TODO FIXME
-        download_data = {}
-        for k, v in data.items():
-            if v in download_lut:
-                download_data[k] = download_lut[v]
-            else:
-                download_data[k] = v
-
         filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
-        store_output_ids(copy.deepcopy(pipeline), download_data, filename)
+        store_output_ids(copy.deepcopy(pipeline), data, filename)
         logging.info(f"{pipeline['pipeline']}: DONE! Output IDs written to {filename}")
 
     return True
