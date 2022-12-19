@@ -66,8 +66,6 @@ class XCLIPClassifier(
             content = csv.DictReader(csvfile)
             for line in content:
                 classes.append(line["name"])
-                print(line)
-        print("c", classes)
         return classes
 
     def call(self, inputs, parameters, callbacks=None):
