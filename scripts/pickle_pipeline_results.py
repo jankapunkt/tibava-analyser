@@ -551,12 +551,21 @@ def main():
             pipeline = yaml.safe_load(f)
 
         outputs = {}
+        valid_pipeline = True
         for output in pipeline["outputs"]:
             for output_name, output_id in output.items():
-                data = dm.load(output_id)
-                outputs[output_name] = data.to_dict()
+                try:
+                    data = dm.load(output_id)
+                    outputs[output_name] = data.to_dict()
+                except Exception as e:
+                    logging.error(f"Data package with id {output_id} does not exist")
+                    valid_pipeline = False
+                    continue
 
-        write_pkl(pipeline=pipeline, outputs=outputs, output_path=args.output_path)
+        if valid_pipeline:
+            write_pkl(pipeline=pipeline, outputs=outputs, output_path=args.output_path)
+        else:
+            logging.error(f"Cannot write pkl file for pipeline {pipeline_file}")
 
 
 if "__main__" == __name__:
