@@ -37,6 +37,16 @@ def parse_meta_ffmpeg(path):
 class VideoDecoder:
     # TODO: videos with sample aspect ratio (SAR) not equal to 1:1 are loaded with wrong shape
     def __init__(self, path, max_dimension=None, fps=None):
+        """Provides an iterator over the frames of a video.
+
+        Args:
+            path (str): Path to the video file.
+            max_dimension (Union[List, int], optional): Resize the video by providing either 
+                - a list of shape [width, height] or
+                - an int that depicts the longer side of the frame.
+                Defaults to None.
+            fps (int, optional): Frames per second. Defaults to None.
+        """
         self._path = path
         self._max_dimension = max_dimension
         self._fps = fps
@@ -57,10 +67,14 @@ class VideoDecoder:
 
         if self._max_dimension is not None:
 
-            res = max(self._size[1], self._size[0])
+            if isinstance(self._max_dimension, (list, tuple)):
+                res = self._max_dimension
+            else:
+                res = max(self._size[1], self._size[0])
 
-            scale = min(self._max_dimension / res, 1)
-            res = (round(self._size[0] * scale), round(self._size[1] * scale))
+                scale = min(self._max_dimension / res, 1)
+                res = (round(self._size[0] * scale), round(self._size[1] * scale))
+
             video_reader = iio.imiter(
                 self._path,
                 plugin="pyav",
@@ -70,6 +84,7 @@ class VideoDecoder:
                     ("scale", {"width": f"{res[0]}", "height": f"{res[1]}"}),
                 ],
             )
+
         else:
             video_reader = iio.imiter(
                 self._path,
