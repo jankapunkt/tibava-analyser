@@ -22,6 +22,7 @@ class Batcher:
 @DatabaseManager.export("redis")
 class RedisDatabase(Database, config=default_config, version="0.1"):
     def __init__(self, config=None):
+        print(config)
         super().__init__(config)
         self.r = redis.Redis(host=self.config.get("host"), port=self.config.get("port"), db=self.config.get("db"))
 

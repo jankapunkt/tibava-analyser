@@ -24,6 +24,7 @@ from analyser.plugins.analyser import AnalyserPluginManager
 from google.protobuf.json_format import MessageToJson, MessageToDict, ParseDict
 
 from analyser.data import DataManager
+from analyser.plugins.database import DatabaseManager
 
 
 def run_plugin(args):
@@ -49,8 +50,8 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = int(parameter.get("value"))
                 if parameter.get("type") == "STRING_TYPE":
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
-                # data = data_manager.load(data_in.get("name"))
-                # plugin_inputs[data_in.get("name")] = data
+                if parameter.get("type") == "BOOL_TYPE":
+                    plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
         callbacks = [AnalyserProgressCallback(shared)]
         results = plugin_manager(
             plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
@@ -66,6 +67,7 @@ def run_plugin(args):
 
         return result_map
     except Exception as e:
+        raise e
         logging.error(f"[Analyser] {repr(e)}")
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
@@ -85,8 +87,25 @@ def init_plugins(config):
     manager.find()
     data_dict["plugin_manager"] = manager
 
-    data_manager = DataManager(data_dir=config.get("data_dir", ""))
+    # building datamanager
+    data_config = config.get("data", None)
+    if not data_config:
+        data_dir = None
+        database = None
+
+    else:
+        data_dir = data_config.get("data_dir", None)
+        cache_config = data_config.get("cache", [])
+        print(cache_config)
+        if cache_config and len(cache_config) == 1:
+            database_plugin = cache_config[0]["plugin"]
+            print(database_plugin)
+            database_manager = DatabaseManager(configs=cache_config)
+            print(database_manager.plugins())
+            database = database_manager(database_manager.plugins()[database_plugin])
+    data_manager = DataManager(data_dir=data_dir, database=database)
     data_dict["data_manager"] = data_manager
+
     return data_dict
 
 

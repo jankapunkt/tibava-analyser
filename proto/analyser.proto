@@ -9,9 +9,11 @@ package tibava.analyser;
 service Analyser {
   rpc list_plugins(ListPluginsRequest) returns (ListPluginsReply);
   rpc upload_data(stream UploadDataRequest) returns (UploadDataResponse);
+  rpc upload_file(stream UploadFileRequest) returns (UploadFileResponse);
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
   rpc check_data(CheckDataRequest) returns (CheckDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
+  rpc run_pipeline(RunPipelineRequest) returns (RunPipelineResponse);
   rpc get_plugin_status(GetPluginStatusRequest)
       returns (GetPluginStatusResponse);
 }
@@ -21,6 +23,7 @@ enum DataType {
   STRING_TYPE = 1;
   INT_TYPE = 2;
   FLOAT_TYPE = 3;
+  BOOL_TYPE = 4;
 }
 
 message PluginInfoParameter {
@@ -47,6 +50,7 @@ enum PluginDataType {
   TEXT_EMBEDDING_DATA = 14;
   KPSS_DATA = 15;
   FACES_DATA = 16;
+  CONTAINER_DATA = 17;
 }
 
 message PluginInfoData {
@@ -72,11 +76,24 @@ message ListPluginsReply { repeated PluginInfo plugins = 1; }
 
 message UploadDataRequest {
   bytes data_encoded = 1;
+  // PluginDataType type = 2;
+  // string ext = 3;
+  string id = 4;
+}
+
+message UploadDataResponse {
+  string id = 1;
+  bool success = 2;
+  string hash = 3;
+}
+
+message UploadFileRequest {
+  bytes data_encoded = 1;
   PluginDataType type = 2;
   string ext = 3;
 }
 
-message UploadDataResponse {
+message UploadFileResponse {
   string id = 1;
   bool success = 2;
   string hash = 3;
@@ -110,6 +127,17 @@ message RunPluginRequest {
 }
 
 message RunPluginResponse {
+  string id = 1;
+  bool success = 2;
+}
+
+message RunPipelineRequest {
+  repeated string inputs = 1;
+  repeated string outputs = 2;
+  repeated RunPluginRequest plugins = 3;
+}
+
+message RunPipelineResponse {
   string id = 1;
   bool success = 2;
 }

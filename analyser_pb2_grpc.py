@@ -24,6 +24,11 @@ class AnalyserStub(object):
             request_serializer=analyser__pb2.UploadDataRequest.SerializeToString,
             response_deserializer=analyser__pb2.UploadDataResponse.FromString,
         )
+        self.upload_file = channel.stream_unary(
+            "/tibava.analyser.Analyser/upload_file",
+            request_serializer=analyser__pb2.UploadFileRequest.SerializeToString,
+            response_deserializer=analyser__pb2.UploadFileResponse.FromString,
+        )
         self.download_data = channel.unary_stream(
             "/tibava.analyser.Analyser/download_data",
             request_serializer=analyser__pb2.DownloadDataRequest.SerializeToString,
@@ -38,6 +43,11 @@ class AnalyserStub(object):
             "/tibava.analyser.Analyser/run_plugin",
             request_serializer=analyser__pb2.RunPluginRequest.SerializeToString,
             response_deserializer=analyser__pb2.RunPluginResponse.FromString,
+        )
+        self.run_pipeline = channel.unary_unary(
+            "/tibava.analyser.Analyser/run_pipeline",
+            request_serializer=analyser__pb2.RunPipelineRequest.SerializeToString,
+            response_deserializer=analyser__pb2.RunPipelineResponse.FromString,
         )
         self.get_plugin_status = channel.unary_unary(
             "/tibava.analyser.Analyser/get_plugin_status",
@@ -61,6 +71,12 @@ class AnalyserServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def upload_file(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
     def download_data(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -74,6 +90,12 @@ class AnalyserServicer(object):
         raise NotImplementedError("Method not implemented!")
 
     def run_plugin(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def run_pipeline(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -98,6 +120,11 @@ def add_AnalyserServicer_to_server(servicer, server):
             request_deserializer=analyser__pb2.UploadDataRequest.FromString,
             response_serializer=analyser__pb2.UploadDataResponse.SerializeToString,
         ),
+        "upload_file": grpc.stream_unary_rpc_method_handler(
+            servicer.upload_file,
+            request_deserializer=analyser__pb2.UploadFileRequest.FromString,
+            response_serializer=analyser__pb2.UploadFileResponse.SerializeToString,
+        ),
         "download_data": grpc.unary_stream_rpc_method_handler(
             servicer.download_data,
             request_deserializer=analyser__pb2.DownloadDataRequest.FromString,
@@ -112,6 +139,11 @@ def add_AnalyserServicer_to_server(servicer, server):
             servicer.run_plugin,
             request_deserializer=analyser__pb2.RunPluginRequest.FromString,
             response_serializer=analyser__pb2.RunPluginResponse.SerializeToString,
+        ),
+        "run_pipeline": grpc.unary_unary_rpc_method_handler(
+            servicer.run_pipeline,
+            request_deserializer=analyser__pb2.RunPipelineRequest.FromString,
+            response_serializer=analyser__pb2.RunPipelineResponse.SerializeToString,
         ),
         "get_plugin_status": grpc.unary_unary_rpc_method_handler(
             servicer.get_plugin_status,
@@ -175,6 +207,35 @@ class Analyser(object):
             "/tibava.analyser.Analyser/upload_data",
             analyser__pb2.UploadDataRequest.SerializeToString,
             analyser__pb2.UploadDataResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def upload_file(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            "/tibava.analyser.Analyser/upload_file",
+            analyser__pb2.UploadFileRequest.SerializeToString,
+            analyser__pb2.UploadFileResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -262,6 +323,35 @@ class Analyser(object):
             "/tibava.analyser.Analyser/run_plugin",
             analyser__pb2.RunPluginRequest.SerializeToString,
             analyser__pb2.RunPluginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def run_pipeline(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/tibava.analyser.Analyser/run_pipeline",
+            analyser__pb2.RunPipelineRequest.SerializeToString,
+            analyser__pb2.RunPipelineResponse.FromString,
             options,
             channel_credentials,
             insecure,

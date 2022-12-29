@@ -14,7 +14,8 @@ class DataManager:
     _data_name_lut = {}
     _data_enum_lut = {}
 
-    def __init__(self, data_dir=None):
+    def __init__(self, data_dir=None, database=None):
+        self.database = database
         if not data_dir:
             data_dir = tempfile.mkdtemp()
         self.data_dir = data_dir

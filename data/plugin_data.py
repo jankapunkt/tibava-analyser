@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import json
 import logging
 import traceback
@@ -8,13 +9,15 @@ from typing import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
 
+
 from .utils import generate_id, create_data_path
 
 
 @dataclass(kw_only=True, frozen=True)
 class PluginData:
     id: str = field(default_factory=generate_id)
-    last_access: datetime = field(default_factory=lambda: datetime.now())
+    version: str = "1.0"
+    last_access: datetime = None
     type: str = field(default="PluginData")
     path: str = None
     data_dir: str = None

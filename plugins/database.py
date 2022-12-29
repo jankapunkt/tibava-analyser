@@ -10,7 +10,7 @@ from typing import Dict
 from analyser.plugins.plugin import Plugin
 
 from packaging import version
-from analyser.plugins.plugin import Manager
+from analyser.plugins.manager import PluginManager
 
 
 class Database(Plugin):
@@ -18,7 +18,7 @@ class Database(Plugin):
         super().__init__(config)
 
 
-class DatabaseManager(Manager):
+class DatabaseManager(PluginManager):
     _plugins = {}
 
     def __init__(self, **kwargs):
@@ -37,34 +37,29 @@ class DatabaseManager(Manager):
     def plugins(self):
         return self._plugins
 
-    def find(self, path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "analysers")):
+    def find(self, path=os.path.join(os.path.abspath(os.path.dirname(__file__)), "databases")):
         file_re = re.compile(r"(.+?)\.py$")
         for pl in os.listdir(path):
             match = re.match(file_re, pl)
             if match:
-                a = importlib.import_module("analyser.plugins.analysers.{}".format(match.group(1)))
+                a = importlib.import_module("analyser.plugins.databases.{}".format(match.group(1)))
                 # print(a)
                 function_dir = dir(a)
                 if "register" in function_dir:
                     a.register(self)
 
-    def __call__(self, plugin, inputs, parameters=None, callbacks=None):
+    def __call__(self, database_name):
 
         run_id = uuid.uuid4().hex[:4]
-        if plugin not in self._plugins:
+        if database_name not in self._plugins:
             return None
 
         plugin_to_run = None
         for plugin_candidate in self.plugin_list:
-            if plugin_candidate.get("plugin").name == plugin:
+            if plugin_candidate.get("plugin").name == database_name:
                 plugin_to_run = plugin_candidate["plugin"]
         if plugin_to_run is None:
-            logging.error(f"[DatabaseManager] {run_id} plugin: {plugin} not found")
+            logging.error(f"[DatabaseManager] {run_id} plugin: {database_name} not found")
             return None
 
-        logging.info(f"[DatabaseManager] {run_id} plugin: {plugin_to_run}")
-        logging.info(f"[DatabaseManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
-        logging.info(f"[DatabaseManager] {run_id} parameters: {parameters}")
-        results = plugin_to_run(inputs, parameters, callbacks)
-        logging.info(f"[DatabaseManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
-        return results
+        return plugin_to_run

@@ -118,6 +118,7 @@ class AnalyserPlugin(Plugin):
             result = self.call(inputs, input_parameters, callbacks=callbacks)
 
         except Exception as e:
+            raise e
             logging.error(f"[Plugin] {self._name} {repr(e)}")
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
