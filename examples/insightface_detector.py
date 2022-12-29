@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import time
 
 from analyser.client import AnalyserClient
 
@@ -24,6 +25,7 @@ def main():
 
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%d-%m-%Y %H:%M:%S", level=level)
 
+    start = time.time()
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
     data_id = client.upload_file(args.input_path)
@@ -50,6 +52,8 @@ def main():
             kpss_id = output.id
 
     logging.info(client.download_data(kpss_id, args.output_path))
+    end = time.time()
+    logging.info(f"Time {end - start}")
     return 0
 
 

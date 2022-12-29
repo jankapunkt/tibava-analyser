@@ -110,9 +110,9 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         # result = self.con.modelrun(self.model_name, f"data_{job_id}", output_names)
         # net_outs = self.session.run(self.output_names, {self.input_name : blob})  # original function
         net_outs = [result.get(output_name)[0, :, :] for output_name in output_names]
-        print(net_outs[0][:5, :5])
-        for x in net_outs:
-            print(x.shape)
+        # print(net_outs[0][:5, :5])
+        # for x in net_outs:
+        #     print(x.shape)
         # exit()
 
         input_height = blob.shape[2]
