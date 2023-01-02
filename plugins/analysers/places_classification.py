@@ -1,7 +1,9 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
 from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, generate_id
-from analyser.utils import InferenceServer
+
+
+from analyser.inference import InferenceServer
 
 import csv
 import numpy as np
@@ -36,7 +38,12 @@ provides = {
 
 @AnalyserPluginManager.export("places_classifier")
 class PlacesClassifier(
-    AnalyserPlugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
+    AnalyserPlugin,
+    config=default_config,
+    parameters=default_parameters,
+    version="0.1",
+    requires=requires,
+    provides=provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)

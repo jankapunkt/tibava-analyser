@@ -1,6 +1,7 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import ListData, ScalarData, ImagesData, generate_id
-from analyser.utils import InferenceServer, Backend, Device
+from analyser.inference import InferenceServer
+
 import cv2
 import imageio
 import numpy as np
@@ -50,7 +51,7 @@ class DeepfaceEmotion(
             model_name=self.model_name,
             host=self.host,
             port=self.port,
-            backend=Backend.ONNX,
+            # backend=Backend.ONNX,
             device=self.model_device,
             inputs=["input"],
             outputs=["dense_2"],

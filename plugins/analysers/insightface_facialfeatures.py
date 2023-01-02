@@ -11,7 +11,6 @@ from analyser.data import (
     create_data_path,
     generate_id,
 )
-from analyser.utils import VideoDecoder
 import cv2
 import imageio.v3 as iio
 import logging
@@ -19,9 +18,8 @@ import numpy as np
 
 # from skimage import transform as trans
 import sys
-import traceback
-from analyser.utils import InferenceServer, Backend, Device
 
+from analyser.inference import InferenceServer
 
 src1 = np.array(
     [[51.642, 50.115], [57.617, 49.990], [35.740, 69.007], [51.157, 89.050], [57.025, 89.702]], dtype=np.float32
@@ -73,14 +71,14 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
         self.input_name = "input.1"
         self.output_name = "683"
 
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-        )
+        # self.server = InferenceServer(
+        #     model_file=self.model_file,
+        #     model_name=self.model_name,
+        #     host=self.host,
+        #     port=self.port,
+        #     backend=Backend.ONNX,
+        #     device=self.model_device,
+        # )
 
     def estimate_norm(self, lmk, image_size=112, mode="arcface"):
         assert lmk.shape == (5, 2)

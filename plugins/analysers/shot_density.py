@@ -24,12 +24,15 @@ provides = {
 
 @AnalyserPluginManager.export("shot_density")
 class ShotDensity(
-    AnalyserPlugin, config=default_config, parameters=default_parameters, version="0.1", requires=requires, provides=provides
+    AnalyserPlugin,
+    config=default_config,
+    parameters=default_parameters,
+    version="0.1",
+    requires=requires,
+    provides=provides,
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
 
     def call(self, inputs, parameters, callbacks=None):
         last_shot_end = 0

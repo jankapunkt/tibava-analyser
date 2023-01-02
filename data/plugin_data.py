@@ -34,7 +34,10 @@ class PluginData:
         return {"id": self.id, "last_access": self.last_access.timestamp()}
 
     def dumps(self):
-        return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type, "ext": self.ext}
+        if self.last_access is not None and hasattr(self.last_access, "timestamp"):
+            return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type, "ext": self.ext}
+
+        return {"id": self.id, "type": self.type, "ext": self.ext}
 
     def save(self, data_dir: str, save_blob: bool = True) -> bool:
         logging.debug("[PluginData::save]")
@@ -80,7 +83,7 @@ class PluginData:
     def load_args(cls, data: dict) -> dict:
         return dict(
             id=data.get("id"),
-            last_access=datetime.fromtimestamp(data.get("last_access")),
+            # last_access=datetime.fromtimestamp(data.get("last_access")),
             type=data.get("type"),
             data_dir=data.get("data_dir"),
         )

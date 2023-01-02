@@ -9,7 +9,6 @@ from analyser.data import (
     VideoData,
     create_data_path,
 )
-from analyser.utils import VideoDecoder
 import cv2
 import imageio.v3 as iio
 import logging
@@ -17,7 +16,8 @@ import numpy as np
 
 import sys
 import traceback
-from analyser.utils import InferenceServer, Backend, Device
+
+from analyser.inference import InferenceServer
 
 
 class InsightfaceGenderAgeCalculator(AnalyserPlugin):

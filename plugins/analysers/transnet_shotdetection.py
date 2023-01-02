@@ -1,7 +1,7 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
 from analyser.data import Shot, ShotsData, VideoData, generate_id
-from analyser.utils import InferenceServer
+from analyser.inference import InferenceServer
 
 import ffmpeg
 import numpy as np
@@ -37,19 +37,22 @@ class TransnetShotdetection(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
+        inference_config = self.config.get("inference", None)
 
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            device=self.model_device,
-        )
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
+        print(self.server)
+        # self.port = self.config["port"]
+        # self.model_name = self.config["model_name"]
+        # self.model_device = self.config["model_device"]
+        # self.model_file = self.config["model_file"]
+
+        # self.server = InferenceServer(
+        #     model_file=self.model_file,
+        #     model_name=self.model_name,
+        #     host=self.host,
+        #     port=self.port,
+        #     device=self.model_device,
+        # )
 
     def predict_frames(self, frames: np.ndarray, callbacks):
         def input_iterator():

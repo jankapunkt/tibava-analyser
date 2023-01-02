@@ -1,5 +1,6 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.utils import VideoDecoder, InferenceServer, Backend
+from analyser.utils import VideoDecoder
+from analyser.inference import InferenceServer
 from analyser.data import (
     BboxData,
     BboxesData,

@@ -1,0 +1,101 @@
+data:
+  data_dir: /data
+  cache:
+    - plugin: redis
+      params:
+        db: 0
+        host: analyser_redisai
+        port: 6379
+        tag: data_test
+plugins:
+  # - plugin: video_to_audio
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: thumbnail_generator
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: audio_amp_analysis
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: audio_freq_analysis
+  #   params:
+  #     host: analyser_redisai
+  - plugin: transnet_shotdetection
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: transnet
+      model_device: gpu
+      model_file: /models/transnet_shotdetection/transnet_gpu.pt
+  # - plugin: shot_density
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: insightface_video_detector
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  # - plugin: insightface_image_detector
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  # - plugin: insightface_video_detector_torch
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     model_file: /models/insightface_detector_torch/scrfd_10g_bnkps_gpu.pth
+  # - plugin: insightface_image_detector_torch
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu      
+  #     model_file: /models/insightface_detector_torch/scrfd_10g_bnkps_gpu.pth
+  # - plugin: insightface_facesize
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  # - plugin: deepface_emotion
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  # - plugin: shot_type_classifier
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     model_file: /models/shot_type_classification/shot_type_classifier_e9-s3199_gpu.pt
+  # - plugin: color_analyser
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: clip_image_embedding
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     image_model_file: /models/clip/clip_image_gpu.pt
+  #     text_model_file: /models/clip/clip_text_gpu.pt
+  # - plugin: clip_text_embedding
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     image_model_file: /models/clip/clip_image_gpu.pt
+  #     text_model_file: /models/clip/clip_text_gpu.pt
+  # - plugin: clip_probs
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     image_model_file: /models/clip/clip_image_gpu.pt
+  #     text_model_file: /models/clip/clip_text_gpu.pt
+  # - plugin: places_classifier
+  #   params:
+  #     host: analyser_redisai
+  #     model_device: gpu
+  #     model_file: /models/places_classification/resnet50_places365_gpu.pt
+  # - plugin: shot_annotator
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: aggregate_scalar
+  #   params:
+  #     host: analyser_redisai
+  # - plugin: cosine_similarity
+  #   params:
+  #     host: analyser_redisai

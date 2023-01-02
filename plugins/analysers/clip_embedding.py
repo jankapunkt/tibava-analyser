@@ -19,7 +19,9 @@ from analyser.data import (
     TextEmbeddings,
     generate_id,
 )
-from analyser.utils import InferenceServer, Backend, Device, VideoDecoder
+
+from analyser.inference import InferenceServer
+from analyser.utils import VideoDecoder
 from analyser.utils.imageops import image_resize, image_crop, image_pad
 from PIL import Image
 from functools import lru_cache

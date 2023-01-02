@@ -34,8 +34,8 @@ class InsightfaceFacesize(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
+        # self.host = self.config["host"]
+        # self.port = self.config["port"]
 
         with open(self.config["model_file"], "rb") as pklfile:
             self.model = pickle.load(pklfile)

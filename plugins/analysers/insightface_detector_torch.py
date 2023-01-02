@@ -1,5 +1,7 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.utils import VideoDecoder, InferenceServer, Backend
+from analyser.utils import VideoDecoder
+
+from analyser.inference import InferenceServer
 from analyser.data import (
     BboxData,
     BboxesData,
@@ -34,14 +36,14 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
         print(self.model_file)
         print(self.model_device)
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.PYTORCH,
-            device="gpu",  # self.model_device,
-        )
+        # self.server = InferenceServer(
+        #     model_file=self.model_file,
+        #     model_name=self.model_name,
+        #     host=self.host,
+        #     port=self.port,
+        #     backend=Backend.PYTORCH,
+        #     device="gpu",  # self.model_device,
+        # )
 
     def distance2bbox(self, points, distance, max_shape=None):
         """Decode distance prediction to bounding box.

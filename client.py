@@ -77,6 +77,7 @@ class AnalyserClient:
         return None
 
     def upload_file(self, path):
+
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
@@ -97,7 +98,7 @@ class AnalyserClient:
                         if not data:
                             break
                         self.hash_stream.update(data)
-                        yield analyser_pb2.UploadDataRequest(type=data_type, data_encoded=data)
+                        yield analyser_pb2.UploadFileRequest(type=data_type, data_encoded=data)
 
             def hash(self):
                 return self.hash_stream.hexdigest()
@@ -106,7 +107,7 @@ class AnalyserClient:
         while try_count > 0:
             generator = RequestGenerator(path)
 
-            response = stub.upload_data(generator())
+            response = stub.upload_file(generator())
 
             if response.hash == generator.hash() and response.success:
                 return response.id

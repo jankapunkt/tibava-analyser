@@ -1,28 +1,14 @@
+from .inference import Device, Backend, generate_id, InferenceServer
 import logging
-from enum import Enum
+
 import time
 from typing import AnyStr, Union, List, Dict
-import uuid
 
 import numpy as np
 
 
-def generate_id():
-    return uuid.uuid4().hex
-
-
-class Backend(Enum):
-    PYTORCH = 1
-    TENSORFLOW = 2
-    ONNX = 3
-
-
-class Device(Enum):
-    CPU = 1
-    GPU = 2
-
-
-class InferenceServer:
+@InferenceServer.export("redisai")
+class RedisAIInferenceServer:
 
     backend_lut = {
         Backend.PYTORCH: "TORCH",
@@ -53,6 +39,7 @@ class InferenceServer:
             import ml2rt
         except:
             logging.error("Could not import redisai python interface")
+            return None
 
         self.model_name = model_name
         self.model_file = model_file

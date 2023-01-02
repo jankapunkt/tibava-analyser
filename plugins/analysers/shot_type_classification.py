@@ -1,7 +1,7 @@
 from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
 from analyser.data import ListData, ScalarData, VideoData, ListData, generate_id
-from analyser.utils import InferenceServer
+from analyser.inference import InferenceServer
 
 import numpy as np
 
