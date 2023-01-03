@@ -23,26 +23,13 @@ from analyser.inference import InferenceServer
 class InsightfaceGenderAgeCalculator(AnalyserPlugin):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
 
         self.input_size = [96, 96]  # from model_zoo.py for Attributeclass
         self.input_std = 128.0
         self.input_mean = 127.5
-        self.input_name = "input.1"
-        self.output_name = "683"
+        inference_config = self.config.get("inference", None)
 
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-        )
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
     def get_2d_matrix(self, scale=None, rotation=None, translation=None):
         # creates 2D affine matrix (partially taken from skimage _geometric.py)
@@ -87,7 +74,7 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
             imgs, 1.0 / self.input_std, input_size, (self.input_mean, self.input_mean, self.input_mean), swapRB=True
         )
 
-        return self.server({self.input_name: blob}, [self.output_name])[self.output_name]
+        return self.server({"data": blob}, ["gender", "age"])
 
     def get_genderage(self, iterator, num_faces, parameters, callbacks):
         try:
@@ -105,14 +92,14 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
                 aimg = self.transform(face.get("frame"), center, self.input_size[0], scale)
 
                 # calculate gender and age of face
-                gender_age = self.get_feat(aimg).flatten()
+                gender_age = self.get_feat(aimg)
 
                 time.append(bbox.time)
                 ref_ids.append(face.get("face_id"))
-                ages.append(gender_age[2])  # float: age / 100
+                ages.append(gender_age["age"].flatten())  # float: age / 100
                 genders.append(
-                    np.exp(gender_age[:2] / parameters.get("softmax_temp"))
-                    / sum(np.exp(gender_age[:2] / parameters.get("softmax_temp")))
+                    np.exp(gender_age["gender"].flatten() / parameters.get("softmax_temp"))
+                    / sum(np.exp(gender_age["gender"].flatten() / parameters.get("softmax_temp")))
                 )  # 0 female; 1 male
 
                 self.update_callbacks(callbacks, progress=i / num_faces)

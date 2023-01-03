@@ -47,23 +47,13 @@ class PlacesClassifier(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
+        inference_config = self.config.get("inference", None)
+
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
         self.image_resolution = self.config["image_resolution"]
 
         self.classes = self.read_classes(self.config["classes_file"], self.config["hierarchy_file"])
         self.hierarchy = self.read_hierarchy(self.config["hierarchy_file"])
-
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            device=self.model_device,
-        )
 
     def read_classes(self, classes_file, hierarchy_file):
         classes = {"places365": [], "places16": [], "places3": []}
@@ -114,7 +104,7 @@ class PlacesClassifier(
         time = []
         num_frames = video_decoder.duration() * video_decoder.fps()
         for i, frame in enumerate(video_decoder):
-            result = self.server({"data": image_pad(frame["frame"])}, ["embedding", "prob"])
+            result = self.server({"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"])
             if result is not None:
                 # store embeddings
                 embeddings.append(

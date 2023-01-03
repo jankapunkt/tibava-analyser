@@ -34,6 +34,18 @@ class BentoMLInferenceServer:
             f"http://{self.host}:{self.port}/{self.service}",
             headers={"content-type": "application/json"},
             data=data,
-        ).json
-        print(f"{raw_output}", flush=True)
-        return
+        ).json()
+
+        # print(f"{raw_output}", flush=True)
+        output_dict = {}
+        for x in outputs:
+            if x not in raw_output:
+                logging.error("Unknown output field {x}")
+                return None
+            try:
+                output_dict[x] = np.asarray(raw_output[x])
+            except:
+                output_dict[x] = raw_output[x]
+
+        # print(f"{output_dict}", flush=True)
+        return output_dict

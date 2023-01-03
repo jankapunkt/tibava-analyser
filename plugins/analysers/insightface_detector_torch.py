@@ -28,22 +28,9 @@ import traceback
 class InsightfaceDetectorTorch(AnalyserPlugin):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
+        inference_config = self.config.get("inference", None)
 
-        print(self.model_file)
-        print(self.model_device)
-        # self.server = InferenceServer(
-        #     model_file=self.model_file,
-        #     model_name=self.model_name,
-        #     host=self.host,
-        #     port=self.port,
-        #     backend=Backend.PYTORCH,
-        #     device="gpu",  # self.model_device,
-        # )
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
     def distance2bbox(self, points, distance, max_shape=None):
         """Decode distance prediction to bounding box.
@@ -107,7 +94,7 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         # print(img, img.shape)
         # print(blob, blob.shape)
         # self.con.tensorset(f"data_{job_id}", blob)
-        result = self.server({"data": img}, output_names)
+        result = self.server({"data": np.expand_dims(img, axis=0)}, output_names)
 
         # result = self.con.modelrun(self.model_name, f"data_{job_id}", output_names)
         # net_outs = self.session.run(self.output_names, {self.input_name : blob})  # original function

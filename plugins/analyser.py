@@ -165,7 +165,7 @@ class AnalyserPluginManager(Manager):
                     a.register(self)
 
     def __call__(self, plugin, inputs, parameters=None, callbacks=None):
-
+        print(self._plugins.keys())
         run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
             return None

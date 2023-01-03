@@ -37,25 +37,12 @@ class DeepfaceEmotion(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
+        inference_config = self.config.get("inference", None)
+
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
         self.grayscale = self.config["grayscale"]
         self.target_size = self.config["target_size"]
-
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            # backend=Backend.ONNX,
-            device=self.model_device,
-            inputs=["input"],
-            outputs=["dense_2"],
-        )
 
     def preprocess(self, img_path):
         # read image
@@ -115,8 +102,8 @@ class DeepfaceEmotion(
             self.update_callbacks(callbacks, progress=i / len(faceimages))
             image = self.preprocess(entry.path)
 
-            result = self.server({"data": image}, ["prob"])
-            prediction = result.get(f"prob")[0] if result else None
+            result = self.server({"data": image}, ["emotion"])
+            prediction = result.get(f"emotion")[0] if result else None
             face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
 
             time.append(entry.time)

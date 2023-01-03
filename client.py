@@ -66,7 +66,7 @@ class AnalyserClient:
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
             for x in data_manager.dump_to_stream(data):
-                yield analyser_pb2.UploadDataRequest(type=x["type"], data_encoded=x["data_encoded"])
+                yield analyser_pb2.UploadDataRequest(id=data.id, data_encoded=x["data_encoded"])
 
         response = stub.upload_data(generate_requests(data))
 

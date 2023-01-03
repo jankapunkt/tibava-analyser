@@ -29,14 +29,9 @@ class PluginData:
                 object.__setattr__(self, "path", create_data_path(self.data_dir, self.id, self.ext))
 
     def to_dict(self) -> dict:
-        if isinstance(self.last_access, float):
-            return {"id": self.id, "last_access": self.last_access}
-        return {"id": self.id, "last_access": self.last_access.timestamp()}
+        return {"id": self.id}
 
     def dumps(self):
-        if self.last_access is not None and hasattr(self.last_access, "timestamp"):
-            return {"id": self.id, "last_access": self.last_access.timestamp(), "type": self.type, "ext": self.ext}
-
         return {"id": self.id, "type": self.type, "ext": self.ext}
 
     def save(self, data_dir: str, save_blob: bool = True) -> bool:

@@ -15,6 +15,7 @@ import cv2
 import imageio.v3 as iio
 import logging
 import numpy as np
+import traceback
 
 # from skimage import transform as trans
 import sys
@@ -58,27 +59,13 @@ arcface_src = np.expand_dims(arcface_src, axis=0)
 class InsightfaceFeatureExtractor(AnalyserPlugin):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["model_file"]
+        inference_config = self.config.get("inference", None)
 
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
         # copied from insightface for w600_r50.onnx model
         self.input_size = tuple([112, 112])
         self.input_std = 127.5
         self.input_mean = 127.5
-        self.input_name = "input.1"
-        self.output_name = "683"
-
-        # self.server = InferenceServer(
-        #     model_file=self.model_file,
-        #     model_name=self.model_name,
-        #     host=self.host,
-        #     port=self.port,
-        #     backend=Backend.ONNX,
-        #     device=self.model_device,
-        # )
 
     def estimate_norm(self, lmk, image_size=112, mode="arcface"):
         assert lmk.shape == (5, 2)
@@ -122,7 +109,7 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
             imgs, 1.0 / self.input_std, input_size, (self.input_mean, self.input_mean, self.input_mean), swapRB=True
         )
 
-        return self.server({self.input_name: blob}, [self.output_name])[self.output_name]
+        return self.server({"data": blob}, ["embedding"])["embedding"]
 
     def get_facial_features(self, iterator, num_faces, parameters, callbacks):
         try:
