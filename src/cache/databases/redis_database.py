@@ -3,7 +3,7 @@ from typing import Any, List, Iterator
 import redis
 import msgpack
 
-from analyser.plugins.database import Database, DatabaseManager
+from analyser.database import CacheManager
 
 default_config = {"db": 0, "host": "analyser_redisai", "port": 6379, "tag": "data"}
 
@@ -19,7 +19,7 @@ class Batcher:
             yield self.iterable[ndx : min(ndx + self.n, l)]
 
 
-@DatabaseManager.export("redis")
+@CacheManager.export("redis")
 class RedisDatabase(Database, config=default_config, version="0.1"):
     def __init__(self, config=None):
         print(config)
