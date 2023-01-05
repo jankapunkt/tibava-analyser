@@ -2,7 +2,7 @@ import uuid
 
 from datetime import datetime
 
-from analyser.plugins.databases.redis_database import RedisDatabase
+from analyser.plugin.databases.redis_database import RedisDatabase
 from analyser.data import generate_id, create_data_path
 
 

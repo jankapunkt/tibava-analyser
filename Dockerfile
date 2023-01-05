@@ -52,5 +52,5 @@ USER appuser
 
 ENV PYTHONPATH="/app/analyser/"
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["python3", "/app/analyser/server.py", "--config", "config.yml", "-v"]
+CMD ["python3", "/app/analyser/analyser/server.py", "--config", "config.yml", "-v"]
 # CMD ["python", "backend.py"]

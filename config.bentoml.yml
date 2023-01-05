@@ -1,7 +1,7 @@
 data:
   data_dir: /data
   cache:
-    - plugin: redis
+      type: redis
       params:
         db: 0
         host: analyser_redisai
@@ -20,114 +20,114 @@ plugins:
   # - plugin: audio_freq_analysis
   #   params:
   #     host: analyser_redisai
-  - plugin: transnet_shotdetection
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: transnet
+  # - plugin: transnet_shotdetection
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: transnet
   # - plugin: shot_density
   #   params:
   #     host: analyser_redisai
-  - plugin: insightface_video_detector_torch
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_detector
-  - plugin: insightface_image_detector_torch
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_detector
+  # - plugin: insightface_video_detector_torch
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_detector
+  # - plugin: insightface_image_detector_torch
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_detector
   # - plugin: insightface_facesize
   #   params:
   #     host: analyser_redisai
   #     model_device: gpu
-  - plugin: deepface_emotion
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: deepface_emotion
-  - plugin: shot_type_classifier
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: shot_type_classification
+  # - plugin: deepface_emotion
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: deepface_emotion
+  # - plugin: shot_type_classifier
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: shot_type_classification
   # - plugin: color_analyser
   #   params:
   #     host: analyser_redisai
-  - plugin: clip_image_embedding
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: clip_image_encoder
-  - plugin: clip_text_embedding
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: clip_text_encoder
-  - plugin: clip_probs
-  - plugin: places_classifier
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: places_classification
+  # - plugin: clip_image_embedding
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: clip_image_encoder
+  # - plugin: clip_text_embedding
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: clip_text_encoder
+  # - plugin: clip_probs
+  # - plugin: places_classifier
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: places_classification
 
-  - plugin: insightface_video_gender_age_calculator
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_genderage
-  - plugin: insightface_image_gender_age_calculator
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_genderage
-  - plugin: insightface_video_feature_extractor
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_feature_extraction
-  - plugin: insightface_image_feature_extractor
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: insightface_feature_extraction
+  # - plugin: insightface_video_gender_age_calculator
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_genderage
+  # - plugin: insightface_image_gender_age_calculator
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_genderage
+  # - plugin: insightface_video_feature_extractor
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_feature_extraction
+  # - plugin: insightface_image_feature_extractor
+  #   params:
+  #     inference:
+  #       type: bentoml
+  #       params:
+  #         host: inference
+  #         port: 3000
+  #         service: insightface_feature_extraction
   # - plugin: shot_annotator
   #   params:
   #     host: analyser_redisai
