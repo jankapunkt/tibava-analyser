@@ -1,8 +1,8 @@
 import zipfile
 import logging
 import yaml
-
-from typing import Callable
+from dataclasses import dataclass, field
+from typing import Callable, Optional
 
 import uuid
 
@@ -11,8 +11,51 @@ def generate_id():
     return uuid.uuid4().hex
 
 
-class Data:
+class FSHandler:
     pass
+
+
+class ZipFSHandler:
+    def __init__(self):
+        pass
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+
+@dataclass(kw_only=True)
+class Data:
+    id: str = field(default_factory=generate_id)
+    version: str = field(default="1.0")
+    type: str = field(default="PluginData")
+    name: Optional[str]
+    ref_id: Optional[str]
+
+    def _register_fs_handler(self, fs_handler: FSHandler) -> None:
+        self.fs_handler = fs_handler
+
+    def __enter__(self):
+        if hasattr(self, "fs_handler") and self.fs_handler:
+            self.fs_handler.open(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if hasattr(self, "fs_handler") and self.fs_handler:
+            self.fs_handler.close(self)
+        # self.fs_handler.close()
+        # if self.zipfile is None:
+        #     return
+
+        # if self.mode == "w":
+        #     dump_meta = self.dump_meta()
+        #     with self.open_file("meta.yml", mode="w") as f:
+        #         f.write(yaml.dump(dump_meta).encode())
+
+        # self.zipfile.close()
+        # self.zipfile = None
 
 
 class ContainerData:
