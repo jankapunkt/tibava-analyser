@@ -38,7 +38,7 @@ class VideoToVideo(
         video = ffmpeg.input(inputs["video"].path)
 
         stream = ffmpeg.output(
-            video.video, video.audio, output_data.pat, preset="faster", ac=2, vcodec="libx264", acodec="aac"
+            video.video, video.audio, output_data.path, preset="faster", ac=2, vcodec="libx264", acodec="aac"
         )
 
         ffmpeg.run(stream)
