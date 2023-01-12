@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import analyser_pb2 as analyser__pb2
+from analyser import analyser_pb2 as analyser__pb2
 
 
 class AnalyserStub(object):

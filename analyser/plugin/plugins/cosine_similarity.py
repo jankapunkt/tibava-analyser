@@ -4,6 +4,9 @@ from analyser.data import ScalarData, ImageEmbeddings
 import logging
 import numpy as np
 from scipy.spatial.distance import cdist
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 
 default_config = {
@@ -33,13 +36,18 @@ class CosineSimilarity(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         self.host = self.config["host"]
         self.port = self.config["port"]
 
-    def call(self, inputs, parameters, callbacks=None):
-
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         query_features = inputs["query_features"].embeddings
         target_features = inputs["target_features"].embeddings
 

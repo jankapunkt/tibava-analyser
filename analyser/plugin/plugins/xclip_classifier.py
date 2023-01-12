@@ -1,6 +1,9 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import VideoData, generate_id, ListData, ScalarData
+from analyser.data import VideoData, ListData, ScalarData
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 
 from analyser.inference import InferenceServer
@@ -47,8 +50,8 @@ class XCLIPClassifier(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         self.host = self.config["host"]
         self.port = self.config["port"]
         self.model_name = self.config["model_name"]
@@ -77,7 +80,13 @@ class XCLIPClassifier(
                 classes.append(line["name"])
         return classes
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
         )

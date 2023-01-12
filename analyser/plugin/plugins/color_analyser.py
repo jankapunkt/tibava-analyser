@@ -2,6 +2,9 @@ from analyser.plugin.analyser import AnalyserPluginManager, AnalyserPlugin
 from analyser.data import VideoData, ListData, RGBData
 from analyser.utils import VideoDecoder
 from sklearn.cluster import KMeans
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 import numpy as np
 
 default_config = {"data_dir": "/data/"}
@@ -32,10 +35,16 @@ class ColorAnalyser(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=parameters.get("max_resolution"), fps=parameters.get("fps")
         )

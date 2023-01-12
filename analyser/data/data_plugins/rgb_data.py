@@ -10,40 +10,36 @@ from ..data import Data
 from analyser import analyser_pb2
 
 
-@DataManager.export("ScalarData", analyser_pb2.SCALAR_DATA)
+@DataManager.export("RGBData", analyser_pb2.RGB_DATA)
 @dataclass(kw_only=True)
-class ScalarData(Data):
-    type: str = field(default="ScalarData")
-    y: npt.NDArray = None
+class RGBData(Data):
+    type: str = field(default="RGBData")
+    colors: npt.NDArray = None
     time: npt.NDArray = None
     delta_time: float = field(default=None)
 
     def load(self) -> None:
         super().load()
-        assert self.check_fs(), "No filesystem handler installed"
-
-        data = self.load_dict("scalar_data.yml")
+        data = self.load_dict("rgb_data.yml")
         self.delta_time = data.get("delta_time")
 
-        with self.fs.open_file("y.npz", "r") as f:
-            self.y = np.load(f)
+        with self.fs.open_file("colors.npz", "r") as f:
+            self.colors = np.load(f)
 
         with self.fs.open_file("time.npz", "r") as f:
             self.time = np.load(f)
 
     def save(self) -> None:
         super().save()
-        assert self.check_fs(), "No filesystem handler installed"
-        assert self.fs.mode == "w", "Data packet is open read only"
 
         self.save_dict(
-            "scalar_data.yml",
+            "rgb_data.yml",
             {
                 "delta_time": self.delta_time,
             },
         )
-        with self.fs.open_file("y.npz", "w") as f:
-            np.save(f, self.y)
+        with self.fs.open_file("colors.npz", "w") as f:
+            np.save(f, self.colors)
 
         with self.fs.open_file("time.npz", "w") as f:
             np.save(f, self.time)
@@ -51,7 +47,7 @@ class ScalarData(Data):
     def to_dict(self) -> dict:
         return {
             **super().to_dict(),
-            "y": self.y.tolist(),
+            "colors": self.colors.tolist(),
             "time": self.time.tolist(),
             "delta_time": self.delta_time,
         }

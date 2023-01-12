@@ -8,16 +8,13 @@ data:
         port: 6379
         tag: data_test
 plugins:
-  # - plugin: video_to_audio
+  - plugin: video_to_audio
+  - plugin: audio_amp_analysis
+  - plugin: audio_rms_analysis
+  - plugin: audio_freq_analysis
   #   params:
   #     host: analyser_redisai
   # - plugin: thumbnail_generator
-  #   params:
-  #     host: analyser_redisai
-  # - plugin: audio_amp_analysis
-  #   params:
-  #     host: analyser_redisai
-  # - plugin: audio_freq_analysis
   #   params:
   #     host: analyser_redisai
   # - plugin: transnet_shotdetection

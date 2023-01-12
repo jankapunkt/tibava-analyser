@@ -1,9 +1,11 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 
-from analyser.data import Annotation, AnnotationData, ShotsData, ScalarData, ListData, generate_id
+from analyser.data import Annotation, AnnotationData, ShotsData, ScalarData
 
 import numpy as np
-import math
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 
 default_config = {
@@ -34,12 +36,18 @@ class ShotScalarAnnotator(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         self.host = self.config["host"]
         self.port = self.config["port"]
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         annotations = []
 
         y = np.asarray(inputs["scalar"].y)

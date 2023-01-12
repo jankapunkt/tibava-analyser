@@ -1,29 +1,16 @@
 import zipfile
 import logging
 import yaml
-from dataclasses import dataclass, field
-from typing import Callable, Optional
+from dataclasses import dataclass, field, fields, asdict
+from typing import Callable, Optional, Dict
 
 import uuid
+
+from .fs_handler import FSHandler
 
 
 def generate_id():
     return uuid.uuid4().hex
-
-
-class FSHandler:
-    pass
-
-
-class ZipFSHandler:
-    def __init__(self):
-        pass
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
 
 
 @dataclass(kw_only=True)
@@ -31,76 +18,53 @@ class Data:
     id: str = field(default_factory=generate_id)
     version: str = field(default="1.0")
     type: str = field(default="PluginData")
-    name: Optional[str]
-    ref_id: Optional[str]
+    name: Optional[str] = None
+    ref_id: Optional[str] = None
 
-    def _register_fs_handler(self, fs_handler: FSHandler) -> None:
-        self.fs_handler = fs_handler
+    def _register_fs_handler(self, fs: FSHandler) -> None:
+        self.fs = fs
 
     def __enter__(self):
-        if hasattr(self, "fs_handler") and self.fs_handler:
-            self.fs_handler.open(self)
+        if hasattr(self, "fs") and self.fs:
+            self.fs.open(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if hasattr(self, "fs_handler") and self.fs_handler:
-            self.fs_handler.close(self)
-        # self.fs_handler.close()
-        # if self.zipfile is None:
-        #     return
+        if hasattr(self, "fs") and self.fs:
+            self.fs.close(self)
 
-        # if self.mode == "w":
-        #     dump_meta = self.dump_meta()
-        #     with self.open_file("meta.yml", mode="w") as f:
-        #         f.write(yaml.dump(dump_meta).encode())
+    def check_fs(self):
+        return hasattr(self, "fs") and self.fs is not None
 
-        # self.zipfile.close()
-        # self.zipfile = None
+    def load(self) -> None:
+        data = self.load_dict("meta.yml")
+        for x in fields(Data):
+            setattr(self, x.name, data.get(x.name, x.default))
 
+    def load_dict(self, filename: str) -> Dict:
+        assert self.check_fs(), "No filesystem handler installed"
 
-class ContainerData:
-    def __init__(self, file_path: str = None, id: str = None, type: str = None, mode: str = None):
-        if mode is None:
-            mode = "w"
-        assert mode == "w" or mode == "r", "No valid mode for ZipData"
+        with self.fs.open_file(filename, "r") as f:
+            decoded_data = f.read().decode("utf-8")
+            return yaml.safe_load(decoded_data)
 
-        if id is None:
-            id = generate_id()
-        self.id = id
+    def save(self) -> None:
 
-        self.file_path = file_path
-        self.type = type
+        data_dict = {}
+        for x in fields(Data):
+            data_dict[x.name] = getattr(self, x.name)
+        self.save_dict("meta.yml", data_dict)
 
-        self.mode = mode
-        self.zipfile = zipfile.ZipFile(self.file_path, self.mode)
+    def save_dict(self, filename: str, data: Dict) -> None:
+        assert self.check_fs(), "No filesystem handler installed"
+        assert self.fs.mode == "w", "Data packet is open read only"
 
-    def __enter__(self):
-        return self
+        with self.fs.open_file(filename, "w") as f:
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.zipfile is None:
-            return
+            f.write(yaml.safe_dump(data).encode())
 
-        if self.mode == "w":
-            dump_meta = self.dump_meta()
-            with self.open_file("meta.yml", mode="w") as f:
-                f.write(yaml.dump(dump_meta).encode())
-
-        self.zipfile.close()
-        self.zipfile = None
-
-    def open_file(self, path: str, mode: str = "r"):
-        if self.zipfile is None:
-            logging.error("")
-            return None
-
-        return self.zipfile.open(path, mode=mode, force_zip64=True)
-
-    def dump_meta(self):
-        return {
-            "type": self.type,
-            "id": self.id,
-        }
-
-    def extract_all(self, path: str, path_generator: Callable[[str], str] = None):
-        pass
+    def to_dict(self) -> dict:
+        data_dict = {}
+        for x in fields(Data):
+            data_dict[x.name] = getattr(self, x.name)
+        return data_dict

@@ -1,9 +1,12 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import Annotation, AnnotationData, ShotsData, ScalarData, ListData, generate_id
+from analyser.data import ShotsData, ScalarData
 
 import math
 import numpy as np
 from sklearn.neighbors import KernelDensity
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 default_config = {
     "data_dir": "/data/",
@@ -31,10 +34,16 @@ class ShotDensity(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         last_shot_end = 0
         shots = []
         for i, shot in enumerate(inputs["shots"].shots):

@@ -4,7 +4,6 @@ import logging
 
 from analyser.client import AnalyserClient
 from analyser.data import ShotsData, Shot, ImageData, ImagesData, DataManager
-from analyser.data import generate_id, create_data_path
 import numpy as np
 import imageio.v3 as iio
 

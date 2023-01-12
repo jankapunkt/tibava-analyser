@@ -1,4 +1,4 @@
-from .inference import Device, Backend, generate_id, InferenceServer
+from ..inference import Device, Backend, generate_id, InferenceServer
 import logging
 
 import time

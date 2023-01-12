@@ -1,5 +1,8 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
+from analyser.data import DataManager, Data
 from analyser.data import ScalarData, ListData
+
+from typing import Callable, Optional, Dict
 
 import logging
 import numpy as np
@@ -31,10 +34,8 @@ class AggregateScalarPerTime(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config: dict = None):
-        super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
+    def __init__(self, config: dict = None, **kwargs):
+        super().__init__(config, **kwargs)
 
     def aggregate_probs(self, y_per_t: dict, aggregation: str = "or") -> list:
         def aggregate_mean(y: list) -> np.array:
@@ -57,7 +58,13 @@ class AggregateScalarPerTime(
 
         return [aggregation_f[aggregation](np.stack(y, axis=0)) for y in y_per_t.values()]
 
-    def call(self, inputs: ListData, parameters: dict, callbacks=None) -> ListData:
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         aggregated_y = []
 
         for i, data in enumerate(inputs["timeline"].data):

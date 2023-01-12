@@ -1,9 +1,9 @@
-from subprocess import call
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.utils import VideoDecoder
-from analyser.data import AudioData, VideoData
+from analyser.data import VideoData
 import ffmpeg
-import os
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 default_config = {"data_dir": "/data/"}
 
@@ -28,10 +28,16 @@ class VideoToVideo(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
 
         output_data = VideoData(ext="mp4", data_dir=self.config.get("data_dir"))
 

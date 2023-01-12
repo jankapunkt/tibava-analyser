@@ -49,7 +49,11 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
         callbacks = [AnalyserProgressCallback(shared)]
         results = plugin_manager(
-            plugin=params.get("plugin"), inputs=plugin_inputs, parameters=plugin_parameters, callbacks=callbacks
+            plugin=params.get("plugin"),
+            inputs=plugin_inputs,
+            parameters=plugin_parameters,
+            data_manager=data_manager,
+            callbacks=callbacks,
         )
         if results is None:
             logging.error(f"[Analyser] {params.get('plugin')} without results")
@@ -57,7 +61,7 @@ def run_plugin(args):
 
         result_map = []
         for key, data in results.items():
-            data_manager.save(data)
+            # data_manager.save(data)
             result_map.append({"name": key, "id": data.id})
 
         return result_map
@@ -123,7 +127,7 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def upload_data(self, request_iterator, context):
         try:
-            data, hash = self.managers["data_manager"].load_from_stream(request_iterator)
+            data, hash = self.managers["data_manager"].load_data_from_stream(request_iterator)
 
             return analyser_pb2.UploadDataResponse(success=True, id=data.id, hash=hash)
 
@@ -135,17 +139,19 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             return analyser_pb2.UploadDataResponse(success=False)
 
     def upload_file(self, request_iterator, context):
-        try:
-            data, hash = self.managers["data_manager"].load_from_stream(request_iterator)
+        # try:
+        data, hash = self.managers["data_manager"].load_file_from_stream(request_iterator)
 
-            return analyser_pb2.UploadDataResponse(success=True, id=data.id, hash=hash)
+        # data, hash = self.managers["data_manager"].load_data_from_stream(request_iterator)
 
-        except Exception as e:
-            logging.error(f"[Analyser] {repr(e)}")
-            logging.error(traceback.format_exc())
-            context.set_code(grpc.StatusCode.DATA_LOSS)
-            context.set_details(f"Error transferring data with id {data.id}")
-            return analyser_pb2.UploadDataResponse(success=False)
+        return analyser_pb2.UploadDataResponse(success=True, id=data.id, hash=hash)
+
+        # except Exception as e:
+        #     logging.error(f"[Analyser] {repr(e)}")
+        #     logging.error(traceback.format_exc())
+        #     context.set_code(grpc.StatusCode.DATA_LOSS)
+        #     context.set_details(f"Error transferring data with id {data.id}")
+        #     return analyser_pb2.UploadDataResponse(success=False)
 
     def check_data(self, request, context):
         try:
@@ -226,10 +232,9 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def download_data(self, request, context):
         try:
-            data = self.managers["data_manager"].load(request.id)
 
-            for x in self.managers["data_manager"].dump_to_stream(data):
-                yield analyser_pb2.DownloadDataResponse(type=x["type"], data_encoded=x["data_encoded"])
+            for x in self.managers["data_manager"].dump_to_stream(request.id):
+                yield analyser_pb2.DownloadDataResponse(id=x["id"], data_encoded=x["data_encoded"])
 
         except Exception as e:
             logging.error(f"[Analyser] {repr(e)}")

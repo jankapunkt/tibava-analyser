@@ -91,6 +91,8 @@ message UploadFileRequest {
   bytes data_encoded = 1;
   PluginDataType type = 2;
   string ext = 3;
+  string filename = 4;
+  string id = 5;
 }
 
 message UploadFileResponse {
@@ -103,9 +105,10 @@ message DownloadDataRequest { string id = 1; }
 
 message DownloadDataResponse {
   bytes data_encoded = 1;
-  PluginDataType type = 2;
-  string ext = 3;
+  // PluginDataType type = 2;
+  // string ext = 3;
   string hash = 4;
+  string id = 5;
 }
 
 message CheckDataRequest { string id = 1; }

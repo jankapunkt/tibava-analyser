@@ -1,32 +1,16 @@
-import gzip
 import os
-import html
-import ftfy
-import regex as re
 import numpy as np
 
 import scipy
-from scipy import spatial
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import (
-    VideoData,
-    StringData,
-    ScalarData,
-    AnnotationData,
-    ImageEmbedding,
-    TextEmbedding,
-    ImageEmbeddings,
-    TextEmbeddings,
-    generate_id,
-)
+from analyser.data import VideoData, ScalarData, ImageEmbedding, TextEmbedding, ImageEmbeddings, TextEmbeddings
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 from analyser.inference import InferenceServer
 from analyser.utils import VideoDecoder
 from analyser.utils.imageops import image_resize, image_crop, image_pad
-from PIL import Image
-from functools import lru_cache
-from cv2 import cvtColor, COLOR_BGR2RGB
-from typing import Union, List
 
 from sklearn.preprocessing import normalize
 import imageio
@@ -79,8 +63,8 @@ class ClipImageEmbedding(
     requires=img_embd_requires,
     provides=img_embd_provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         inference_config = self.config.get("inference", None)
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
@@ -88,7 +72,13 @@ class ClipImageEmbedding(
         converted = image_resize(image_pad(img), size=crop_size)
         return converted
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         preds = []
         video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
         num_frames = video_decoder.duration() * video_decoder.fps()
@@ -121,8 +111,8 @@ class ClipTextEmbedding(
     requires=text_embd_requires,
     provides=text_embd_provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
         inference_config = self.config.get("inference", None)
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
@@ -133,7 +123,13 @@ class ClipTextEmbedding(
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         text_id = generate_id()
         # text = self.preprocess(parameters["search_term"])
         result = self.server({"data": parameters["search_term"]}, ["embedding"])
@@ -166,15 +162,21 @@ class ClipProbs(
     requires=prob_requires,
     provides=prob_provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
     def preprocess(self, text):
         # tokenize text
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         probs = []
         time = []
         delta_time = None

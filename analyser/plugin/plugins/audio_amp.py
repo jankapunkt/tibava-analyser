@@ -1,5 +1,9 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import AudioData, ScalarData
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
+
 import librosa
 import numpy as np
 import logging
@@ -31,10 +35,16 @@ class AudioAmpAnalysis(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
 
         y, sr = librosa.load(inputs.get("audio").path, sr=parameters.get("sr"))
 

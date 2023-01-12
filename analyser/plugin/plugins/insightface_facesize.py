@@ -3,6 +3,9 @@ from analyser.data import BboxesData, ListData, ScalarData
 
 import numpy as np
 import pickle
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 default_config = {
     "data_dir": "/data/",
@@ -32,15 +35,21 @@ class InsightfaceFacesize(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         # self.host = self.config["host"]
         # self.port = self.config["port"]
 
         with open(self.config["model_file"], "rb") as pklfile:
             self.model = pickle.load(pklfile)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         facesizes_dict = {}
         delta_time = None
 

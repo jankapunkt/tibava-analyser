@@ -1,6 +1,6 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
-from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, generate_id
+from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings
 
 
 from analyser.inference import InferenceServer
@@ -8,6 +8,9 @@ from analyser.inference import InferenceServer
 import csv
 import numpy as np
 from sklearn.preprocessing import normalize
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 
 default_config = {
@@ -45,8 +48,8 @@ class PlacesClassifier(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         inference_config = self.config.get("inference", None)
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
@@ -94,7 +97,13 @@ class PlacesClassifier(
 
         return {"places3": hierarchy_places3, "places16": hierarchy_places16}
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         video_decoder = VideoDecoder(
             inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
         )

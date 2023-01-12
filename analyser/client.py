@@ -76,11 +76,18 @@ class AnalyserClient:
         logging.error("Error while copying data ...")
         return None
 
-    def upload_file(self, path):
+    def upload_file(self, path, id=None):
+
+        ext = os.path.splitext(path)[-1][1:]
+        filename = os.path.basename(path)
 
         mimetype = mimetypes.guess_type(path)
         if re.match(r"video/*", mimetype[0]):
             data_type = analyser_pb2.VIDEO_DATA
+        if re.match(r"audio/*", mimetype[0]):
+            data_type = analyser_pb2.AUDIO_DATA
+        if re.match(r"image/*", mimetype[0]):
+            data_type = analyser_pb2.IMAGES_DATA
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
@@ -98,7 +105,9 @@ class AnalyserClient:
                         if not data:
                             break
                         self.hash_stream.update(data)
-                        yield analyser_pb2.UploadFileRequest(type=data_type, data_encoded=data)
+                        yield analyser_pb2.UploadFileRequest(
+                            type=data_type, data_encoded=data, id=None, ext=ext, filename=filename
+                        )
 
             def hash(self):
                 return self.hash_stream.hexdigest()
@@ -197,7 +206,7 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
-        data, hash = DataManager(output_path).load_from_stream(response, data_id)
+        data, hash = DataManager(output_path).load_data_from_stream(response)
         return data
 
     def download_data_to_blob(self, data_id, output_path):

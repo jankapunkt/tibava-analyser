@@ -1,9 +1,9 @@
-from subprocess import call
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.utils import VideoDecoder
 from analyser.data import AudioData, VideoData
 import ffmpeg
-import os
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 default_config = {"data_dir": "/data/"}
 
@@ -28,17 +28,28 @@ class VideoToAudio(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
+        with inputs["video"] as input_data, data_manager.create_data("AudioData") as output_data:
+            output_data.ext = "wav"
+            print(output_data.id)
 
-        output_data = AudioData(ext="mp3", data_dir=self.config.get("data_dir"))
+            with input_data.open_video() as f_video, output_data.open_audio("w") as f_audio:
 
-        video = ffmpeg.input(inputs["video"].path)
-        audio = video.audio
-        stream = ffmpeg.output(audio, output_data.path)
-        ffmpeg.run(stream)
+                process = (
+                    ffmpeg.input("pipe:")
+                    .audio.output("pipe:", format="wav")
+                    .run_async(pipe_stdin=True, pipe_stdout=True)
+                )
+                outputs, _ = process.communicate(input=f_video.read())
+                f_audio.write(outputs)
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"audio": output_data}
+            return {"audio": output_data}

@@ -1,19 +1,7 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
 from analyser.inference import InferenceServer
-from analyser.data import (
-    BboxData,
-    BboxesData,
-    FaceData,
-    FacesData,
-    KpsData,
-    KpssData,
-    ImageData,
-    ImagesData,
-    VideoData,
-    generate_id,
-    create_data_path,
-)
+from analyser.data import BboxData, BboxesData, FaceData, FacesData, KpsData, KpssData, ImageData, ImagesData, VideoData
 
 from analyser.utils import VideoDecoder
 import cv2
@@ -22,11 +10,14 @@ import logging
 import numpy as np
 import sys
 import traceback
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 
 class InsightfaceDetector(AnalyserPlugin):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         self.host = self.config["host"]
         self.port = self.config["port"]
         self.model_name = self.config["model_name"]
@@ -363,10 +354,16 @@ class InsightfaceVideoDetector(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
             # decode video to extract bboxes per frame
             video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
@@ -418,10 +415,16 @@ class InsightfaceImageDetector(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
 
             image_paths = [

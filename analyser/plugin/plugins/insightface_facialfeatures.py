@@ -1,21 +1,15 @@
 from typing import Iterator
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import (
-    KpssData,
-    FacesData,
-    ImagesData,
-    ImageEmbedding,
-    ImageEmbeddings,
-    VideoData,
-    create_data_path,
-    generate_id,
-)
+from analyser.data import KpssData, FacesData, ImagesData, ImageEmbedding, ImageEmbeddings, VideoData
 import cv2
 import imageio.v3 as iio
 import logging
 import numpy as np
 import traceback
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 # from skimage import transform as trans
 import sys
@@ -57,8 +51,8 @@ arcface_src = np.expand_dims(arcface_src, axis=0)
 
 
 class InsightfaceFeatureExtractor(AnalyserPlugin):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         inference_config = self.config.get("inference", None)
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
@@ -181,10 +175,16 @@ class InsightfaceVideoFeatureExtractor(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
             kpss = inputs["kpss"].kpss
             parameters["fps"] = 1 / kpss[0].delta_time
@@ -258,10 +258,16 @@ class InsightfaceImageFeatureExtractor(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
             kpss = inputs["kpss"].kpss
             assert len(kpss) > 0

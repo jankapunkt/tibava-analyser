@@ -2,14 +2,14 @@ import logging
 import os
 import re
 import uuid
-from typing import Dict, List, Any, Type
+from typing import Dict, List, Any, Type, Callable
 import traceback
 import sys
 import importlib
 
 from analyser.utils import convert_name
 from analyser.utils.plugin import Plugin, Manager
-from analyser.data import Data  # , VideoData, AudioData, ImageData
+from analyser.data import Data, DataManager
 from analyser import analyser_pb2
 from analyser.plugin.callback import AnalyserPluginCallback
 
@@ -93,15 +93,16 @@ class AnalyserPlugin(Plugin):
     def __call__(
         self,
         inputs: Dict[str, Data],
-        parameters: Dict[str, Any] = None,
-        callbacks: List[AnalyserPluginCallback] = None,
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
     ) -> Dict[str, Data]:
         input_parameters = self._parameters
         if parameters is not None:
             input_parameters.update(parameters)
         logging.info(f"[Plugin] {self._name} starting")
         try:
-            result = self.call(inputs, input_parameters, callbacks=callbacks)
+            result = self.call(inputs, data_manager, input_parameters, callbacks=callbacks)
 
         except Exception as e:
             raise e
@@ -150,7 +151,14 @@ class AnalyserPluginManager(Manager):
                 if "register" in function_dir:
                     a.register(self)
 
-    def __call__(self, plugin, inputs, parameters=None, callbacks=None):
+    def __call__(
+        self,
+        plugin: str,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ):
         print(self._plugins.keys())
         run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
@@ -167,6 +175,6 @@ class AnalyserPluginManager(Manager):
         logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
         logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
         logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-        results = plugin_to_run(inputs, parameters, callbacks)
+        results = plugin_to_run(inputs, data_manager, parameters, callbacks)
         logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
         return results

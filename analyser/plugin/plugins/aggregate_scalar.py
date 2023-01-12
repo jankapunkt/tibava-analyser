@@ -1,5 +1,8 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import ScalarData, ListData
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 import logging
 import numpy as np
@@ -31,10 +34,8 @@ class AggregateScalar(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
     def aggregate_probs(self, probs, times, interp_time, aggregation="prod"):
         probs_interp = []
@@ -57,7 +58,13 @@ class AggregateScalar(
 
         return np.mean(probs_interp, axis=0)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         probs = []
         times = []
         longest_timeline = 0

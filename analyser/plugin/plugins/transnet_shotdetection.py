@@ -1,7 +1,10 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import Shot, ShotsData, VideoData, generate_id
+from analyser.data import Shot, ShotsData, VideoData
 from analyser.inference import InferenceServer
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 import ffmpeg
 import numpy as np
@@ -35,8 +38,8 @@ class TransnetShotdetection(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         inference_config = self.config.get("inference", None)
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
@@ -113,7 +116,13 @@ class TransnetShotdetection(
 
         return np.array(scenes, dtype=np.int32)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         self.update_callbacks(callbacks, progress=0.0)
         video_stream, err = (
             ffmpeg.input(inputs["video"].path)

@@ -1,18 +1,13 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import (
-    ImagesData,
-    ScalarData,
-    ListData,
-    BboxesData,
-    FacesData,
-    VideoData,
-    create_data_path,
-)
+from analyser.data import ImagesData, ScalarData, ListData, BboxesData, FacesData, VideoData
 import cv2
 import imageio.v3 as iio
 import logging
 import numpy as np
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 import sys
 import traceback
@@ -21,8 +16,8 @@ from analyser.inference import InferenceServer
 
 
 class InsightfaceGenderAgeCalculator(AnalyserPlugin):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
         self.input_size = [96, 96]  # from model_zoo.py for Attributeclass
         self.input_std = 128.0
@@ -170,10 +165,16 @@ class InsightfaceVideoGenderAgeCalculator(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
             bboxes = inputs["bboxes"].bboxes
             parameters["fps"] = 1 / bboxes[0].delta_time
@@ -248,10 +249,16 @@ class InsightfaceImageGenderAgeCalculator(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         try:
             faces = inputs["faces"].faces
             bboxes = inputs["bboxes"].bboxes

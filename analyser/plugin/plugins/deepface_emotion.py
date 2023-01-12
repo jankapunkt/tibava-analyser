@@ -1,6 +1,9 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import ListData, ScalarData, ImagesData, generate_id
+from analyser.data import ListData, ScalarData, ImagesData
 from analyser.inference import InferenceServer
+from analyser.data import DataManager, Data
+
+from typing import Callable, Optional, Dict
 
 import cv2
 import imageio
@@ -35,8 +38,8 @@ class DeepfaceEmotion(
     requires=requires,
     provides=provides,
 ):
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
         inference_config = self.config.get("inference", None)
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
@@ -87,7 +90,13 @@ class DeepfaceEmotion(
 
         return img_pixels
 
-    def call(self, inputs, parameters, callbacks=None):
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
         time = []
         ref_ids = []
         predictions = []
