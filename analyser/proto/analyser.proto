@@ -13,9 +13,11 @@ service Analyser {
   rpc download_data(DownloadDataRequest) returns (stream DownloadDataResponse);
   rpc check_data(CheckDataRequest) returns (CheckDataResponse);
   rpc run_plugin(RunPluginRequest) returns (RunPluginResponse);
-  rpc run_pipeline(RunPipelineRequest) returns (RunPipelineResponse);
   rpc get_plugin_status(GetPluginStatusRequest)
       returns (GetPluginStatusResponse);
+  rpc run_pipeline(RunPipelineRequest) returns (RunPipelineResponse);
+  rpc get_pipeline_status(GetPieplineStatusRequest)
+      returns (GetPieplineStatusResponse);
 }
 
 enum DataType {
@@ -117,6 +119,8 @@ message CheckDataResponse {
   string hash = 2;
 }
 
+// Plugin
+
 message PluginParameter {
   string name = 1;
   string value = 2;
@@ -134,17 +138,6 @@ message RunPluginResponse {
   bool success = 2;
 }
 
-message RunPipelineRequest {
-  repeated string inputs = 1;
-  repeated string outputs = 2;
-  repeated RunPluginRequest plugins = 3;
-}
-
-message RunPipelineResponse {
-  string id = 1;
-  bool success = 2;
-}
-
 message GetPluginStatusRequest { string id = 1; }
 
 message GetPluginStatusResponse {
@@ -158,5 +151,50 @@ message GetPluginStatusResponse {
   }
   Status status = 1;
   repeated RunPluginData outputs = 2;
+  float progress = 3;
+}
+
+// PIPELINE
+
+message RunPipelineData {
+  string symbol = 1;
+  string id = 2;
+}
+
+message PipelineSymbolMap {
+  string name = 1;
+  string symbol = 2;
+}
+
+message PipelinePlugin {
+  string plugin = 1;
+  repeated PipelineSymbolMap inputs = 2;
+  repeated PipelineSymbolMap outputs = 3;
+  repeated PluginParameter parameters = 4;
+}
+
+message RunPipelineRequest {
+  repeated RunPipelineData inputs = 1;
+  repeated PipelinePlugin plugins = 3;
+}
+
+message RunPipelineResponse {
+  string id = 1;
+  bool success = 2;
+}
+
+message GetPieplineStatusRequest { string id = 1; }
+
+message GetPieplineStatusResponse {
+
+  enum Status {
+    UNKNOWN = 0;
+    ERROR = 1;
+    DONE = 2;
+    RUNNING = 3;
+    WAITING = 4;
+  }
+  Status status = 1;
+  repeated RunPipelineData outputs = 2;
   float progress = 3;
 }

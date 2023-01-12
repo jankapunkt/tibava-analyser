@@ -12,6 +12,31 @@ plugins:
   - plugin: audio_amp_analysis
   - plugin: audio_rms_analysis
   - plugin: audio_freq_analysis
+  - plugin: clip_image_embedding
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: clip_image_encoder
+  - plugin: clip_text_embedding
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: clip_text_encoder
+  - plugin: clip_probs
+  - plugin: places_classifier
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: places_classification
   #   params:
   #     host: analyser_redisai
   # - plugin: thumbnail_generator

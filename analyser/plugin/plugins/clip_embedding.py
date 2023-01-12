@@ -79,27 +79,26 @@ class ClipImageEmbedding(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        preds = []
-        video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
-        num_frames = video_decoder.duration() * video_decoder.fps()
-        for i, frame in enumerate(video_decoder):
-            self.update_callbacks(callbacks, progress=i / num_frames)
-            img_id = generate_id()
-            img = frame.get("frame")
-            img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
-            imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
-            result = self.server({"data": np.expand_dims(img, axis=0)}, ["embedding"])
-            preds.append(
-                ImageEmbedding(
-                    embedding=normalize(result["embedding"]),
-                    image_id=img_id,
-                    time=frame.get("time"),
-                    delta_time=1 / parameters.get("fps"),
-                )
-            )
+        with inputs["video"] as input_data, data_manager.create_data("ImageEmbeddings") as output_data:
+            with input_data.open_video("r") as f_video:
+                video_decoder = VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}")
+                num_frames = video_decoder.duration() * video_decoder.fps()
+                for i, frame in enumerate(video_decoder):
+                    self.update_callbacks(callbacks, progress=i / num_frames)
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"embeddings": ImageEmbeddings(embeddings=preds)}
+                    img = frame.get("frame")
+                    img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
+                    result = self.server({"data": np.expand_dims(img, axis=0)}, ["embedding"])
+                    output_data.embeddings.append(
+                        ImageEmbedding(
+                            embedding=normalize(result["embedding"]),
+                            time=frame.get("time"),
+                            delta_time=1 / parameters.get("fps"),
+                        )
+                    )
+
+                self.update_callbacks(callbacks, progress=1.0)
+            return {"embeddings": output_data}
 
 
 @AnalyserPluginManager.export("clip_text_embedding")
@@ -130,18 +129,14 @@ class ClipTextEmbedding(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        text_id = generate_id()
-        # text = self.preprocess(parameters["search_term"])
-        result = self.server({"data": parameters["search_term"]}, ["embedding"])
-
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "embeddings": TextEmbeddings(
-                embeddings=[
-                    TextEmbedding(text_id=text_id, text=parameters["search_term"], embedding=result["embedding"][0])
-                ]
+        with data_manager.create_data("TextEmbeddings") as output_data:
+            # text = self.preprocess(parameters["search_term"])
+            result = self.server({"data": parameters["search_term"]}, ["embedding"])
+            output_data.embeddings.append(
+                TextEmbedding(text=parameters["search_term"], embedding=result["embedding"][0])
             )
-        }
+            self.update_callbacks(callbacks, progress=1.0)
+            return {"embeddings": output_data}
 
 
 prob_requires = {
@@ -165,10 +160,8 @@ class ClipProbs(
     def __init__(self, config=None, **kwargs):
         super().__init__(config, **kwargs)
 
-    def preprocess(self, text):
-        # tokenize text
-        tokenized = self.tokenizer.tokenize(text)
-        return tokenized
+        inference_config = self.config.get("inference", None)
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
     def call(
         self,
@@ -177,33 +170,35 @@ class ClipProbs(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        probs = []
-        time = []
-        delta_time = None
-        embeddings = inputs["embeddings"]
-        text = self.preprocess(parameters["search_term"])
-        result = self.text_server({"data": text}, ["o"])
+        with inputs["embeddings"] as input_data, data_manager.create_data("ScalarData") as output_data:
+            probs = []
+            time = []
+            delta_time = None
+            pos_text = parameters["search_term"]
+            result = self.server({"data": pos_text}, ["embedding"])
 
-        text_embedding = normalize(result["o"])
+            text_embedding = normalize(result["embedding"])
 
-        neg_text = self.preprocess("Not " + parameters["search_term"])
-        neg_result = self.text_server({"data": neg_text}, ["o"])
+            neg_text = "Not " + parameters["search_term"]
+            neg_result = self.server({"data": neg_text}, ["embedding"])
 
-        neg_text_embedding = normalize(neg_result["o"])
+            neg_text_embedding = normalize(neg_result["embedding"])
 
-        text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
-        for embedding in embeddings.embeddings:
+            text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
+            for embedding in input_data.embeddings:
 
-            result = 100 * text_embedding @ embedding.embedding.T
+                result = 100 * text_embedding @ embedding.embedding.T
 
-            prob = scipy.special.softmax(result, axis=0)
+                prob = scipy.special.softmax(result, axis=0)
 
-            # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
-            probs.append(prob[0, 0])
-            time.append(embedding.time)
-            delta_time = embedding.delta_time
+                # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
+                probs.append(prob[0, 0])
+                time.append(embedding.time)
+                delta_time = embedding.delta_time
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "probs": ScalarData(y=np.array(probs), time=time, delta_time=delta_time, name="image_text_similarities")
-        }
+            self.update_callbacks(callbacks, progress=1.0)
+            output_data.y = np.array(probs)
+            output_data.time = time
+            output_data.delta_time = delta_time
+            output_data.name = "image_text_similarities"
+            return {"probs": output_data}

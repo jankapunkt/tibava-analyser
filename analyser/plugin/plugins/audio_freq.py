@@ -40,22 +40,29 @@ class AudioFreqAnalysis(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
 
-        y, sr = librosa.load(inputs.get("audio").path, sr=parameters.get("sr"))
-        if parameters.get("max_samples"):
-            target_sr = sr / (len(y) / int(parameters.get("max_samples")))
+        with inputs["audio"] as input_data, data_manager.create_data("HistData") as output_data:
+            with input_data.open_audio("r") as f_audio:
+                y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
 
-            y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
-            sr = target_sr
+            if parameters.get("max_samples"):
+                target_sr = sr / (len(y) / int(parameters.get("max_samples")))
 
-        S = np.abs(librosa.stft(y, n_fft=parameters.get("n_fft")))
-        S_db = librosa.amplitude_to_db(S, ref=np.max)
+                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+                sr = target_sr
 
-        time = y.shape[0] / sr
-        t_delta = time / S_db.shape[1]
+            S = np.abs(librosa.stft(y, n_fft=parameters.get("n_fft")))
+            S_db = librosa.amplitude_to_db(S, ref=np.max)
 
-        if parameters.get("normalize"):
-            S_db = (S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db))
+            time = y.shape[0] / sr
+            t_delta = time / S_db.shape[1]
 
-        S_db = np.transpose(S_db)
+            if parameters.get("normalize"):
+                S_db = (S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db))
 
-        return {"freq": HistData(hist=S_db, time=(np.arange(S_db.shape[0]) * t_delta).tolist(), delta_time=1 / sr)}
+            S_db = np.transpose(S_db)
+
+            output_data.hist = S_db
+            output_data.time = np.arange(S_db.shape[0]) * t_delta
+            output_data.delta_time = 1 / sr
+
+            return {"freq": output_data}

@@ -46,22 +46,28 @@ class AudioAmpAnalysis(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
 
-        y, sr = librosa.load(inputs.get("audio").path, sr=parameters.get("sr"))
+        with inputs["audio"] as input_data, data_manager.create_data("ScalarData") as output_data:
+            with input_data.open_audio("r") as f_audio:
+                y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
 
-        if parameters.get("max_samples"):
-            target_sr = sr / (len(y) / int(parameters.get("max_samples")))
-            try:
-                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
-                sr = target_sr
-            except Exception as e:
-                logging.warning("Resampling failed. Try numpy.")
-                t = np.arange(y.shape[0]) / sr
-                t_target = np.arange(int(y.shape[0] / sr * target_sr)) / target_sr
+            if parameters.get("max_samples"):
+                target_sr = sr / (len(y) / int(parameters.get("max_samples")))
+                try:
+                    y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+                    sr = target_sr
+                except Exception as e:
+                    logging.warning("Resampling failed. Try numpy.")
+                    t = np.arange(y.shape[0]) / sr
+                    t_target = np.arange(int(y.shape[0] / sr * target_sr)) / target_sr
 
-                y = np.interp(t_target, t, y)
-                sr = target_sr
+                    y = np.interp(t_target, t, y)
+                    sr = target_sr
 
-        if parameters.get("normalize"):
-            y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            if parameters.get("normalize"):
+                y = (y - np.min(y)) / (np.max(y) - np.min(y))
 
-        return {"amp": ScalarData(y=y, time=(np.arange(len(y)) / sr).tolist(), delta_time=1 / sr)}
+            output_data.y = y
+            output_data.time = np.arange(len(y)) / sr
+            output_data.delta_time = 1 / sr
+
+            return {"amp": output_data}

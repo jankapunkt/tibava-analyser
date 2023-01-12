@@ -12,11 +12,11 @@ from analyser import analyser_pb2
 
 @dataclass(kw_only=True)
 class ImageEmbedding(Data):
-    image_id: int = None
+    image_id: str = None
     ref_id: str = None
     time: float = None
-    delta_time: float = field(default=None)
-    embedding: npt.NDArray = field(default_factory=np.ndarray)
+    delta_time: float = None
+    embedding: npt.NDArray = None
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
@@ -60,7 +60,7 @@ class ImageEmbeddings(Data):
             return
 
         for i in range(embeddings.shape[0]):
-            self.embeddings[i] = embeddings[i]
+            self.embeddings[i].embedding = embeddings[i]
 
     def save(self) -> None:
         super().save()
