@@ -29,7 +29,7 @@ class ZipFSHandler(FSHandler):
         self.mode = mode
 
     def open(self, data) -> None:
-        print("open")
+        logging.info(f"open {self.path}")
         self.zipfile = zipfile.ZipFile(self.path, self.mode)
         if self.mode == "r":
             data.load()
@@ -37,11 +37,11 @@ class ZipFSHandler(FSHandler):
     def mkdir(self, path) -> None:
         if self.zipfile is None:
             raise Exception()
-        print("mkdir")
+        logging.info(f"mkdir {self.path}")
         self.zipfile.mkdir(path)
 
     def close(self, data) -> None:
-        print("close")
+        logging.info(f"close {self.path}")
         if self.zipfile is None:
             return
 
@@ -53,19 +53,19 @@ class ZipFSHandler(FSHandler):
         data.save()
 
         # data_split = split_data_in_paths(data)
-        # print(data_split)
+        # logging.info(data_split)
 
         # dump_meta = data._meta_data()
         # with self.open_file("meta.yml", mode="w") as f:
         #     f.write(yaml.dump(data_split[]).encode())
 
-        # print(data._data())
+        # logging.info(data._data())
 
         self.zipfile.close()
         self.zipfile = None
 
     def open_file(self, filename: str, mode: str = "r"):
-        print("open_file")
+        logging.info(f"{self.__class__.__name__} open_file {self.path} {filename}")
         if self.zipfile is None:
             logging.error("")
             return None
@@ -82,21 +82,24 @@ class LocalFSHandler(FSHandler):
         self.path = path
 
     def open(self, data) -> None:
-        print("open")
-        self.zipfile = zipfile.ZipFile(self.path, self.mode)
-        if self.mode != "r":
-            self.fs.mkdir(self.path)
-        if self.mode == "r":
+        logging.info(f"open {self.path}")
+        # if self.fs.mode != "r":
+        #     self.fs.mkdir(self.path)
+        if self.fs.mode == "r":
             data.load()
+
+    @property
+    def mode(self):
+        return self.fs.mode
 
     def mkdir(self, path) -> None:
         if self.fs is None:
             raise Exception()
-        print("mkdir")
+        logging.info(f"mkdir {self.path}")
         self.zipfile.mkdir(path)
 
     def close(self, data) -> None:
-        print("close")
+        logging.info(f"close {self.path}")
         if self.fs is None:
             return
 
@@ -106,7 +109,7 @@ class LocalFSHandler(FSHandler):
         data.save()
 
     def open_file(self, filename: str, mode: str = "r"):
-        print("open_file")
+        logging.info(f"{self.__class__.__name__} open_file {self.path} {filename}")
         if self.fs is None:
             logging.error("")
             return None
@@ -114,4 +117,4 @@ class LocalFSHandler(FSHandler):
         if mode == "w" and self.fs.mode == "r":
             raise ValueError
 
-        return self.fs.open(os.path.join(self.path, filename), mode=mode)
+        return self.fs.open_file(os.path.join(self.path, filename), mode=mode)

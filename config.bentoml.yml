@@ -12,6 +12,7 @@ plugins:
   - plugin: audio_amp_analysis
   - plugin: audio_rms_analysis
   - plugin: audio_freq_analysis
+  - plugin: color_analyser
   - plugin: clip_image_embedding
     params:
       inference:

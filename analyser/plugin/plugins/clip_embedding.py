@@ -26,31 +26,13 @@ img_embd_parameters = {
     "crop_size": [224, 224],
 }
 
-text_embd_parameters = {
-    "search_term": "",
-}
-
-prob_parameters = {
-    "search_term": "",
-}
-
-anno_parameters = {
-    "threshold": 0.5,
-}
 
 img_embd_requires = {
     "video": VideoData,
 }
 
-text_embd_requires = {}
-
-
 img_embd_provides = {
     "embeddings": ImageEmbeddings,
-}
-
-text_embd_provides = {
-    "embeddings": TextEmbeddings,
 }
 
 
@@ -101,6 +83,17 @@ class ClipImageEmbedding(
             return {"embeddings": output_data}
 
 
+text_embd_parameters = {
+    "search_term": "",
+}
+
+text_embd_requires = {}
+
+text_embd_provides = {
+    "embeddings": TextEmbeddings,
+}
+
+
 @AnalyserPluginManager.export("clip_text_embedding")
 class ClipTextEmbedding(
     AnalyserPlugin,
@@ -138,6 +131,10 @@ class ClipTextEmbedding(
             self.update_callbacks(callbacks, progress=1.0)
             return {"embeddings": output_data}
 
+
+prob_parameters = {
+    "search_term": "",
+}
 
 prob_requires = {
     "embeddings": ImageEmbeddings,

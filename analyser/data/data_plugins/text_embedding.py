@@ -14,12 +14,13 @@ from analyser import analyser_pb2
 class TextEmbedding(Data):
     text_id: int = None
     text: str = None
-    embedding: npt.NDArray = field(default_factory=np.ndarray)
+    embedding: npt.NDArray = None
 
     def to_dict(self) -> dict:
         return {
             "text_id": self.text_id,
             "text": self.text,
+            "ref_id": self.ref_id,
             "embedding": self.embedding,
         }
 
@@ -28,6 +29,7 @@ class TextEmbedding(Data):
         return {
             **meta,
             "text_id": self.text_id,
+            "text": self.text,
             "ref_id": self.ref_id,
         }
 
@@ -52,7 +54,7 @@ class TextEmbeddings(Data):
             return
 
         for i in range(embeddings.shape[0]):
-            self.embeddings[i] = embeddings[i]
+            self.embeddings[i].embedding = embeddings[i]
 
     def save(self) -> None:
         super().save()
