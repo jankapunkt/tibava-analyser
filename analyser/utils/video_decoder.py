@@ -1,5 +1,62 @@
 import imageio.v3 as iio
 import ffmpeg
+import code
+import traceback
+import sys
+import av
+
+
+def parse_meta_av(path, **kwargs):
+    try:
+        fh = av.open(path)
+        stream = fh.streams.video[0]
+        frame = next(fh.decode(video=0))
+        frame = frame.reformat(format="rgb24")
+        # print(dir(fh))
+        # print(frame)
+        # print(dir(frame))
+        # print("########")
+        # print(frame.interlaced_frame)
+        # print(frame.format)
+        # print(frame.planes)
+        # print(frame.pict_type)
+
+        # print(frame.width)
+        # print(frame.height)
+        # print(frame.to_ndarray().shape)
+        # iio.imwrite(os.path.join(test_path, "test_out.jpg"), frame.to_ndarray())
+        # print(stream.duration)
+        # print(stream.time_base)
+        # print(fh.size)
+        # print(float(stream.duration * stream.time_base))
+        # print(stream.average_rate)
+        # print(stream.guessed_rate)
+        return {
+            "fps": stream.average_rate,
+            "width": frame.width,
+            "height": frame.height,
+            "size": (frame.width, frame.height),
+            "duration": float(stream.duration * stream.time_base),
+        }
+
+    except:
+        return None
+
+
+def parse_meta_imageio(path, **kwargs):
+    try:
+        # TODO
+        meta = iio.immeta(path, plugin="FFMPEG", **kwargs)
+        return {
+            "fps": meta.average_rate,
+            "width": meta.width,
+            "height": meta.height,
+            "size": (meta.width, meta.height),
+            "duration": float(meta.duration * meta.time_base),
+        }
+
+    except:
+        return None
 
 
 # def parse_meta_ffmpeg(path):
@@ -33,6 +90,8 @@ import ffmpeg
 #     except:
 #         return None
 
+import pdb
+
 
 class VideoDecoder:
     # TODO: videos with sample aspect ratio (SAR) not equal to 1:1 are loaded with wrong shape
@@ -51,13 +110,9 @@ class VideoDecoder:
         self._max_dimension = max_dimension
         self._fps = fps
 
-        self._meta = iio.immeta(path, plugin="FFMPEG", **kwargs)
-        # print(self._meta)
+        self._meta = parse_meta_av(path)
 
         self._size = self._meta.get("size")
-
-        # if self._fps is None:
-        #     self._fps = self._meta.get("fps")
 
         self._real_fps = self._meta.get("fps")
         self._duration = self._meta.get("duration")

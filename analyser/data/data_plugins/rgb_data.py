@@ -39,6 +39,8 @@ class RGBData(Data):
             },
         )
         with self.fs.open_file("colors.npz", "w") as f:
+            print(self.colors)
+            print(self.colors.shape)
             np.save(f, self.colors)
 
         with self.fs.open_file("time.npz", "w") as f:

@@ -52,14 +52,17 @@ class ColorAnalyser(
             kcolors = []
             time = []
             with input_data.open_video() as f_video:
+                print("A", flush=True)
                 video_decoder = VideoDecoder(
                     f_video,
                     max_dimension=parameters.get("max_resolution"),
                     fps=parameters.get("fps"),
                     extension=f".{input_data.ext}",
                 )
+                print("B", flush=True)
 
                 num_frames = video_decoder.duration() * video_decoder.fps()
+                print("C", flush=True)
                 for i, frame in enumerate(video_decoder):
                     self.update_callbacks(callbacks, progress=i / num_frames)
                     image = frame["frame"]
@@ -71,15 +74,15 @@ class ColorAnalyser(
                     time.append(i / parameters.get("fps"))
 
             kcolors = np.stack(kcolors, axis=0)
-            print(kcolors)
+            print(kcolors.dtype)
             logging.info("Video reading done")
             for colors in zip(*kcolors):
 
                 with output_data.create_data("RGBData") as color_data:
-                    color_data.color = np.asarray(colors) / 255
+                    color_data.colors = np.asarray(colors) / 255
                     color_data.time = np.asarray(time)
                     color_data.delta_time = 1 / parameters.get("fps")
-                    print(color_data)
+                    print(color_data.colors.dtype)
 
             self.update_callbacks(callbacks, progress=1.0)
             print(output_data)
