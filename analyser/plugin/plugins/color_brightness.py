@@ -43,30 +43,35 @@ class ColorBrightnessAnalyser(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        video_decoder = VideoDecoder(
-            inputs["video"].path, max_dimension=parameters.get("max_resolution"), fps=parameters.get("fps")
-        )
 
-        values = []
-        time = []
-        num_frames = video_decoder.duration() * video_decoder.fps()
-        for i, frame in enumerate(video_decoder):
-            self.update_callbacks(callbacks, progress=i / num_frames)
-            image = frame["frame"]
-            hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-            value = np.mean(hsv[:, :, 2])
-            values.append(value)
-            time.append(i / parameters.get("fps"))
+        with inputs["video"] as input_data, data_manager.create_data("ScalarData") as output_data:
+
+            with input_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    f_video,
+                    max_dimension=parameters.get("max_resolution"),
+                    fps=parameters.get("fps"),
+                    extension=f".{input_data.ext}",
+                )
+
+                values = []
+                time = []
+                num_frames = video_decoder.duration() * video_decoder.fps()
+                for i, frame in enumerate(video_decoder):
+                    self.update_callbacks(callbacks, progress=i / num_frames)
+                    image = frame["frame"]
+                    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+                    value = np.mean(hsv[:, :, 2])
+                    values.append(value)
+                    time.append(i / parameters.get("fps"))
 
         y = np.stack(values)
 
         if parameters.get("normalize"):
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
         self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "brightness": ScalarData(
-                y=y,
-                time=time,
-                delta_time=1 / parameters.get("fps"),
-            )
-        }
+
+        output_data.y = y
+        output_data.time = time
+        output_data.delta_time = 1 / parameters.get("fps")
+        return {"brightness": output_data}

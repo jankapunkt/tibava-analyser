@@ -47,15 +47,16 @@ class ImagesData(Data):
             "images": [x.to_dict() for x in self.images],
         }
 
+    def __len__(self) -> int:
+        return len(self.images)
+
     def __iter__(self) -> Iterator:
         yield from self.images
 
-    def save_image(
-        self, image: npt.ArrayLike, ref_id: str = None, time: float = None, delta_time: float = None
-    ) -> None:
+    def save_image(self, image: npt.ArrayLike, **kwargs) -> None:
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
-        image_data = ImageData(ref_id=ref_id, time=time, delta_time=delta_time)
+        image_data = ImageData(**kwargs)
         try:
 
             encoded = iio.imwrite("<bytes>", image, extension=".jpg")

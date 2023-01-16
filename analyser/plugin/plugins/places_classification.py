@@ -104,56 +104,65 @@ class PlacesClassifier(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        video_decoder = VideoDecoder(
-            inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
-        )
 
-        embeddings = []
-        probs = {"places365": [], "places16": [], "places3": []}
-        time = []
-        num_frames = video_decoder.duration() * video_decoder.fps()
-        for i, frame in enumerate(video_decoder):
-            result = self.server({"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"])
-            if result is not None:
-                # store embeddings
-                embeddings.append(
-                    ImageEmbedding(
-                        embedding=normalize(result["embedding"]),
-                        image_id=generate_id(),
-                        time=frame.get("time"),
-                        delta_time=1 / parameters.get("fps"),
-                    )
+        with inputs["video"] as input_data, data_manager.create_data("ImageEmbeddings") as embeddings_data:
+
+            with input_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    f_video,
+                    max_dimension=self.image_resolution,
+                    fps=parameters.get("fps"),
+                    extension=f".{input_data.ext}",
                 )
 
-                # store places365 probabilities
-                prob = result["prob"]
-                probs["places365"].append(np.squeeze(np.asarray(prob)))
+                embeddings = []
+                probs = {"places365": [], "places16": [], "places3": []}
+                time = []
+                num_frames = video_decoder.duration() * video_decoder.fps()
+                for i, frame in enumerate(video_decoder):
+                    result = self.server(
+                        {"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"]
+                    )
+                    if result is not None:
+                        # store embeddings
+                        embeddings_data.embeddings.append(
+                            ImageEmbedding(
+                                embedding=normalize(result["embedding"]),
+                                time=frame.get("time"),
+                                delta_time=1 / parameters.get("fps"),
+                            )
+                        )
 
-                # store places16 probabilities
-                probs["places16"].append(np.matmul(prob, self.hierarchy["places16"])[0])
+                        # store places365 probabilities
+                        prob = result["prob"]
+                        probs["places365"].append(np.squeeze(np.asarray(prob)))
 
-                # store places3 probabilities
-                probs["places3"].append(np.matmul(prob, self.hierarchy["places3"])[0])
+                        # store places16 probabilities
+                        probs["places16"].append(np.matmul(prob, self.hierarchy["places16"])[0])
 
-                # store time
-                time.append(i / parameters.get("fps"))
+                        # store places3 probabilities
+                        probs["places3"].append(np.matmul(prob, self.hierarchy["places3"])[0])
 
-            self.update_callbacks(callbacks, progress=i / num_frames)
+                        # store time
+                        time.append(i / parameters.get("fps"))
 
-        probs_grpc = {}
+                    self.update_callbacks(callbacks, progress=i / num_frames)
+
+        probs_data = {}
         for level in probs.keys():
-            probs_grpc[level] = ListData(
-                data=[
-                    ScalarData(y=np.asarray(y), time=time, delta_time=1 / parameters.get("fps"))
-                    for y in zip(*probs[level])
-                ],
-                index=self.classes[level],
-            )
+            with data_manager.create_data("ListData") as probs_places:
+                for index, y in zip(self.classes[level], zip(*probs[level])):
+                    with probs_places.create_data("ScalarData", index) as scalar:
+                        scalar.y = y
+                        scalar.time = time
+                        scalar.delta_time = 1 / parameters.get("fps")
+
+                probs_data[level] = probs_places
 
         self.update_callbacks(callbacks, progress=1.0)
         return {
-            "embeddings": ImageEmbeddings(embeddings=embeddings),
-            "probs_places365": probs_grpc["places365"],
-            "probs_places16": probs_grpc["places16"],
-            "probs_places3": probs_grpc["places3"],
+            "embeddings": embeddings,
+            "probs_places365": probs_data["places365"],
+            "probs_places16": probs_data["places16"],
+            "probs_places3": probs_data["places3"],
         }

@@ -65,18 +65,26 @@ class AggregateScalar(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        probs = []
-        times = []
-        longest_timeline = 0
-        for data in inputs["timelines"].data:
-            probs.append(data.y)
-            times.append(data.time)
 
-            if len(data.time) > longest_timeline:
-                longest_timeline = len(data.time)
-                interp_time = data.time
-                interp_delta_time = data.delta_time
+        with inputs["timelines"] as input_data, data_manager.create_data("ScalarData") as output_data:
+            probs = []
+            times = []
+            longest_timeline = 0
+            for data in inputs["timelines"].data:
+                probs.append(data.y)
+                times.append(data.time)
 
-        aggregated_probs = self.aggregate_probs(probs, times, interp_time, aggregation=parameters.get("aggregation"))
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"probs": ScalarData(y=aggregated_probs.squeeze(), time=interp_time, delta_time=interp_delta_time)}
+                if len(data.time) > longest_timeline:
+                    longest_timeline = len(data.time)
+                    interp_time = data.time
+                    interp_delta_time = data.delta_time
+
+            aggregated_probs = self.aggregate_probs(
+                probs, times, interp_time, aggregation=parameters.get("aggregation")
+            )
+            output_data.y = aggregated_probs.squeeze()
+            output_data.time = interp_time
+            output_data.delta_time = interp_delta_time
+
+            self.update_callbacks(callbacks, progress=1.0)
+            return {"probs": output_data}

@@ -47,6 +47,9 @@ class ListData(Data):
 
         return data
 
+    def __len__(self):
+        return len(self.index)
+
     def __iter__(self):
         for i, data_id in zip(self.index, self.data):
             data = Data()

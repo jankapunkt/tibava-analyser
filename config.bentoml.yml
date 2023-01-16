@@ -38,19 +38,19 @@ plugins:
           host: inference
           port: 3000
           service: places_classification
+  - plugin: transnet_shotdetection
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: transnet
   #   params:
   #     host: analyser_redisai
   # - plugin: thumbnail_generator
   #   params:
   #     host: analyser_redisai
-  # - plugin: transnet_shotdetection
-  #   params:
-  #     inference:
-  #       type: bentoml
-  #       params:
-  #         host: inference
-  #         port: 3000
-  #         service: transnet
   # - plugin: shot_density
   #   params:
   #     host: analyser_redisai

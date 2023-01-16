@@ -17,7 +17,7 @@ default_config = {
 default_parameters = {"aggregation": "or"}
 
 requires = {
-    "timeline": ListData,
+    "timelines": ListData,
 }
 
 provides = {
@@ -65,28 +65,29 @@ class AggregateScalarPerTime(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        aggregated_y = []
 
-        for i, data in enumerate(inputs["timeline"].data):
+        with inputs["timelines"] as input_data, data_manager.create_data("ListData") as output_data:
+            aggregated_y = []
 
-            y_per_t = {}
-            for n in range(len(data.time)):
-                if data.time[n] not in y_per_t:
-                    y_per_t[data.time[n]] = []
+            for i, data in enumerate(input_data):
+                with data:
 
-                y_per_t[data.time[n]].append(data.y[n])
+                    y_per_t = {}
+                    for n in range(len(data.time)):
+                        if data.time[n] not in y_per_t:
+                            y_per_t[data.time[n]] = []
 
-            aggregated_y.append(self.aggregate_probs(y_per_t, aggregation=parameters.get("aggregation")))
-            self.update_callbacks(callbacks, progress=i / len(inputs["timeline"].data))
+                        y_per_t[data.time[n]].append(data.y[n])
 
-        self.update_callbacks(callbacks, progress=1.0)
+                    aggregated_y.append(self.aggregate_probs(y_per_t, aggregation=parameters.get("aggregation")))
+                    self.update_callbacks(callbacks, progress=i / len(input_data))
 
-        return {
-            "aggregated_timeline": ListData(
-                data=[
-                    ScalarData(y=np.asarray(y), time=list(y_per_t.keys()), delta_time=data.delta_time)
-                    for y in aggregated_y
-                ],
-                index=inputs["timeline"].index,
-            )
-        }
+            self.update_callbacks(callbacks, progress=1.0)
+
+            for index, y in zip(inputs["timeline"].index, aggregated_y):
+
+                with output_data.create_data("ScalarData", index=index) as scalar_data:
+                    scalar_data.y = np.asarray(y)
+                    scalar_data.time = np.asarray(y_per_t.keys())
+                    scalar_data.delta_time = data.delta_time
+            return {"aggregated_timeline": output_data}

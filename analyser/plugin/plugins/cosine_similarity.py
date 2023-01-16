@@ -48,48 +48,56 @@ class CosineSimilarity(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        query_features = inputs["query_features"].embeddings
-        target_features = inputs["target_features"].embeddings
 
-        unique_times = set()
-        times = []
-        tfs = []
-        for tf in target_features:
-            unique_times.add(tf.time)
-            times.append(tf.time)
-            tfs.append(tf.embedding)
-            delta_time = tf.delta_time
+        with inputs["query_features"] as query_features, inputs[
+            "target_features"
+        ] as target_features, data_manager.create_data("ScalarData") as output_data:
+            # query_features = inputs["query_features"].embeddings
+            # target_features = inputs["target_features"].embeddings
 
-        qfs = [qf.embedding for qf in query_features]
+            unique_times = set()
+            times = []
+            tfs = []
+            for tf in target_features:
+                unique_times.add(tf.time)
+                times.append(tf.time)
+                tfs.append(tf.embedding)
+                delta_time = tf.delta_time
 
-        tfs = np.asarray(tfs)
-        qfs = np.asarray(qfs)
+            qfs = [qf.embedding for qf in query_features]
 
-        cossim = 1 - cdist(tfs, qfs, "cosine")
-        cossim = (cossim + 1) / 2
+            tfs = np.asarray(tfs)
+            qfs = np.asarray(qfs)
 
-        # aggregation over available features at a given time t
-        if parameters.get("aggregation") == "max":
-            cossim = np.max(cossim, axis=-1)
-        else:
-            logging.error("Unknown aggregation method. Using max instead ...")
-            cossim = np.max(cossim, axis=-1)
+            cossim = 1 - cdist(tfs, qfs, "cosine")
+            cossim = (cossim + 1) / 2
 
-        # aggregation over time using max
-        # NOTE: Its sufficient if a query feature vector match one vector at a specific time in the target video
-        cossim_t = []
-        for t in unique_times:
-            cossim_t.append(np.max(cossim[np.asarray(times) == t]))
-
-        unique_times = list(unique_times)
-        cossim_t = np.squeeze(np.asarray(cossim_t))
-
-        if parameters.get("normalize") > 0:
-            if parameters.get("normalize_min_val") and parameters.get("normalize_max_val"):
-                cossim_t = (cossim_t - parameters.get("normalize_min_val")) / (
-                    parameters.get("normalize_max_val") - parameters.get("normalize_min_val")
-                )
+            # aggregation over available features at a given time t
+            if parameters.get("aggregation") == "max":
+                cossim = np.max(cossim, axis=-1)
             else:
-                cossim_t = (cossim_t - np.min(cossim_t)) / (np.max(cossim_t) - np.min(cossim_t))
+                logging.error("Unknown aggregation method. Using max instead ...")
+                cossim = np.max(cossim, axis=-1)
 
-        return {"probs": ScalarData(y=np.squeeze(cossim), time=list(unique_times), delta_time=delta_time)}
+            # aggregation over time using max
+            # NOTE: Its sufficient if a query feature vector match one vector at a specific time in the target video
+            cossim_t = []
+            for t in unique_times:
+                cossim_t.append(np.max(cossim[np.asarray(times) == t]))
+
+            unique_times = list(unique_times)
+            cossim_t = np.squeeze(np.asarray(cossim_t))
+
+            if parameters.get("normalize") > 0:
+                if parameters.get("normalize_min_val") and parameters.get("normalize_max_val"):
+                    cossim_t = (cossim_t - parameters.get("normalize_min_val")) / (
+                        parameters.get("normalize_max_val") - parameters.get("normalize_min_val")
+                    )
+                else:
+                    cossim_t = (cossim_t - np.min(cossim_t)) / (np.max(cossim_t) - np.min(cossim_t))
+
+            output_data.y = np.squeeze(cossim)
+            output_data.time = list(unique_times)
+            output_data.delta_time = delta_time
+
+            return {"probs": output_data}

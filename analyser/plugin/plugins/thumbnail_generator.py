@@ -43,22 +43,25 @@ class ThumbnailGenerator(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
 
-        video_decoder = VideoDecoder(
-            path=inputs["video"].path, fps=parameters.get("fps"), max_dimension=parameters.get("max_dimension")
-        )
+        with inputs["video"] as input_data, data_manager.create_data("ImageData") as output_data:
 
-        images = []
-        num_frames = video_decoder.duration() * video_decoder.fps()
-        for i, frame in enumerate(video_decoder):
+            with input_data.open_video() as f_video:
 
-            self.update_callbacks(callbacks, progress=i / num_frames)
-            image_id = generate_id()
-            output_path = create_data_path(self.config.get("data_dir"), image_id, "jpg")
-            imageio.imwrite(output_path, frame.get("frame"))
-            images.append(
-                ImageData(id=image_id, ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps"))
-            )
-        data = ImagesData(images=images)
+                video_decoder = VideoDecoder(
+                    path=f_video,
+                    fps=parameters.get("fps"),
+                    max_dimension=parameters.get("max_dimension"),
+                    extension=f".{input_data.ext}",
+                )
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"images": data}
+                num_frames = video_decoder.duration() * video_decoder.fps()
+                for i, frame in enumerate(video_decoder):
+
+                    self.update_callbacks(callbacks, progress=i / num_frames)
+
+                    output_data.save_image(
+                        frame.get("frame"), ext="jpg", time=frame.get("time"), delta_time=1 / parameters.get("fps")
+                    )
+
+                self.update_callbacks(callbacks, progress=1.0)
+                return {"images": output_data}

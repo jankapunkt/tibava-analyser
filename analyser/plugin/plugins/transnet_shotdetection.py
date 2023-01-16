@@ -44,18 +44,6 @@ class TransnetShotdetection(
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
         print(self.server)
-        # self.port = self.config["port"]
-        # self.model_name = self.config["model_name"]
-        # self.model_device = self.config["model_device"]
-        # self.model_file = self.config["model_file"]
-
-        # self.server = InferenceServer(
-        #     model_file=self.model_file,
-        #     model_name=self.model_name,
-        #     host=self.host,
-        #     port=self.port,
-        #     device=self.model_device,
-        # )
 
     def predict_frames(self, frames: np.ndarray, callbacks):
         def input_iterator():
@@ -124,27 +112,34 @@ class TransnetShotdetection(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
         self.update_callbacks(callbacks, progress=0.0)
-        video_stream, err = (
-            ffmpeg.input(inputs["video"].path)
-            .output("pipe:", format="rawvideo", pix_fmt="rgb24", s="48x27")
-            .run(capture_stdout=True, capture_stderr=True)
-        )
+        with inputs["video"] as input_data, data_manager.create_data("ShotsData") as output_data:
 
-        video_decoder = VideoDecoder(inputs["video"].path)
-        video_decoder.fps
+            frames = []
+            with input_data.open_video() as f_video:
 
-        video = np.frombuffer(video_stream, np.uint8).reshape([-1, 27, 48, 3])
+                video_decoder = VideoDecoder(
+                    path=f_video,
+                    max_dimension=[27, 48],
+                    extension=f".{input_data.ext}",
+                )
+                for x in video_decoder:
+                    frames.append(x.get("frame"))
 
-        prediction, _ = self.predict_frames(video, callbacks)
+                frames = np.stack(frames, axis=0)
 
-        shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))
+                video_decoder.fps
 
-        data = ShotsData(
-            shots=[
-                Shot(start=x[0].item() / video_decoder.fps(), end=x[1].item() / video_decoder.fps()) for x in shot_list
-            ]
-        )
+                video = frames.reshape([-1, 27, 48, 3])
 
-        self.update_callbacks(callbacks, progress=1.0)
+                prediction, _ = self.predict_frames(video, callbacks)
 
-        return {"shots": data}
+                shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))
+
+                output_data.shots = [
+                    Shot(start=x[0].item() / video_decoder.fps(), end=x[1].item() / video_decoder.fps())
+                    for x in shot_list
+                ]
+
+                self.update_callbacks(callbacks, progress=1.0)
+
+                return {"shots": output_data}

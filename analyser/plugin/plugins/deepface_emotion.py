@@ -47,9 +47,8 @@ class DeepfaceEmotion(
         self.grayscale = self.config["grayscale"]
         self.target_size = self.config["target_size"]
 
-    def preprocess(self, img_path):
+    def preprocess(self, img):
         # read image
-        img = imageio.imread(img_path)
 
         # post-processing
         if self.grayscale == True:
@@ -97,36 +96,40 @@ class DeepfaceEmotion(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        time = []
-        ref_ids = []
-        predictions = []
 
-        faceid_lut = {}
-        faceimages = inputs["images"].images
-        for faceimage in faceimages:
-            faceid_lut[faceimage.id] = faceimage.ref_id
+        with inputs["images"] as input_data, data_manager.create_data("ListData") as output_data:
+            time = []
+            ref_ids = []
+            predictions = []
 
-        for i, entry in enumerate(faceimages):
+            faceid_lut = {}
+            faceimages = input_data
+            for faceimage in input_data:
+                faceid_lut[faceimage.id] = faceimage.ref_id
 
-            self.update_callbacks(callbacks, progress=i / len(faceimages))
-            image = self.preprocess(entry.path)
+            for i, entry in enumerate(input_data):
 
-            result = self.server({"data": image}, ["emotion"])
-            prediction = result.get(f"emotion")[0] if result else None
-            face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
+                self.update_callbacks(callbacks, progress=i / len(faceimages))
+                image = input_data.load_image(entry)
+                image = self.preprocess(image)
 
-            time.append(entry.time)
-            ref_ids.append(face_id)
-            predictions.append(prediction.tolist())
-            delta_time = entry.delta_time  # same for all examples
+                result = self.server({"data": image}, ["emotion"])
+                prediction = result.get(f"emotion")[0] if result else None
+                face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "probs": ListData(
-                data=[
-                    ScalarData(y=np.asarray(y), time=time, delta_time=delta_time, ref_id=ref_ids)
-                    for y in zip(*predictions)
-                ],
-                index=["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"],
-            )
-        }
+                time.append(entry.time)
+                ref_ids.append(face_id)
+                predictions.append(prediction.tolist())
+                delta_time = entry.delta_time  # same for all examples
+
+            self.update_callbacks(callbacks, progress=1.0)
+
+            index = ["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"]
+            for i, y in zip(index, zip(*predictions)):
+                with output_data.create_data("ScalarData", i) as data:
+                    data.y = np.asarray(y)
+                    data.time = time
+                    data.delta_time = delta_time
+                    data.ref_id = ref_ids
+
+            return {"probs": output_data}

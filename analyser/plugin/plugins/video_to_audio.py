@@ -40,7 +40,6 @@ class VideoToAudio(
     ) -> Dict[str, Data]:
         with inputs["video"] as input_data, data_manager.create_data("AudioData") as output_data:
             output_data.ext = "wav"
-            print(output_data.id)
 
             with input_data.open_video() as f_video, output_data.open_audio("w") as f_audio:
 
