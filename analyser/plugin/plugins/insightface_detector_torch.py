@@ -263,7 +263,9 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
                 for i in range(len(frame_bboxes)):
                     # store bboxes, kpss, and faces
-                    face = FaceData(ref_id = frame.get("ref_id"))
+                    ref_id = frame.get("ref_id", None)
+                    print(f"############## {ref_id} {type(ref_id)}", flush=True)
+                    face = FaceData(ref_id=frame.get("ref_id", None))
                     bbox = BboxData(**frame_bboxes[i], ref_id=face.id)
                     kps = KpsData(**frame_kpss[i], ref_id=face.id)
 
@@ -298,13 +300,6 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
                         delta_time=1 / parameters.get("fps"),
                         ref_id=face.id,
                     )
-                    # print(f"{output_path} , {face_image.shape}", flush=True)
-                    # iio.imwrite(output_path, face_image)
-
-            # images_data = ImagesData(images=images)
-            # bboxes_data = BboxesData(bboxes=bboxes)
-            # faces_data = FacesData(faces=faces)
-            # kpss_data = KpssData(kpss=kpss)
             self.update_callbacks(callbacks, progress=1.0)
 
             return {"images": images_data, "bboxes": bboxes_data, "kpss": kpss_data, "faces": faces_data}
@@ -353,9 +348,7 @@ class InsightfaceVideoDetectorTorch(
 
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
-                    f_video,
-                    fps=parameters.get("fps"),
-                    extension=f".{input_data.ext}",
+                    f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}", ref_id=input_data.id
                 )
 
                 # decode video to extract bboxes per frame

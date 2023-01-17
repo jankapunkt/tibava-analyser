@@ -95,7 +95,7 @@ import pdb
 
 class VideoDecoder:
     # TODO: videos with sample aspect ratio (SAR) not equal to 1:1 are loaded with wrong shape
-    def __init__(self, path, max_dimension=None, fps=None, **kwargs):
+    def __init__(self, path, max_dimension=None, fps=None, ref_id=None, **kwargs):
         """Provides an iterator over the frames of a video.
 
         Args:
@@ -109,6 +109,7 @@ class VideoDecoder:
         self._path = path
         self._max_dimension = max_dimension
         self._fps = fps
+        self._ref_id = ref_id
 
         self._meta = parse_meta_av(path)
 
@@ -144,7 +145,7 @@ class VideoDecoder:
         )
         fps = self._real_fps if self._fps is None else self._fps
         for i, frame in enumerate(video_reader):
-            yield {"time": i / fps, "index": i, "frame": frame, "ref_id": self._path}
+            yield {"time": i / fps, "index": i, "frame": frame, "ref_id": self._ref_id}
 
     def fps(self):
         return float(self._real_fps if self._fps is None else self._fps)

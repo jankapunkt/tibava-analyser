@@ -49,11 +49,11 @@ class CosineSimilarity(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
 
-        with inputs["query_features"] as query_features, inputs[
+        with inputs["query_features"] as query_features_data, inputs[
             "target_features"
-        ] as target_features, data_manager.create_data("ScalarData") as output_data:
-            # query_features = inputs["query_features"].embeddings
-            # target_features = inputs["target_features"].embeddings
+        ] as target_features_data, data_manager.create_data("ScalarData") as output_data:
+            query_features = query_features_data.embeddings
+            target_features = target_features_data.embeddings
 
             unique_times = set()
             times = []
