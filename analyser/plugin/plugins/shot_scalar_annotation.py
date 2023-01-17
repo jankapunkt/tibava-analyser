@@ -48,21 +48,23 @@ class ShotScalarAnnotator(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        annotations = []
+        with inputs["shots"] as shots_data, inputs["scalar"] as scalar_data, data_manager.create_data(
+            "AnnotationData"
+        ) as output_data:
 
-        y = np.asarray(inputs["scalar"].y)
-        time = np.asarray(inputs["scalar"].time)
-        for i, shot in enumerate(inputs["shots"].shots):
-            shot_y_data = y[np.logical_and(time >= shot.start, time <= shot.end)]
+            y = np.asarray(scalar_data.y)
+            time = np.asarray(scalar_data.time)
+            for i, shot in enumerate(shots_data.shots):
+                shot_y_data = y[np.logical_and(time >= shot.start, time <= shot.end)]
 
-            if len(shot_y_data) <= 0:
-                continue
+                if len(shot_y_data) <= 0:
+                    continue
 
-            y_mean = np.mean(shot_y_data)
-            annotations.append(
-                Annotation(start=shot.start, end=shot.end, labels=[str(y_mean)])
-            )  # Maybe store max_mean_class_prob as well?
-            self.update_callbacks(callbacks, progress=i / len(inputs["shots"].shots))
+                y_mean = np.mean(shot_y_data)
+                output_data.annotations.append(
+                    Annotation(start=shot.start, end=shot.end, labels=[str(y_mean)])
+                )  # Maybe store max_mean_class_prob as well?
+                self.update_callbacks(callbacks, progress=i / len(shots_data.shots))
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"annotations": AnnotationData(annotations=annotations)}
+            self.update_callbacks(callbacks, progress=1.0)
+            return {"annotations": output_data}

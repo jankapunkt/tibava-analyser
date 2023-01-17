@@ -54,35 +54,51 @@ class ShotTypeClassifier(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        video_decoder = VideoDecoder(
-            inputs["video"].path, max_dimension=self.image_resolution, fps=parameters.get("fps")
-        )
 
-        # video_decoder.fps
+        with inputs["video"] as input_data, data_manager.create_data("ListData") as output_data:
+            with input_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    path=f_video,
+                    max_dimension=self.image_resolution,
+                    fps=parameters.get("fps"),
+                    extension=f".{input_data.ext}",
+                )
 
-        predictions = []
-        time = []
+                # video_decoder.fps
 
-        num_frames = video_decoder.duration() * video_decoder.fps()
-        for i, frame in enumerate(video_decoder):
+                predictions = []
+                time = []
 
-            self.update_callbacks(callbacks, progress=i / num_frames)
-            frame = image_pad(frame["frame"])
+                num_frames = video_decoder.duration() * video_decoder.fps()
+                for i, frame in enumerate(video_decoder):
 
-            result = self.server({"data": np.expand_dims(frame, 0)}, ["prob"])
-            if result is not None:
-                predictions.append(result["prob"].tolist())
-                time.append(i / parameters.get("fps"))
-        # predictions = zip(*predictions)
-        probs = ListData(
-            data=[
-                ScalarData(y=np.asarray(y), time=time, delta_time=1 / parameters.get("fps")) for y in zip(*predictions)
-            ],
-            index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
-        )
+                    self.update_callbacks(callbacks, progress=i / num_frames)
+                    frame = image_pad(frame["frame"])
 
-        # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
-        # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
+                    result = self.server({"data": np.expand_dims(frame, 0)}, ["prob"])
+                    if result is not None:
+                        # print(result["prob"].shape)
+                        predictions.append(np.squeeze(result["prob"]).tolist())
+                        time.append(i / parameters.get("fps"))
+                # predictions = zip(*predictions)
+                index = ["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"]
+                print(len(list(zip(*predictions))))
+                for i, y in zip(index, zip(*predictions)):
+                    print(i)
+                    with output_data.create_data("ScalarData", index=i) as scalar_data:
+                        scalar_data.y = np.asarray(y)
+                        scalar_data.time = time
+                        scalar_data.delta_time = 1 / parameters.get("fps")
+                # probs = ListData(
+                #     data=[
+                #         ScalarData(y=np.asarray(y), time=time, delta_time=1 / parameters.get("fps"))
+                #         for y in zip(*predictions)
+                #     ],
+                #     index=["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"],
+                # )
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {"probs": probs}
+                # predictions: list(np.array) in form of [(p_ECU, p_CU, p_MS, p_FS, p_LS), ...] * #frames
+                # times: list in form [0 / fps, 1 / fps, ..., #frames/fps]
+
+                self.update_callbacks(callbacks, progress=1.0)
+                return {"probs": output_data}

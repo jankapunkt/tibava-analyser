@@ -16,15 +16,24 @@ from analyser import analyser_pb2
 
 @dataclass(kw_only=True)
 class ImageData(Data):
-    ref_id: str = None
+    type: str = field(default="ImageData")
     time: float = None
     delta_time: float = field(default=None)
     ext: str = field(default="jpg")
+
+    def to_dict(self) -> dict:
+        return {
+            **super().to_dict(),
+            "time": self.time,
+            "delta_time": self.delta_time,
+            "ext": self.ext,
+        }
 
 
 @DataManager.export("ImagesData", analyser_pb2.IMAGES_DATA)
 @dataclass(kw_only=True)
 class ImagesData(Data):
+    type: str = field(default="ImagesData")
     images: List[ImageData] = field(default_factory=list)
 
     def load(self) -> None:
@@ -72,9 +81,10 @@ class ImagesData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         image_id = image.id if isinstance(image, ImageData) else image
+        image_ext = image.ext if isinstance(image, ImageData) else "jpg"
         try:
-            with self.fs.open_file(f"{image_id.id}.jpg", "r") as f:
-                return iio.imread(f.read())
-        except:
-            logging.error(f"Could not load a image with id {image_id}")
+            with self.fs.open_file(f"{image_id}.{image_ext}", "r") as f:
+                return iio.imread(f.read(), extension=f".{image_ext}")
+        except Exception as e:
+            logging.error(f"Could not load a image with id {image_id} (Exception: {e})")
             return None

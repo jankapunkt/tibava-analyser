@@ -80,19 +80,27 @@ def main():
 
     logging.info("#### Embeddings")
     logging.info(embeddings_id)
-    logging.info(client.download_data(embeddings_id, args.output_path))
+    data = client.download_data(embeddings_id, args.output_path)
+    with data:
+        logging.info(data)
 
     logging.info("#### Places365 results")
     logging.info(places365_id)
-    logging.info(client.download_data(places365_id, args.output_path))
+    data = client.download_data(places365_id, args.output_path)
+    with data:
+        logging.info(data)
 
     logging.info("#### Places16 results")
     logging.info(places16_id)
-    logging.info(client.download_data(places16_id, args.output_path))
+    data = client.download_data(places16_id, args.output_path)
+    with data:
+        logging.info(data)
 
     logging.info("#### Places3 results")
     logging.info(places3_id)
-    logging.info(client.download_data(places3_id, args.output_path))
+    data = client.download_data(places3_id, args.output_path)
+    with data:
+        logging.info(data)
 
     """
     Aggregate places label by shot
@@ -116,7 +124,9 @@ def main():
 
         logging.info("#### Places3 annotations by shot")
         logging.info(annotation_id)
-        logging.info(client.download_data(annotation_id, args.output_path))
+        data = client.download_data(annotation_id, args.output_path)
+        with data:
+            logging.info(data)
 
     return 0
 

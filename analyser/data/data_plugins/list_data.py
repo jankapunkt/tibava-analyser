@@ -35,7 +35,7 @@ class ListData(Data):
 
     def create_data(self, data_type: str, index: str = None):
         assert self.fs.mode == "w", "Data packet is open read only"
-        assert data_type in DataManager._data_name_lut, "Unknown data type {data_type}"
+        assert data_type in DataManager._data_name_lut, f"Unknown data type {data_type}"
 
         data = DataManager._data_name_lut[data_type]()
         data._register_fs_handler(LocalFSHandler(self.fs, data.id))
@@ -58,7 +58,7 @@ class ListData(Data):
             with data:
                 data_type = data.type
 
-            assert data_type in DataManager._data_name_lut, "Unknown data type {name}"
+            assert data_type in DataManager._data_name_lut, f"Unknown data type {data_type}"
 
             data = DataManager._data_name_lut[data_type]()
             data._register_fs_handler(LocalFSHandler(self.fs, data_id))
@@ -67,4 +67,10 @@ class ListData(Data):
 
     def to_dict(self) -> dict:
         # TODO
-        return {**super().to_dict(), "data": [x.to_dict() for x in self.data], "index": self.index}
+        result = {**super().to_dict(), "data": [], "index": []}
+        for i, data in self:
+            with data:
+                result["index"].append(i)
+                result["data"].append(data.to_dict())
+
+        return result

@@ -48,7 +48,9 @@ def main():
         if output.name == "images":
             images_id = output.id
 
-    logging.info(client.download_data(images_id, args.output_path))
+    data = client.download_data(images_id, args.output_path)
+    with data:
+        logging.info(data)
     return 0
 
 

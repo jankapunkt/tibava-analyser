@@ -31,7 +31,7 @@ class AnnotationData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("annotation_data.yml")
-        self.shots = [Annotation(**x) for x in data.get("annotations")]
+        self.annotations = [Annotation(**x) for x in data.get("annotations")]
 
     def save(self) -> None:
         super().save()

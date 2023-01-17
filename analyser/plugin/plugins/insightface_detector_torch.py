@@ -220,11 +220,11 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
             # store bbox
             bbox = {
-                "x": x / img.shape[1],
-                "y": y / img.shape[0],
-                "w": w / img.shape[1],
-                "h": h / img.shape[0],
-                "det_score": det_score,
+                "x": float(x / img.shape[1]),
+                "y": float(y / img.shape[0]),
+                "w": float(w / img.shape[1]),
+                "h": float(h / img.shape[0]),
+                "det_score": float(det_score),
                 "time": frame.get("time"),
                 "delta_time": 1 / fps,
             }
@@ -241,12 +241,13 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
         return bbox_list, kps_list
 
-    def predict_faces(self, iterator, num_frames, parameters, callbacks):
-        try:
-            images = []
-            bboxes = []
-            kpss = []
-            faces = []
+    def predict_faces(self, iterator, num_frames, parameters, data_manager, callbacks):
+
+        with data_manager.create_data("ImagesData") as images_data, data_manager.create_data(
+            "BboxesData"
+        ) as bboxes_data, data_manager.create_data("FacesData") as faces_data, data_manager.create_data(
+            "KpssData"
+        ) as kpss_data:
 
             # iterate through images to get face_images and bboxes
             for i, frame in enumerate(iterator):
@@ -262,17 +263,18 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
                 for i in range(len(frame_bboxes)):
                     # store bboxes, kpss, and faces
-                    face = FaceData()
+                    face = FaceData(ref_id = frame.get("ref_id"))
                     bbox = BboxData(**frame_bboxes[i], ref_id=face.id)
                     kps = KpsData(**frame_kpss[i], ref_id=face.id)
 
-                    faces.append(face)
-                    bboxes.append(bbox)
-                    kpss.append(kps)
+                    # faces.append(face)
+                    # bboxes.append(bbox)
+                    # kpss.append(kps)
+                    bboxes_data.bboxes.append(bbox)
+                    faces_data.faces.append(face)
+                    kpss_data.kpss.append(kps)
 
                     # store face image
-                    faceimg_id = generate_id()
-                    output_path = create_data_path(self.config.get("data_dir"), faceimg_id, "jpg")
                     frame_image = frame.get("frame")
                     h, w = frame_image.shape[:2]
 
@@ -288,40 +290,24 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
                         round(bbox.x * w) : round((bbox.x + bbox.w) * w),
                         :,
                     ]
-                    print(f"{output_path} , {face_image.shape}", flush=True)
-                    iio.imwrite(output_path, face_image)
 
-                    image = ImageData(
-                        id=faceimg_id,
+                    images_data.save_image(
+                        face_image,
                         ext="jpg",
                         time=frame.get("time"),
                         delta_time=1 / parameters.get("fps"),
                         ref_id=face.id,
                     )
+                    # print(f"{output_path} , {face_image.shape}", flush=True)
+                    # iio.imwrite(output_path, face_image)
 
-                    images.append(image)
-
-            images_data = ImagesData(images=images)
-            bboxes_data = BboxesData(bboxes=bboxes)
-            faces_data = FacesData(faces=faces)
-            kpss_data = KpssData(kpss=kpss)
+            # images_data = ImagesData(images=images)
+            # bboxes_data = BboxesData(bboxes=bboxes)
+            # faces_data = FacesData(faces=faces)
+            # kpss_data = KpssData(kpss=kpss)
             self.update_callbacks(callbacks, progress=1.0)
 
             return {"images": images_data, "bboxes": bboxes_data, "kpss": kpss_data, "faces": faces_data}
-
-        except Exception as e:
-            raise e
-            logging.error(f"InsightfaceDetectorTorch: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
 
 
 default_config = {
@@ -362,28 +348,28 @@ class InsightfaceVideoDetectorTorch(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        try:
-            # decode video to extract bboxes per frame
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
-            num_frames = video_decoder.duration() * video_decoder.fps()
 
-            return self.predict_faces(
-                iterator=video_decoder, num_frames=num_frames, parameters=parameters, callbacks=callbacks
-            )
+        with inputs["video"] as input_data:
 
-        except Exception as e:
-            raise e
-            logging.error(f"InsightfaceVideoDetectorTorch: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
+            with input_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    f_video,
+                    fps=parameters.get("fps"),
+                    extension=f".{input_data.ext}",
+                )
 
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
+                # decode video to extract bboxes per frame
+                # video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
+
+                num_frames = video_decoder.duration() * video_decoder.fps()
+
+                return self.predict_faces(
+                    iterator=video_decoder,
+                    num_frames=num_frames,
+                    parameters=parameters,
+                    data_manager=data_manager,
+                    callbacks=callbacks,
+                )
 
 
 default_config = {
@@ -424,31 +410,20 @@ class InsightfaceImageDetectorTorch(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        try:
 
-            image_paths = [
-                create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
-            ]
+        with inputs["images"] as input_data:
 
-            def image_generator(image_paths):
-                for image_path in image_paths:
-                    yield {"frame": iio.imread(image_path), "time": 0, "ref_id": image_path}
+            def image_generator():
+                for image in input_data:
+                    frame = input_data.load_image(image)
 
-            images = image_generator(image_paths)
+                    yield {"frame": frame, "time": 0, "ref_id": image.id}
+
+            images = image_generator()
             return self.predict_faces(
-                iterator=images, num_frames=len(image_paths), parameters=parameters, callbacks=callbacks
+                iterator=images,
+                num_frames=len(input_data),
+                parameters=parameters,
+                data_manager=data_manager,
+                callbacks=callbacks,
             )
-
-        except Exception as e:
-            raise e
-            logging.error(f"InsightfaceImageDetectorTorch: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}

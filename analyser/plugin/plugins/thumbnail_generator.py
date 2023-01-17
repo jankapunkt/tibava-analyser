@@ -43,7 +43,7 @@ class ThumbnailGenerator(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
 
-        with inputs["video"] as input_data, data_manager.create_data("ImageData") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data("ImagesData") as output_data:
 
             with input_data.open_video() as f_video:
 

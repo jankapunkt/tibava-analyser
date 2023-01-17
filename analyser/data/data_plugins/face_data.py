@@ -26,7 +26,7 @@ class FacesData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("faces_data.yml")
-        self.shots = [FaceData(**x) for x in data.get("faces")]
+        self.faces = [FaceData(**x) for x in data.get("faces")]
 
     def save(self) -> None:
         super().save()

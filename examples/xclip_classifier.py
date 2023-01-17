@@ -45,10 +45,12 @@ def main():
         if output.name == "logits":
             logits_id = output.id
 
-    logging.info(client.download_data(logits_id, args.output_path))
-
+    data = client.download_data(logits_id, args.output_path)
+    with data:
+        logging.info(data)
 
     return 0
+
 
 if "__main__" == __name__:
     main()

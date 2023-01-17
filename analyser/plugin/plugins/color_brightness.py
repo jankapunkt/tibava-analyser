@@ -65,13 +65,13 @@ class ColorBrightnessAnalyser(
                     values.append(value)
                     time.append(i / parameters.get("fps"))
 
-        y = np.stack(values)
+            y = np.stack(values)
 
-        if parameters.get("normalize"):
-            y = (y - np.min(y)) / (np.max(y) - np.min(y))
-        self.update_callbacks(callbacks, progress=1.0)
+            if parameters.get("normalize"):
+                y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            self.update_callbacks(callbacks, progress=1.0)
 
-        output_data.y = y
-        output_data.time = time
-        output_data.delta_time = 1 / parameters.get("fps")
-        return {"brightness": output_data}
+            output_data.y = y
+            output_data.time = time
+            output_data.delta_time = 1 / parameters.get("fps")
+            return {"brightness": output_data}

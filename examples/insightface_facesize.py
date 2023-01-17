@@ -30,8 +30,8 @@ def main():
     logging.info(f"Upload done: {data_id}")
 
     # insightface_detection
-    job_id = client.run_plugin("insightface_video_detector", [{"id": data_id, "name": "video"}], [])
-    logging.info(f"Job insightface_video_detector started: {job_id}")
+    job_id = client.run_plugin("insightface_video_detector_torch", [{"id": data_id, "name": "video"}], [])
+    logging.info(f"Job insightface_video_detector_torch started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
     if result is None:
@@ -45,6 +45,7 @@ def main():
             bboxes_id = output.id
 
     # facesizes
+    # bboxes_id = "13d6f37f9b31473aad68f1ad1fee96a6"
     job_id = client.run_plugin("insightface_facesize", [{"id": bboxes_id, "name": "bboxes"}], [])
     logging.info(f"Job insightface_facesize started: {job_id}")
 
@@ -61,9 +62,13 @@ def main():
             output_id_probs = output.id
         if output.name == "facesizes":
             output_id_facesizes = output.id
+    data = client.download_data(output_id_probs, args.output_path)
+    with data:
+        logging.info(data)
 
-    logging.info(client.download_data(output_id_probs, args.output_path))
-    logging.info(client.download_data(output_id_facesizes, args.output_path))
+    data = client.download_data(output_id_facesizes, args.output_path)
+    with data:
+        logging.info(data)
 
     return 0
 

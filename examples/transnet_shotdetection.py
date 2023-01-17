@@ -47,8 +47,10 @@ def main():
     for output in result.outputs:
         if output.name == "shots":
             shots_id = output.id
+    data = client.download_data(shots_id, args.output_path)
+    with data:
+        logging.info(data)
 
-    logging.info(client.download_data(shots_id, args.output_path))
     return 0
 
 

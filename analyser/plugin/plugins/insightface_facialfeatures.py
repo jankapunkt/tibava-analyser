@@ -105,9 +105,8 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
 
         return self.server({"data": blob}, ["embedding"])["embedding"]
 
-    def get_facial_features(self, iterator, num_faces, parameters, callbacks):
-        try:
-            features = []
+    def get_facial_features(self, iterator, num_faces, parameters, data_manager, callbacks):
+        with data_manager.create_data("ImageEmbeddings") as image_embeddings_data:
 
             # iterate through images to get face_images and bboxes
             for i, face in enumerate(iterator):
@@ -117,37 +116,21 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
                 landmark = np.column_stack([kps.x, kps.y])
                 landmark *= (w, h)  # revert normalization done in insightface_detector.py
 
-                image_id = generate_id()
                 aimg = self.norm_crop(face.get("frame"), landmark=landmark)
-                output_path = create_data_path(self.config.get("data_dir"), image_id, "jpg")
-                iio.imwrite(output_path, aimg)
 
-                features.append(
+                image_embeddings_data.embeddings.append(
                     ImageEmbedding(
                         ref_id=face.get("face_id"),
                         embedding=self.get_feat(aimg).flatten(),
                         time=kps.time,
-                        delta_time=1 / parameters.get("fps"),
+                        delta_time=1 / parameters.get("fps",1.0),
                     )
                 )
 
                 self.update_callbacks(callbacks, progress=i / num_faces)
 
             self.update_callbacks(callbacks, progress=1.0)
-            return {"features": ImageEmbeddings(embeddings=features)}
-
-        except Exception as e:
-            logging.error(f"InsightfaceDetector: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
+            return {"features": image_embeddings_data}
 
 
 default_config = {
@@ -185,8 +168,8 @@ class InsightfaceVideoFeatureExtractor(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        try:
-            kpss = inputs["kpss"].kpss
+        with inputs["video"] as video_data, inputs["kpss"] as kpss_data:
+            kpss = kpss_data.kpss
             parameters["fps"] = 1 / kpss[0].delta_time
             assert len(kpss) > 0
 
@@ -195,42 +178,39 @@ class InsightfaceVideoFeatureExtractor(
                 faceid_lut[kps.id] = kps.ref_id
 
             # decode video to extract kps for frames with detected faces
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
-            kps_dict = {}
-            num_faces = 0
-            for kps in kpss:
-                if kps.time not in kps_dict:
-                    kps_dict[kps.time] = []
-                num_faces += 1
-                kps_dict[kps.time].append(kps)
 
-            def get_iterator(video_decoder, kps_dict):
-                # TODO: change VideoDecoder class to be able to directly seek the video for specific frames
-                # WORKAROUND: loop over the whole video and store frames whenever there is a face detected
-                for frame in video_decoder:
-                    t = frame["time"]
-                    if t in kps_dict:
-                        for kps in kps_dict[t]:
-                            face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
-                            yield {"frame": frame["frame"], "kps": kps, "face_id": face_id}
+            with video_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    f_video,
+                    fps=parameters.get("fps"),
+                    extension=f".{video_data.ext}",
+                )
+                kps_dict = {}
+                num_faces = 0
+                for kps in kpss:
+                    if kps.time not in kps_dict:
+                        kps_dict[kps.time] = []
+                    num_faces += 1
+                    kps_dict[kps.time].append(kps)
 
-            iterator = get_iterator(video_decoder, kps_dict)
-            return self.get_facial_features(
-                iterator=iterator, num_faces=num_faces, parameters=parameters, callbacks=callbacks
-            )
+                def get_iterator(video_decoder, kps_dict):
+                    # TODO: change VideoDecoder class to be able to directly seek the video for specific frames
+                    # WORKAROUND: loop over the whole video and store frames whenever there is a face detected
+                    for frame in video_decoder:
+                        t = frame["time"]
+                        if t in kps_dict:
+                            for kps in kps_dict[t]:
+                                face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
+                                yield {"frame": frame["frame"], "kps": kps, "face_id": face_id}
 
-        except Exception as e:
-            logging.error(f"InsightfaceVideoFeatureExtractor: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
+                iterator = get_iterator(video_decoder, kps_dict)
+                return self.get_facial_features(
+                    iterator=iterator,
+                    num_faces=num_faces,
+                    parameters=parameters,
+                    data_manager=data_manager,
+                    callbacks=callbacks,
+                )
 
 
 default_config = {
@@ -244,7 +224,7 @@ default_config = {
 
 default_parameters = {"input_size": (640, 640)}
 
-requires = {"images": ImagesData, "kpss": KpssData}
+requires = {"images": ImagesData, "kpss": KpssData,  "faces": FacesData}
 provides = {"features": ImageEmbeddings}
 
 
@@ -268,52 +248,37 @@ class InsightfaceImageFeatureExtractor(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        try:
-            kpss = inputs["kpss"].kpss
+        with inputs["images"] as images_data, inputs["kpss"] as kpss_data, inputs["faces"] as faces_data:
+            kpss = kpss_data.kpss
+            faces = faces_data.faces
             assert len(kpss) > 0
 
-            faceid_lut = {}
-            for kps in kpss:
-                faceid_lut[kps.id] = kps.ref_id
-
-            image_paths = [
-                create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
-            ]
-
-            kps_dict = {}
-            num_faces = 0
-            for kps in kpss:
-                if kps.ref_id not in image_paths:
-                    continue
-
-                if kps.ref_id not in kps_dict:
-                    kps_dict[kps.ref_id] = []
-
-                num_faces += 1
-                kps_dict[kps.ref_id].append(kps)
-
-            def get_iterator(kps_dict):
-                for image_path in kps_dict:
-                    image = iio.imread(image_path)
-
-                    for kps in kps_dict[image_path]:
-                        face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
-                        yield {"frame": image, "kps": kps, "face_id": face_id}
-
-            iterator = get_iterator(kps_dict)
+            image_lut = {image.id: image for image in images_data}
+            face_image_lut = {face.id: face.ref_id for face in faces}
+            kps_face_lut = {kps.ref_id: kps for kps in kpss}
+            print(f"{faces_data}", flush=True)
+            print(f"{face_image_lut}", flush=True)
+            print(f"{kps_face_lut}", flush=True)
+            def get_iterator():
+                for face_id, kps in kps_face_lut.items():
+                    if face_id not in face_image_lut:
+                        continue
+                    image_id = face_image_lut[face_id]
+                    if image_id not in image_lut:
+                        continue
+                    
+                    image_data = image_lut[image_id]
+                    
+                    image = images_data.load_image(image_data)
+                    
+                    yield {"frame": image, "kps": kps, "face_id": face_id}
+            
+            print(f"{list(get_iterator())}", flush=True)
+            
             return self.get_facial_features(
-                iterator=iterator, num_faces=num_faces, parameters=parameters, callbacks=callbacks
+                iterator=get_iterator(),
+                num_faces=len(kps_face_lut),
+                parameters=parameters,
+                data_manager=data_manager,
+                callbacks=callbacks,
             )
-
-        except Exception as e:
-            logging.error(f"InsightfaceImageDetector: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}

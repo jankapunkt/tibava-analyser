@@ -128,8 +128,12 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def upload_data(self, request_iterator, context):
         try:
             data, hash = self.managers["data_manager"].load_data_from_stream(request_iterator)
+            data_id = None
+            with data:
+                data_id = data.id
+            print(f"UPLOADED {data}", flush=True)
 
-            return analyser_pb2.UploadDataResponse(success=True, id=data.id, hash=hash)
+            return analyser_pb2.UploadDataResponse(success=True, id=data_id, hash=hash)
 
         except Exception as e:
             logging.error(f"[Analyser] {repr(e)}")

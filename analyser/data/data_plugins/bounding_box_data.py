@@ -49,7 +49,7 @@ class BboxesData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("bboxes_data.yml")
-        self.shots = [BboxData(**x) for x in data.get("bboxes")]
+        self.bboxes = [BboxData(**x) for x in data.get("bboxes")]
 
     def save(self) -> None:
         super().save()

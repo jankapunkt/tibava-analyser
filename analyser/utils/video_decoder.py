@@ -147,7 +147,7 @@ class VideoDecoder:
             yield {"time": i / fps, "index": i, "frame": frame, "ref_id": self._path}
 
     def fps(self):
-        return self._fps
+        return float(self._real_fps if self._fps is None else self._fps)
 
     def duration(self):
         return self._duration

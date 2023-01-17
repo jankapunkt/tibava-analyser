@@ -62,8 +62,9 @@ def main():
         for output in result.outputs:
             if output.name == "shot_density":
                 shot_density_id = output.id
-
-        logging.info(client.download_data(shot_density_id, args.output_path))
+        data = client.download_data(shot_density_id, args.output_path)
+        with data:
+            logging.info(data)
 
     return 0
 

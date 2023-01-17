@@ -71,7 +71,7 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
 
         return self.server({"data": blob}, ["gender", "age"])
 
-    def get_genderage(self, iterator, num_faces, parameters, callbacks):
+    def get_genderage(self, iterator, num_faces, parameters, data_manager, callbacks):
         try:
             ages = []
             genders = []
@@ -175,53 +175,47 @@ class InsightfaceVideoGenderAgeCalculator(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        try:
-            bboxes = inputs["bboxes"].bboxes
+        with inputs["video"] as video_data, inputs["bboxes"] as bboxes_data:
+            bboxes = bboxes_data.bboxes
             parameters["fps"] = 1 / bboxes[0].delta_time
             assert len(bboxes) > 0
 
-            faceid_lut = {}
-            for bbox in bboxes:
-                faceid_lut[bbox.id] = bbox.ref_id
-
             # decode video to extract bboxes for frames with detected faces
-            video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
 
-            bbox_dict = {}
-            num_faces = 0
-            for bbox in bboxes:
-                if bbox.time not in bbox_dict:
-                    bbox_dict[bbox.time] = []
-                num_faces += 1
-                bbox_dict[bbox.time].append(bbox)
+            with video_data.open_video() as f_video:
+                video_decoder = VideoDecoder(
+                    f_video,
+                    fps=parameters.get("fps"),
+                    extension=f".{video_data.ext}",
+                )
 
-            def get_iterator(video_decoder, bbox_dict):
-                # TODO: change VideoDecoder class to be able to directly seek the video for specific frames
-                # WORKAROUND: loop over the whole video and store frames whenever there is a face detected
-                for frame in video_decoder:
-                    t = frame["time"]
-                    if t in bbox_dict:
-                        for bbox in bbox_dict[t]:
-                            face_id = faceid_lut[bbox.id] if bbox.id in faceid_lut else None
-                            yield {"frame": frame["frame"], "bbox": bbox, "face_id": face_id}
+                # video_decoder = VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps"))
 
-            iterator = get_iterator(video_decoder, bbox_dict)
-            return self.get_genderage(
-                iterator=iterator, num_faces=num_faces, parameters=parameters, callbacks=callbacks
-            )
+                bbox_dict = {}
+                num_faces = 0
+                for bbox in bboxes:
+                    if bbox.time not in bbox_dict:
+                        bbox_dict[bbox.time] = []
+                    num_faces += 1
+                    bbox_dict[bbox.time].append(bbox)
 
-        except Exception as e:
-            logging.error(f"InsightfaceVideoGenderAgeCalculator: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
+                def get_iterator(video_decoder, bbox_dict):
+                    # TODO: change VideoDecoder class to be able to directly seek the video for specific frames
+                    # WORKAROUND: loop over the whole video and store frames whenever there is a face detected
+                    for frame in video_decoder:
+                        t = frame["time"]
+                        if t in bbox_dict:
+                            for bbox in bbox_dict[t]:
+                                yield {"frame": frame["frame"], "bbox": bbox, "face_id": bbox.ref_id}
 
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
+                iterator = get_iterator(video_decoder, bbox_dict)
+                return self.get_genderage(
+                    iterator=iterator,
+                    num_faces=num_faces,
+                    parameters=parameters,
+                    data_manager=data_manager,
+                    callbacks=callbacks,
+                )
 
 
 default_config = {
@@ -239,73 +233,64 @@ requires = {"images": ImagesData, "bboxes": BboxesData}
 provides = {"ages": ListData, "genders": ListData}
 
 
-@AnalyserPluginManager.export("insightface_image_gender_age_calculator")
-class InsightfaceImageGenderAgeCalculator(
-    InsightfaceVideoGenderAgeCalculator,
-    AnalyserPlugin,
-    config=default_config,
-    parameters=default_parameters,
-    version="0.1",
-    requires=requires,
-    provides=provides,
-):
-    def __init__(self, config=None, **kwargs):
-        super().__init__(config, **kwargs)
+# @AnalyserPluginManager.export("insightface_image_gender_age_calculator")
+# class InsightfaceImageGenderAgeCalculator(
+#     InsightfaceVideoGenderAgeCalculator,
+#     AnalyserPlugin,
+#     config=default_config,
+#     parameters=default_parameters,
+#     version="0.1",
+#     requires=requires,
+#     provides=provides,
+# ):
+#     def __init__(self, config=None, **kwargs):
+#         super().__init__(config, **kwargs)
 
-    def call(
-        self,
-        inputs: Dict[str, Data],
-        data_manager: DataManager,
-        parameters: Dict = None,
-        callbacks: Callable = None,
-    ) -> Dict[str, Data]:
-        try:
-            faces = inputs["faces"].faces
-            bboxes = inputs["bboxes"].bboxes
-            assert len(bboxes) > 0
+#     def call(
+#         self,
+#         inputs: Dict[str, Data],
+#         data_manager: DataManager,
+#         parameters: Dict = None,
+#         callbacks: Callable = None,
+#     ) -> Dict[str, Data]:
+#         with inputs["images"] as images_data, inputs["bboxes"] as bboxes_data:
+#             faces = faces_data
+#             bboxes = bboxes_data
+#             assert len(bboxes) > 0
 
-            faceid_lut = {}
-            for face in faces:
-                faceid_lut[face.bbox_id] = face.id
+#             faceid_lut = {}
+#             for face in faces:
+#                 faceid_lut[face.bbox_id] = face.id
 
-            image_paths = [
-                create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
-            ]
+#             image_paths = [
+#                 create_data_path(inputs["images"].data_dir, image.id, image.ext) for image in inputs["images"].images
+#             ]
 
-            bbox_dict = {}
-            num_faces = 0
-            for bbox in bboxes:
-                if bbox.ref_id not in image_paths:
-                    continue
+#             bbox_dict = {}
+#             num_faces = 0
+#             for bbox in bboxes:
+#                 if bbox.ref_id not in image_paths:
+#                     continue
 
-                if bbox.ref_id not in bbox_dict:
-                    bbox_dict[bbox.ref_id] = []
+#                 if bbox.ref_id not in bbox_dict:
+#                     bbox_dict[bbox.ref_id] = []
 
-                num_faces += 1
-                bbox_dict[bbox.ref_id].append(bbox)
+#                 num_faces += 1
+#                 bbox_dict[bbox.ref_id].append(bbox)
 
-            def get_iterator(bbox_dict):
-                for image_path in bbox_dict:
-                    image = iio.imread(image_path)
+#             def get_iterator(bbox_dict):
+#                 for image_path in bbox_dict:
+#                     image = iio.imread(image_path)
 
-                    for bbox in bbox_dict[image_path]:
-                        face_id = faceid_lut[bbox.id] if bbox.id in faceid_lut else None
-                        yield {"frame": image, "bbox": bbox, "face_id": face_id}
+#                     for bbox in bbox_dict[image_path]:
+#                         face_id = faceid_lut[bbox.id] if bbox.id in faceid_lut else None
+#                         yield {"frame": image, "bbox": bbox, "face_id": face_id}
 
-            iterator = get_iterator(bbox_dict)
-            return self.get_genderage(
-                iterator=iterator, num_faces=num_faces, parameters=parameters, callbacks=callbacks
-            )
-
-        except Exception as e:
-            logging.error(f"InsightfaceGenderAge: {repr(e)}")
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-
-            traceback.print_exception(
-                exc_type,
-                exc_value,
-                exc_traceback,
-                limit=2,
-                file=sys.stdout,
-            )
-        return {}
+#             iterator = get_iterator(bbox_dict)
+#             return self.get_genderage(
+#                 iterator=iterator,
+#                 num_faces=num_faces,
+#                 parameters=parameters,
+#                 data_manager=data_manager,
+#                 callbacks=callbacks,
+#             )

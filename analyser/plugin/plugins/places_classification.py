@@ -115,7 +115,6 @@ class PlacesClassifier(
                     extension=f".{input_data.ext}",
                 )
 
-                embeddings = []
                 probs = {"places365": [], "places16": [], "places3": []}
                 time = []
                 num_frames = video_decoder.duration() * video_decoder.fps()
@@ -161,7 +160,7 @@ class PlacesClassifier(
 
         self.update_callbacks(callbacks, progress=1.0)
         return {
-            "embeddings": embeddings,
+            "embeddings": embeddings_data,
             "probs_places365": probs_data["places365"],
             "probs_places16": probs_data["places16"],
             "probs_places3": probs_data["places3"],

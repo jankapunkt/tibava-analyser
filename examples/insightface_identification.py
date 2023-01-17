@@ -4,7 +4,7 @@ import logging
 import sys
 
 from analyser.client import AnalyserClient
-from analyser.data import DataManager, ImageData, ImagesData, generate_id, create_data_path
+from analyser.data import DataManager, ImageData, ImagesData
 
 
 def parse_args():
@@ -79,25 +79,24 @@ def main():
     """
     manager = DataManager()
     client = AnalyserClient("localhost", 50051, manager=manager)
-    images = []
     logging.info(f"Read query images")
-    for image_path in args.query_images:
-        image_id = generate_id()
-        output_path = create_data_path(manager.data_dir, image_id, "jpg")
-        image = iio.imread(image_path)
-        iio.imwrite(output_path, image)
-        images.append(ImageData(id=image_id, ext="jpg"))
+    images_data = manager.create_data("ImagesData")
+    with images_data:
+        for image_path in args.query_images:
+            image = iio.imread(image_path)
+            images_data.save_image(image)
 
-    data = ImagesData(images=images)
     logging.info("Start uploading query images")
-    query_image_ids = client.upload_data(data)
+    logging.info(f"Upload done: {images_data.id}")
+    images_data
+    query_image_ids = client.upload_data(images_data)
     logging.info(f"Upload done: {query_image_ids}")
 
     """
     FACE DETECTION FROM QUERY IMAGE(S)
     """
-    job_id = client.run_plugin("insightface_image_detector", [{"id": query_image_ids, "name": "images"}], [])
-    logging.info(f"Job insightface_image_detector started: {job_id}")
+    job_id = client.run_plugin("insightface_image_detector_torch", [{"id": query_image_ids, "name": "images"}], [])
+    logging.info(f"Job insightface_image_detector_torch started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
     if result is None:
@@ -108,6 +107,8 @@ def main():
     for output in result.outputs:
         if output.name == "kpss":
             query_kpss_id = output.id
+        if output.name == "faces":
+            query_faces_id = output.id
 
     query_kpss_data = client.download_data(query_kpss_id, args.output_path)
     logging.info(query_kpss_data)
@@ -120,6 +121,7 @@ def main():
         [
             {"id": query_image_ids, "name": "images"},
             {"id": query_kpss_id, "name": "kpss"},
+            {"id": query_faces_id, "name": "faces"},
         ],
         [],
     )

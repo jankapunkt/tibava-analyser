@@ -61,11 +61,13 @@ class AnalyserClient:
                 data_manager = DataManager()
             else:
                 data_manager = self.manager
-            data_manager.save(data)
-            data = data_manager.load(data.id)
+            # data_manager.save(data)
+            # data = data_manager.load(data.id)
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
-            for x in data_manager.dump_to_stream(data):
+            print("#########################")
+            print(data.id)
+            for x in data_manager.dump_to_stream(data.id):
                 yield analyser_pb2.UploadDataRequest(id=data.id, data_encoded=x["data_encoded"])
 
         response = stub.upload_data(generate_requests(data))

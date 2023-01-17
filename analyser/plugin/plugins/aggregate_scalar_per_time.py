@@ -68,8 +68,11 @@ class AggregateScalarPerTime(
 
         with inputs["timelines"] as input_data, data_manager.create_data("ListData") as output_data:
             aggregated_y = []
+            print(len(input_data))
+            print(input_data.to_dict())
 
-            for i, data in enumerate(input_data):
+            for i, (index, data) in enumerate(input_data):
+                print(data)
                 with data:
 
                     y_per_t = {}
@@ -84,10 +87,10 @@ class AggregateScalarPerTime(
 
             self.update_callbacks(callbacks, progress=1.0)
 
-            for index, y in zip(inputs["timeline"].index, aggregated_y):
+            for index, y in zip(input_data.index, aggregated_y):
 
                 with output_data.create_data("ScalarData", index=index) as scalar_data:
                     scalar_data.y = np.asarray(y)
-                    scalar_data.time = np.asarray(y_per_t.keys())
+                    scalar_data.time = np.asarray(list(y_per_t.keys()))
                     scalar_data.delta_time = data.delta_time
             return {"aggregated_timeline": output_data}

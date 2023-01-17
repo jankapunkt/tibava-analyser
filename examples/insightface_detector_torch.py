@@ -43,15 +43,17 @@ def main():
     for output in result.outputs:
         if output.name == "bboxes":
             bboxes_id = output.id
-
-    logging.info(client.download_data(bboxes_id, args.output_path))
+    data = client.download_data(bboxes_id, args.output_path)
+    with data:
+        logging.info(data)
 
     kpss_id = None
     for output in result.outputs:
         if output.name == "kpss":
             kpss_id = output.id
-
-    logging.info(client.download_data(kpss_id, args.output_path))
+    data = client.download_data(kpss_id, args.output_path)
+    with data:
+        logging.info(data)
     end = time.time()
     logging.info(f"Time {end - start}")
     return 0
