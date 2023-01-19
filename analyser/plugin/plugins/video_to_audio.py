@@ -1,6 +1,6 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import AudioData, VideoData
-import ffmpeg
+import av
 from analyser.data import DataManager, Data
 
 from typing import Callable, Optional, Dict
@@ -43,12 +43,19 @@ class VideoToAudio(
 
             with input_data.open_video() as f_video, output_data.open_audio("w") as f_audio:
 
-                process = (
-                    ffmpeg.input("pipe:")
-                    .audio.output("pipe:", format="wav")
-                    .run_async(pipe_stdin=True, pipe_stdout=True)
-                )
-                outputs, _ = process.communicate(input=f_video.read())
-                f_audio.write(outputs)
+                with av.open(f_video, format=input_data.ext) as in_container:
+                    in_stream = in_container.streams.audio[0]
+                    with av.open(f_audio, "w", "wav") as out_container:
+                        out_stream = out_container.add_stream("pcm_s16le", rate=48000, layout="mono")
+                        for frame in in_container.decode(in_stream):
+                            for packet in out_stream.encode(frame):
+                                out_container.mux(packet)
+                # process = (
+                #     ffmpeg.input("pipe:", f=input_data.ext)
+                #     .audio.output("pipe:", format="wav")
+                #     .run_async(pipe_stdin=True, pipe_stdout=True)
+                # )
+                # outputs, _ = process.communicate(input=f_video.read())
+                # f_audio.write(outputs)
 
             return {"audio": output_data}

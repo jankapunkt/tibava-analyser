@@ -123,3 +123,44 @@ def test_audio_data():
             assert y.shape[0] == 24001
 
     # assert False#
+
+
+def test_list_data():
+    tmp_dir = tempfile.mkdtemp()
+    data_manager = DataManager(data_dir=tmp_dir)
+
+    data_path = None
+    sub_ids = []
+    with data_manager.create_data("ListData") as data:
+        data_id = data.id
+        data_path = os.path.join(tmp_dir, data_id[0:2], data_id[2:4], f"{data_id}.zip")
+        with data.create_data("ScalarData") as scalar:
+            scalar.y = [0, 1, 2, 3, 4]
+            scalar.time = [0, 2, 4, 6, 8]
+            scalar.delta_time = 2.0
+            sub_ids.append(scalar.id)
+        with data.create_data("ScalarData") as scalar:
+            scalar.y = [5, 3, 2, -1, 0.1]
+            scalar.time = [0, 2, 4, 6, 8]
+            scalar.delta_time = 2.0
+            sub_ids.append(scalar.id)
+
+    read_zipfile_dir(data_path)
+
+    with data_manager.load(data_id) as data:
+
+        assert len(data) == 2
+        assert data.id == data_id
+        print(list(data.fs.list_files()))
+        for i, (index, sub_data) in enumerate(data):
+            assert i == index
+            with sub_data:
+                print(list(sub_data.fs.list_files()))
+
+        data.extract_all(data_manager)
+
+    for sub_id in sub_ids:
+        data_path = os.path.join(tmp_dir, sub_id[0:2], sub_id[2:4], f"{sub_id}.zip")
+        read_zipfile_dir(data_path)
+
+    assert False

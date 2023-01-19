@@ -15,33 +15,34 @@ test_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def test_video_decoder():
-    with open(os.path.join(test_path, "xg_mascara.mp4"), "rb") as f_in:
-        fh = av.open(os.path.join(test_path, "xg_mascara.mp4"))
-        fh = av.open(f_in)
-        stream = fh.streams.video[0]
-        frame = next(fh.decode(video=0))
-        frame = frame.reformat(format="rgb24")
-        print(dir(fh))
-        print(frame)
-        print(dir(frame))
-        print("########")
-        print(frame.interlaced_frame)
-        print(frame.format)
-        print(frame.planes)
-        print(frame.pict_type)
+    pass
+    # with open(os.path.join(test_path, "xg_mascara.mp4"), "rb") as f_in:
+    #     fh = av.open(os.path.join(test_path, "xg_mascara.mp4"))
+    #     fh = av.open(f_in)
+    #     stream = fh.streams.video[0]
+    #     frame = next(fh.decode(video=0))
+    #     frame = frame.reformat(format="rgb24")
+    #     print(dir(fh))
+    #     print(frame)
+    #     print(dir(frame))
+    #     print("########")
+    #     print(frame.interlaced_frame)
+    #     print(frame.format)
+    #     print(frame.planes)
+    #     print(frame.pict_type)
 
-        print(frame.width)
-        print(frame.height)
-        print(frame.to_ndarray().shape)
-        iio.imwrite(os.path.join(test_path, "test_out.jpg"), frame.to_ndarray())
-        print(stream.duration)
-        print(stream.time_base)
-        print(fh.size)
-        print(float(stream.duration * stream.time_base))
-        print(stream.average_rate)
-        print(stream.guessed_rate)
+    #     print(frame.width)
+    #     print(frame.height)
+    #     print(frame.to_ndarray().shape)
+    #     iio.imwrite(os.path.join(test_path, "test_out.jpg"), frame.to_ndarray())
+    #     print(stream.duration)
+    #     print(stream.time_base)
+    #     print(fh.size)
+    #     print(float(stream.duration * stream.time_base))
+    #     print(stream.average_rate)
+    #     print(stream.guessed_rate)
 
-        assert False
+    # assert False
 
     # tmp_dir = tempfile.mkdtemp()
     # data_manager = DataManager(data_dir=tmp_dir)

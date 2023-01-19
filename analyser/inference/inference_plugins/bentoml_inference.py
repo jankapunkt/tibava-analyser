@@ -40,7 +40,7 @@ class BentoMLInferenceServer:
         output_dict = {}
         for x in outputs:
             if x not in raw_output:
-                logging.error("Unknown output field {x}")
+                logging.error(f"Unknown output field {x}")
                 return None
             try:
                 output_dict[x] = np.asarray(raw_output[x])

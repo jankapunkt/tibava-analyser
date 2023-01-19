@@ -34,11 +34,16 @@ class ZipFSHandler(FSHandler):
         if self.mode == "r":
             data.load()
 
-    def mkdir(self, path) -> None:
+    def list_files(self) -> None:
         if self.zipfile is None:
             raise Exception()
-        logging.info(f"mkdir {self.path}")
-        self.zipfile.mkdir(path)
+        yield from self.zipfile.namelist()
+
+    # def mkdir(self, path) -> None:
+    #     if self.zipfile is None:
+    #         raise Exception()
+    #     logging.info(f"mkdir {self.path}")
+    #     self.zipfile.mkdir(path)
 
     def close(self, data) -> None:
         logging.info(f"close {self.path}")
@@ -92,11 +97,18 @@ class LocalFSHandler(FSHandler):
     def mode(self):
         return self.fs.mode
 
-    def mkdir(self, path) -> None:
+    def list_files(self) -> None:
         if self.fs is None:
             raise Exception()
-        logging.info(f"mkdir {self.path}")
-        self.zipfile.mkdir(path)
+        for x in self.fs.list_files():
+            if x.startswith(self.path):
+                yield x[len(self.path) + 1 :]
+
+    # def mkdir(self, path) -> None:
+    #     if self.fs is None:
+    #         raise Exception()
+    #     logging.info(f"mkdir {self.path}")
+    #     self.zipfile.mkdir(path)
 
     def close(self, data) -> None:
         logging.info(f"close {self.path}")

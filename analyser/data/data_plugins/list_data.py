@@ -1,4 +1,6 @@
 import logging
+import zipfile
+
 from typing import List, Union
 from dataclasses import dataclass, field
 
@@ -7,7 +9,7 @@ import numpy as np
 
 from ..manager import DataManager
 from ..data import Data
-from ..fs_handler import LocalFSHandler
+from ..fs_handler import LocalFSHandler, ZipFSHandler
 from analyser import analyser_pb2
 
 
@@ -65,8 +67,22 @@ class ListData(Data):
 
             yield i, data
 
+    def extract_all(self, data_manager: DataManager) -> None:
+
+        for i, data in self:
+            with data:
+                output_path = data_manager._create_data_path(data.id)
+                with zipfile.ZipFile(output_path, "w") as z:
+                    for file in data.fs.list_files():
+                        logging.info(f"Extract {file}")
+                        with data.fs.open_file(file) as f_in, z.open(file, "w") as f_out:
+                            while True:
+                                chunk = f_in.read(1024)
+                                if not chunk:
+                                    break
+                                f_out.write(chunk)
+
     def to_dict(self) -> dict:
-        # TODO
         result = {**super().to_dict(), "data": [], "index": []}
         for i, data in self:
             with data:

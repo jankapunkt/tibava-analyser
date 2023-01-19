@@ -119,10 +119,13 @@ class PlacesClassifier(
                 time = []
                 num_frames = video_decoder.duration() * video_decoder.fps()
                 for i, frame in enumerate(video_decoder):
+                    print("########## Video loop", flush=True)
                     result = self.server(
                         {"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"]
                     )
+                    print("Video loop 1", flush=True)
                     if result is not None:
+                        print("Video loop 2", flush=True)
                         # store embeddings
                         embeddings_data.embeddings.append(
                             ImageEmbedding(
@@ -132,6 +135,7 @@ class PlacesClassifier(
                             )
                         )
 
+                        print("Video loop 3", flush=True)
                         # store places365 probabilities
                         prob = result["prob"]
                         probs["places365"].append(np.squeeze(np.asarray(prob)))
@@ -142,16 +146,19 @@ class PlacesClassifier(
                         # store places3 probabilities
                         probs["places3"].append(np.matmul(prob, self.hierarchy["places3"])[0])
 
+                        print("Video loop 4", flush=True)
                         # store time
                         time.append(i / parameters.get("fps"))
-
+                    print("Video loop 5", flush=True)
                     self.update_callbacks(callbacks, progress=i / num_frames)
 
+        print("Video loop result", flush=True)
         probs_data = {}
         for level in probs.keys():
             with data_manager.create_data("ListData") as probs_places:
                 for index, y in zip(self.classes[level], zip(*probs[level])):
                     with probs_places.create_data("ScalarData", index) as scalar:
+                        print("Video loop scalar", flush=True)
                         scalar.y = y
                         scalar.time = time
                         scalar.delta_time = 1 / parameters.get("fps")

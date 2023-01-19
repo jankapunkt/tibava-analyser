@@ -76,6 +76,7 @@ class ShotTypeClassifier(
                     frame = image_pad(frame["frame"])
 
                     result = self.server({"data": np.expand_dims(frame, 0)}, ["prob"])
+                    print(result, flush=True)
                     if result is not None:
                         # print(result["prob"].shape)
                         predictions.append(np.squeeze(result["prob"]).tolist())

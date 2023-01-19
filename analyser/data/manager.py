@@ -46,6 +46,9 @@ class DataManager:
         data._register_fs_handler(ZipFSHandler(data_path, mode="w"))
         return data
 
+    def _create_data_path(self, data_id) -> str:
+        return create_data_path(self.data_dir, data_id, "zip")
+
     def load(self, data_id: str):
         data_path = create_data_path(self.data_dir, data_id, "zip")
 
@@ -139,7 +142,7 @@ class DataManager:
         data_path = create_data_path(self.data_dir, data_id, "zip")
 
         if not os.path.exists(data_path):
-            logging.error(f"Data not found with id {id}")
+            logging.error(f"Data not found with id {data_id}")
             return None
 
         with open(data_path, "rb") as bytestream:

@@ -19,6 +19,7 @@ plugins:
   - plugin: color_brightness_analyser
   - plugin: shot_scalar_annotator
   - plugin: shot_density
+  - plugin: shot_annotator
   - plugin: thumbnail_generator
   - plugin: insightface_facesize
   - plugin: clip_image_embedding

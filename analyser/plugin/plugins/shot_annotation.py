@@ -62,7 +62,6 @@ class ShotAnnotator(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
         with inputs["shots"] as shots, inputs["probs"] as probs:
-            annotations = []
 
             with data_manager.create_data("AnnotationData") as annotation_data:
 
