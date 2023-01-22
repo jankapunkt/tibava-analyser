@@ -144,6 +144,7 @@ class AnalyserPluginManager(Manager):
     @classmethod
     def export(cls, name):
         def export_helper(plugin):
+            print(f"### {name}", flush=True)
             cls._plugins[name] = plugin
             return plugin
 
@@ -168,7 +169,8 @@ class AnalyserPluginManager(Manager):
         run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
             return None
-
+        print([x.get("plugin").name for x in self.plugin_list], flush=True)
+        print(plugin, flush=True)
         plugin_to_run = None
         for plugin_candidate in self.plugin_list:
             if plugin_candidate.get("plugin").name == plugin:

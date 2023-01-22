@@ -81,6 +81,13 @@ plugins:
   - plugin: shot_scalar_annotator
     params:
       host: analyser_redisai
-  - plugin: xclip_classifier
+  - plugin: x_clip_video_embedding
     params:
       host: analyser_redisai
+  - plugin: x_clip_text_embedding
+    params:
+      host: analyser_redisai
+  - plugin: x_clip_probs
+    params:
+      host: analyser_redisai
+      

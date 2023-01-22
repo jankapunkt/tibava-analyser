@@ -1,5 +1,6 @@
 import imageio.v3 as iio
 import ffmpeg
+import numpy as np
 
 
 def parse_meta_ffmpeg(path):
@@ -103,3 +104,37 @@ class VideoDecoder:
 
     def duration(self):
         return self._duration
+
+
+class VideoBatcher:
+    def __init__(self, video_decoder: VideoDecoder, batch_size=8):
+        self.video_decoder = video_decoder
+        self.batch_size = batch_size
+
+    def __iter__(self):
+        cache = []
+        for x in self.video_decoder:
+            cache.append(x)
+
+            if len(cache) >= self.batch_size:
+                yield {
+                    "time": [x["time"] for x in cache],
+                    "index": [x["index"] for x in cache],
+                    "frame": np.stack([x["frame"] for x in cache]),
+                    "ref_id": [x["ref_id"] for x in cache],
+                }
+                cache = []
+
+        if len(cache) >= self.batch_size:
+            yield {
+                "time": [x["time"] for x in cache],
+                "index": [x["index"] for x in cache],
+                "frame": np.stack([x["frame"] for x in cache]),
+                "ref_id": [x["ref_id"] for x in cache],
+            }
+
+    def fps(self):
+        return self.video_decoder._fps
+
+    def duration(self):
+        return self.video_decoder._duration
