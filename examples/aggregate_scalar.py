@@ -4,7 +4,7 @@ import numpy as np
 import logging
 
 from analyser.client import AnalyserClient
-from analyser.data import ListData, ScalarData
+from analyser.data import ListData, ScalarData, DataManager
 
 
 def parse_args():
@@ -28,25 +28,25 @@ def main():
 
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%d-%m-%Y %H:%M:%S", level=level)
 
-    client = AnalyserClient("localhost", 50051)
+    data_manager = DataManager()
+    client = AnalyserClient("localhost", 50051, manager=data_manager)
 
     # Create random time series with given fps
-    timelines = []
-    for fps in args.fps:
-        time = np.linspace(0, args.duration, int(args.duration * fps))[:, np.newaxis]
-        y = np.random.rand(int(args.duration * fps))
-        print(y)
-        timelines.append(ScalarData(y=y.squeeze(), time=time.squeeze().tolist(), delta_time=1 / fps))
+    with data_manager.create_data("ListData") as timelines:
+        # timelines = []
+        for fps in args.fps:
+            time = np.linspace(0, args.duration, int(args.duration * fps))[:, np.newaxis]
+            y = np.random.rand(int(args.duration * fps))
 
-    timelines = ListData(
-        data=[x for x in timelines],
-        index=[f"timeline{i}" for i in range(len(timelines))],
-    )
+            with timelines.create_data("ScalarData") as scalar_data:
+                scalar_data.y = y.squeeze()
+                scalar_data.time = time.squeeze().tolist()
+                scalar_data.delta_time = 1 / fps
 
-    # Upload data
-    logging.info(f"Start uploading")
-    data_id = client.upload_data(timelines)
-    logging.info(f"Upload done: {data_id}")
+        # Upload data
+        logging.info(f"Start uploading")
+        data_id = client.upload_data(timelines)
+        logging.info(f"Upload done: {data_id}")
 
     # Run scalar aggregation
     job_id = client.run_plugin(

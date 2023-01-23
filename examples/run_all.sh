@@ -1,14 +1,15 @@
+#!/usr/bin/bash
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
 # download test file
-sudo docker compose exec analyser wget "https://tib.eu/cloud/s/ddsr9M9LD3NfGyc/download/xg_mascara.mp4" -O /media/test.mp4
-sudo docker compose exec analyser wget "https://tib.eu/cloud/s/xCCbgTFNz2JKQgM/download/test.jpg" -O /media/test.jpg
+wget "https://tib.eu/cloud/s/ddsr9M9LD3NfGyc/download/xg_mascara.mp4" -O /media/test.mp4
+wget "https://tib.eu/cloud/s/xCCbgTFNz2JKQgM/download/test.jpg" -O /media/test.jpg
 
 # test each test_script.py
 FILES="$SCRIPT_DIR/*.py"
 for f in $FILES
 do
     fname=$(basename "$f")
-    echo "#### sudo docker-compose exec analyser python3 /app/analyser/test/$fname -v"
-    sudo docker compose exec analyser python3 /app/analyser/examples/$fname -v
+    echo "#### sudo docker-compose exec analyser python3 /app/analyser/test/$fname"
+    python3 /app/analyser/examples/$fname 
 done

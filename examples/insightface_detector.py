@@ -17,6 +17,7 @@ def parse_args():
 
 
 def main():
+    return
     args = parse_args()
 
     level = logging.ERROR
