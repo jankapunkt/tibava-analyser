@@ -45,7 +45,13 @@ def main():
             output_id = output.id
 
     logging.info(output_id)
-    logging.info(client.download_data(output_id, args.output_path))
+    data = client.download_data(output_id, args.output_path)
+    with data:
+        for i, x in data:
+            with x:
+                logging.info(f"{i} {x}")
+
+        logging.info(data)
     return 0
 
 

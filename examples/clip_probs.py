@@ -59,7 +59,10 @@ def main():
     for output in result.outputs:
         if output.name == "probs":
             probs_id = output.id
-    logging.info(client.download_data(probs_id, args.output_path))
+    data = client.download_data(probs_id, args.output_path)
+    with data:
+
+        logging.info(data)
     logging.info("done")
     return 0
 

@@ -30,7 +30,7 @@ def main():
     logging.info(f"Upload done: {data_id}")
 
     # insightface_detection
-    job_id = client.run_plugin("insightface_video_detector", [{"id": data_id, "name": "video"}], [])
+    job_id = client.run_plugin("insightface_video_detector_torch", [{"id": data_id, "name": "video"}], [])
     logging.info(f"Job insightface_video_detector started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)

@@ -58,7 +58,9 @@ def main():
             rms_id = output.id
 
     logging.info(f"Job audio_rms done: {rms_id}")
-    logging.info(client.download_data(rms_id, args.output_path))
+    data = client.download_data(rms_id, args.output_path)
+    with data:
+        logging.info(data)
 
     return 0
 

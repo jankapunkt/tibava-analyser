@@ -72,8 +72,9 @@ def main():
     for output in result.outputs:
         if output.name == "annotations":
             annotations_id = output.id
-
-    logging.info(client.download_data(annotations_id, args.output_path))
+    data = client.download_data(annotations_id, args.output_path)
+    with data:
+        logging.info(data)
     return 0
 
 

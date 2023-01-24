@@ -42,7 +42,9 @@ def main():
         if output.name == "embeddings":
             embd_id = output.id
             break
-    logging.info(client.download_data(embd_id, args.output_path))
+    data = client.download_data(embd_id, args.output_path)
+    with data:
+        logging.info(data)
     logging.info("done")
     return 0
 
