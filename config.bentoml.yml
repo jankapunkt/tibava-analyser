@@ -22,6 +22,36 @@ plugins:
   - plugin: shot_annotator
   - plugin: thumbnail_generator
   - plugin: insightface_facesize
+  - plugin: x_clip_video_embedding
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: x_clip_video
+  - plugin: x_clip_text_embedding
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: x_clip_text
+  - plugin: x_clip_probs
+    params:
+      text_inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: x_clip_text
+      sim_inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: x_clip_sim
   - plugin: clip_image_embedding
     params:
       inference:
@@ -39,14 +69,6 @@ plugins:
           port: 3000
           service: clip_text_encoder
   - plugin: clip_probs
-  - plugin: places_classifier
-    params:
-      inference:
-        type: bentoml
-        params:
-          host: inference
-          port: 3000
-          service: places_classification
   - plugin: transnet_shotdetection
     params:
       inference:

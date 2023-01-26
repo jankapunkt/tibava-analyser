@@ -1,5 +1,6 @@
 import imageio.v3 as iio
 import av
+import numpy as np
 
 
 def parse_meta_av(path, **kwargs):

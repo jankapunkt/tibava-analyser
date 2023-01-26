@@ -13,3 +13,4 @@ from .bounding_box_data import BboxData, BboxesData
 from .shot_data import Shot, ShotsData
 from .face_data import FaceData, FacesData
 from .keypoint_data import KpsData, KpssData
+from .video_temporal_embedding import VideoTemporalEmbeddings, VideoTemporalEmbedding

@@ -53,6 +53,7 @@ enum PluginDataType {
   KPSS_DATA = 15;
   FACES_DATA = 16;
   CONTAINER_DATA = 17;
+  VIDEO_TEMPORAL_EMBEDDING_DATA = 18;
 }
 
 message PluginInfoData {

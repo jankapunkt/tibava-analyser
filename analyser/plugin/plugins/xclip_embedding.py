@@ -7,22 +7,24 @@ import numpy as np
 
 import scipy
 from scipy import spatial
-from analyser.plugins.analyser import AnalyserPlugin, AnalyserPluginManager
+from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import (
     VideoData,
-    StringData,
     ScalarData,
-    AnnotationData,
-    ImageEmbedding,
     TextEmbedding,
     ImageEmbeddings,
+    ImageEmbedding,
+    VideoTemporalEmbeddings,
+    VideoTemporalEmbedding,
     TextEmbeddings,
-    generate_id,
+    DataManager,
+    Data,
 )
-from analyser.utils import InferenceServer, Backend, Device, VideoDecoder, VideoBatcher
+from analyser.inference import InferenceServer
+from analyser.utils import VideoDecoder, VideoBatcher
 from analyser.utils.imageops import image_resize, image_crop, image_pad
 from functools import lru_cache
-from typing import Union, List
+from typing import Union, List, Callable, Optional, Dict
 
 from sklearn.preprocessing import normalize
 import imageio
@@ -203,7 +205,7 @@ img_embd_requires = {
 
 img_embd_provides = {
     "image_features": ImageEmbeddings,
-    "video_features": ImageEmbeddings,
+    "video_features": VideoTemporalEmbeddings,
 }
 
 
@@ -218,22 +220,8 @@ class XClipVideoEmbedding(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["video_model_file"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["video_model_file"]
-
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-            inputs=["image"],
-            outputs=["video_features", "image_features"],
-        )
+        inference_config = self.config.get("inference", None)
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
     def preprocess(self, img, resize_size, crop_size):
         converted = image_resize(image_pad(img), size=crop_size)
@@ -246,53 +234,59 @@ class XClipVideoEmbedding(
     #     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
     #         return converted
 
-    def call(self, inputs, parameters, callbacks=None):
-        print("1", flush=True)
-        video_features = []
-        image_features = []
-        video_decoder = VideoBatcher(
-            VideoDecoder(path=inputs["video"].path, fps=parameters.get("fps")), batch_size=parameters.get("batch_size")
-        )
-        print("2", flush=True)
-        num_frames = (video_decoder.duration() * video_decoder.fps()) // parameters.get("batch_size")
-        print(f"3 {num_frames}", flush=True)
-        for i, frame in enumerate(video_decoder):
-            self.update_callbacks(callbacks, progress=i / num_frames)
-            img_id = generate_id()
-            imgs = frame.get("frame")
-            print(f"3 {imgs.shape}", flush=True)
-            preprocessed_imgs = []
-            for img in imgs:
-                img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
-                preprocessed_imgs.append(img)
-            preprocessed_imgs = np.expand_dims(np.stack(preprocessed_imgs), 0)
-            print(f"3 {preprocessed_imgs.shape}", flush=True)
-            # imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
-            result = self.server({"image": preprocessed_imgs}, ["video_features", "image_features"])
-            print(result, flush=True)
-            video_features.append(
-                ImageEmbedding(
-                    embedding=result["video_features"],
-                    image_id=img_id,
-                    time=frame.get("time")[0],
-                    delta_time=1 / parameters.get("fps"),
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ):
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ImageEmbeddings"
+        ) as image_data, data_manager.create_data("VideoTemporalEmbeddings") as video_data:
+            with input_data.open_video("r") as f_video:
+                print("1", flush=True)
+                video_decoder = VideoBatcher(
+                    VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}"),
+                    batch_size=parameters.get("batch_size"),
                 )
-            )
+                print("2", flush=True)
+                num_frames = (video_decoder.duration() * video_decoder.fps()) // parameters.get("batch_size")
+                print(f"3 {num_frames}", flush=True)
+                for i, frame in enumerate(video_decoder):
+                    self.update_callbacks(callbacks, progress=i / num_frames)
+                    imgs = frame.get("frame")
+                    print(f"3 {imgs.shape}", flush=True)
+                    preprocessed_imgs = []
+                    for img in imgs:
+                        img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
+                        preprocessed_imgs.append(img)
+                    preprocessed_imgs = np.expand_dims(np.stack(preprocessed_imgs), 0)
+                    print(f"3 {preprocessed_imgs.shape}", flush=True)
+                    # imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
+                    result = self.server({"data": preprocessed_imgs}, ["video_features", "image_features"])
+                    print(result, flush=True)
+                    image_data.embeddings.append(
+                        ImageEmbedding(
+                            embedding=result["image_features"],
+                            time=frame.get("time")[0],
+                            delta_time=1 / parameters.get("fps"),
+                        )
+                    )
 
-            image_features.append(
-                ImageEmbedding(
-                    embedding=result["image_features"],
-                    image_id=img_id,
-                    time=frame.get("time")[0],
-                    delta_time=1 / parameters.get("fps"),
-                )
-            )
+                    video_data.embeddings.append(
+                        VideoTemporalEmbedding(
+                            embedding=result["video_features"],
+                            time=frame.get("time")[0],
+                            delta_time=1 / parameters.get("fps"),
+                        )
+                    )
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "image_features": ImageEmbeddings(embeddings=image_features),
-            "video_features": ImageEmbeddings(embeddings=video_features),
-        }
+            self.update_callbacks(callbacks, progress=1.0)
+            return {
+                "image_features": image_data,
+                "video_features": video_data,
+            }
 
 
 text_embd_parameters = {
@@ -316,24 +310,10 @@ class XClipTextEmbedding(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_name = self.config["text_model_name"]
-        self.model_device = self.config["model_device"]
-        self.model_file = self.config["text_model_file"]
         self.bpe_path = self.config["bpe_file"]
+        inference_config = self.config.get("inference", None)
         self.tokenizer = SimpleTokenizer(self.bpe_path)
-
-        self.server = InferenceServer(
-            model_file=self.model_file,
-            model_name=self.model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-            inputs=["text"],
-            outputs=["text_features"],
-        )
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
 
     def preprocess(self, text):
         # tokenize text
@@ -341,21 +321,24 @@ class XClipTextEmbedding(
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters, callbacks=None):
-        text_id = generate_id()
-        text = self.preprocess(parameters["search_term"])
-        # print(text.shape)
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ):
+        with data_manager.create_data("TextEmbeddings") as text_data:
+            text = self.preprocess(parameters["search_term"])
+            # print(text.shape)
 
-        result = self.server({"text": text}, ["text_features"])
-
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "embeddings": TextEmbeddings(
-                embeddings=[
-                    TextEmbedding(text_id=text_id, text=parameters["search_term"], embedding=result["text_features"][0])
-                ]
+            result = self.server({"text": text}, ["text_features"])
+            text_data.embeddings.append(
+                TextEmbedding(text=parameters["search_term"], embedding=result["text_features"][0])
             )
-        }
+
+            self.update_callbacks(callbacks, progress=1.0)
+            return {"embeddings": text_data}
 
 
 prob_parameters = {
@@ -364,7 +347,7 @@ prob_parameters = {
 
 prob_requires = {
     "image_features": ImageEmbeddings,
-    "video_features": ImageEmbeddings,
+    "video_features": VideoTemporalEmbeddings,
 }
 
 prob_provides = {
@@ -383,36 +366,17 @@ class XClipProbs(
 ):
     def __init__(self, config=None):
         super().__init__(config)
-        self.host = self.config["host"]
-        self.port = self.config["port"]
-        self.model_device = self.config["model_device"]
-        self.text_model_name = self.config["text_model_name"]
-        self.text_model_file = self.config["text_model_file"]
-        self.sim_model_name = self.config["sim_model_name"]
-        self.sim_model_file = self.config["sim_model_file"]
+
         self.bpe_path = self.config["bpe_file"]
         self.tokenizer = SimpleTokenizer(self.bpe_path)
 
-        self.text_server = InferenceServer(
-            model_file=self.text_model_file,
-            model_name=self.text_model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-            inputs=["text"],
-            outputs=["text_features"],
+        text_inference_config = self.config.get("text_inference", None)
+        self.text_server = InferenceServer.build(
+            text_inference_config.get("type"), text_inference_config.get("params", {})
         )
-
-        self.sim_server = InferenceServer(
-            model_file=self.sim_model_file,
-            model_name=self.sim_model_name,
-            host=self.host,
-            port=self.port,
-            backend=Backend.ONNX,
-            device=self.model_device,
-            inputs=["text_features", "video_features", "image_features"],
-            outputs=["probs", "scale"],
+        sim_inference_config = self.config.get("sim_inference", None)
+        self.sim_server = InferenceServer.build(
+            sim_inference_config.get("type"), sim_inference_config.get("params", {})
         )
 
     def preprocess(self, text):
@@ -420,60 +384,71 @@ class XClipProbs(
         tokenized = self.tokenizer.tokenize(text)
         return tokenized
 
-    def call(self, inputs, parameters, callbacks=None):
-        probs = []
-        time = []
-        delta_time = None
-        image_features = inputs["image_features"]
-        video_features = inputs["video_features"]
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ):
 
-        text = self.preprocess(parameters["search_term"])
-        result = self.text_server({"text": text}, ["text_features"])
+        with inputs["image_features"] as image_data, inputs["video_features"] as video_data, data_manager.create_data(
+            "ScalarData"
+        ) as scalar_data:
+            probs = []
+            time = []
+            delta_time = None
+            image_features = image_data
+            video_features = video_data
 
-        text_embedding = normalize(result["text_features"])
+            text = self.preprocess(parameters["search_term"])
+            result = self.text_server({"text": text}, ["text_features"])
 
-        neg_text = self.preprocess("Not " + parameters["search_term"])
-        neg_result = self.text_server({"text": neg_text}, ["text_features"])
+            text_embedding = normalize(result["text_features"])
 
-        neg_text_embedding = normalize(neg_result["text_features"])
+            neg_text = self.preprocess("Not " + parameters["search_term"])
+            neg_result = self.text_server({"text": neg_text}, ["text_features"])
 
-        text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
-        for image_feature, video_feature in zip(image_features.embeddings, video_features.embeddings):
-            print(f"#### {text_embedding.shape}", flush=True)
-            print(f"#### {video_feature.embedding.shape}", flush=True)
-            print(f"#### {image_feature.embedding.shape}", flush=True)
-            result = self.sim_server(
-                {
-                    "text_features": text_embedding,
-                    "video_features": video_feature.embedding,
-                    "image_features": image_feature.embedding,
-                },
-                ["probs", "scale"],
-            )
-            # result = 100 * text_embedding @ embedding.embedding.T
+            neg_text_embedding = normalize(neg_result["text_features"])
 
-            prob = scipy.special.softmax(result["probs"], axis=0)
+            text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
+            for image_feature, video_feature in zip(image_features.embeddings, video_features.embeddings):
+                print(f"#### {text_embedding.shape}", flush=True)
+                print(f"#### {video_feature.embedding.shape}", flush=True)
+                print(f"#### {image_feature.embedding.shape}", flush=True)
+                result = self.sim_server(
+                    {
+                        "text_features": text_embedding,
+                        "video_features": video_feature.embedding,
+                        "image_features": image_feature.embedding,
+                    },
+                    ["probs", "scale"],
+                )
+                # result = 100 * text_embedding @ embedding.embedding.T
 
-            # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
-            probs.append(prob[0, 0])
-            time.append(image_feature.time)
-            delta_time = image_feature.delta_time
+                prob = scipy.special.softmax(result["probs"], axis=0)
 
-        self.update_callbacks(callbacks, progress=1.0)
-        return {
-            "probs": ScalarData(y=np.array(probs), time=time, delta_time=delta_time, name="image_text_similarities")
-        }
-
-
-anno_parameters = {
-    "threshold": 0.5,
-}
+                # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
+                probs.append(prob[0, 0])
+                time.append(image_feature.time)
+                delta_time = image_feature.delta_time
+            scalar_data.y = np.array(probs)
+            scalar_data.time = time
+            scalar_data.delta_time = delta_time
+            scalar_data.name = "image_text_similarities"
+            self.update_callbacks(callbacks, progress=1.0)
+            return {"probs": scalar_data}
 
 
-anno_requires = {
-    "embeddings": ImageEmbeddings,
-    "search_term": StringData,
-}
+# anno_parameters = {
+#     "threshold": 0.5,
+# }
+
+
+# anno_requires = {
+#     "embeddings": ImageEmbeddings,
+#     "search_term": StringData,
+# }
 
 
 # anno_provides = {
