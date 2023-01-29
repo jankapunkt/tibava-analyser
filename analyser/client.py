@@ -201,14 +201,18 @@ class AnalyserClient:
 
         return result
 
-    def download_data(self, data_id, output_path):
+    def download_data(self, data_id, output_path: str = None):
 
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
-        data, hash = DataManager(output_path).load_data_from_stream(response)
+        if self.output_path is None:
+            manager = self.manager
+        else:
+            manager = DataManager(output_path)
+        data, hash = manager.load_data_from_stream(response)
         return data
 
     def download_data_to_blob(self, data_id, output_path):
