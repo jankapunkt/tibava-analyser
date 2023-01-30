@@ -208,7 +208,7 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         response = stub.download_data(download_data_request)
-        if self.output_path is None:
+        if output_path is None:
             manager = self.manager
         else:
             manager = DataManager(output_path)

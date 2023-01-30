@@ -245,40 +245,34 @@ class XClipVideoEmbedding(
             "ImageEmbeddings"
         ) as image_data, data_manager.create_data("VideoTemporalEmbeddings") as video_data:
             with input_data.open_video("r") as f_video:
-                print("1", flush=True)
                 video_decoder = VideoBatcher(
                     VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}"),
                     batch_size=parameters.get("batch_size"),
                 )
-                print("2", flush=True)
                 num_frames = (video_decoder.duration() * video_decoder.fps()) // parameters.get("batch_size")
-                print(f"3 {num_frames}", flush=True)
                 for i, frame in enumerate(video_decoder):
                     self.update_callbacks(callbacks, progress=i / num_frames)
                     imgs = frame.get("frame")
-                    print(f"3 {imgs.shape}", flush=True)
                     preprocessed_imgs = []
                     for img in imgs:
                         img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
                         preprocessed_imgs.append(img)
                     preprocessed_imgs = np.expand_dims(np.stack(preprocessed_imgs), 0)
-                    print(f"3 {preprocessed_imgs.shape}", flush=True)
                     # imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
                     result = self.server({"data": preprocessed_imgs}, ["video_features", "image_features"])
-                    print(result, flush=True)
                     image_data.embeddings.append(
                         ImageEmbedding(
                             embedding=result["image_features"],
-                            time=frame.get("time")[0],
-                            delta_time=1 / parameters.get("fps"),
+                            time=np.mean(frame.get("time")).item(),
+                            delta_time=parameters.get("batch_size") / parameters.get("fps"),
                         )
                     )
 
                     video_data.embeddings.append(
                         VideoTemporalEmbedding(
                             embedding=result["video_features"],
-                            time=frame.get("time")[0],
-                            delta_time=1 / parameters.get("fps"),
+                            time=np.mean(frame.get("time")).item(),
+                            delta_time=parameters.get("batch_size") / parameters.get("fps"),
                         )
                     )
 
@@ -343,6 +337,8 @@ class XClipTextEmbedding(
 
 prob_parameters = {
     "search_term": "",
+    "normalize": True,
+    "softmax": False,
 }
 
 prob_requires = {
@@ -413,9 +409,9 @@ class XClipProbs(
 
             text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
             for image_feature, video_feature in zip(image_features.embeddings, video_features.embeddings):
-                print(f"#### {text_embedding.shape}", flush=True)
-                print(f"#### {video_feature.embedding.shape}", flush=True)
-                print(f"#### {image_feature.embedding.shape}", flush=True)
+                # print(f"#### {text_embedding.shape}", flush=True)
+                # print(f"#### {video_feature.embedding.shape}", flush=True)
+                # print(f"#### {image_feature.embedding.shape}", flush=True)
                 result = self.sim_server(
                     {
                         "text_features": text_embedding,
@@ -425,14 +421,24 @@ class XClipProbs(
                     ["probs", "scale"],
                 )
                 # result = 100 * text_embedding @ embedding.embedding.T
+                # print("##################", flush=True)
+                # print(result["probs"], flush=True)
 
-                prob = scipy.special.softmax(result["probs"], axis=0)
+                if parameters["softmax"]:
+                    prob = np.squeeze(result["probs"]) * result["scale"]
+                    prob = scipy.special.softmax(prob, axis=0)
+                else:
+                    prob = np.squeeze(result["probs"])
+                # print(prob, flush=True)
 
                 # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
-                probs.append(prob[0, 0])
+                probs.append(prob[0])
                 time.append(image_feature.time)
                 delta_time = image_feature.delta_time
-            scalar_data.y = np.array(probs)
+            y = np.array(probs)
+            if parameters["normalize"]:
+                y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            scalar_data.y = y
             scalar_data.time = time
             scalar_data.delta_time = delta_time
             scalar_data.name = "image_text_similarities"
