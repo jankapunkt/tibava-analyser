@@ -70,14 +70,18 @@ class AggregateScalar(
             probs = []
             times = []
             longest_timeline = 0
-            for data in inputs["timelines"].data:
-                probs.append(data.y)
-                times.append(data.time)
+            print("################################", flush=True)
+            print(len(inputs["timelines"]), flush=True)
+            for _, data in input_data:
+                with data:
+                    print(data.id, flush=True)
+                    probs.append(data.y)
+                    times.append(data.time)
 
-                if len(data.time) > longest_timeline:
-                    longest_timeline = len(data.time)
-                    interp_time = data.time
-                    interp_delta_time = data.delta_time
+                    if len(data.time) > longest_timeline:
+                        longest_timeline = len(data.time)
+                        interp_time = data.time
+                        interp_delta_time = data.delta_time
 
             aggregated_probs = self.aggregate_probs(
                 probs, times, interp_time, aggregation=parameters.get("aggregation")

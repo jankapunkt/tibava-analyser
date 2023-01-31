@@ -92,39 +92,6 @@ def test_audio_data():
             assert y.shape[0] == 24001
 
 
-def test_audio_data():
-    tmp_dir = tempfile.mkdtemp()
-    data_manager = DataManager(data_dir=tmp_dir)
-
-    data_path = None
-    with data_manager.create_data("AudioData") as data:
-        data_id = data.id
-        data_path = os.path.join(tmp_dir, data.id[0:2], data.id[2:4], f"{data.id}.zip")
-        data.ext = "wav"
-        with data.open_audio(mode="w") as f_out:
-            with open(os.path.join(test_path, "test.wav"), "rb") as f_in:
-                while True:
-                    data = f_in.read(128 * 1024)
-                    if len(data) == 0:
-                        break
-                    f_out.write(data)
-
-    read_zipfile_dir(data_path)
-
-    with data_manager.load(data_id) as data:
-        assert data.type == "AudioData"
-        assert data.id == data_id
-        assert data.ext == "wav"
-        with data.open_audio() as f:
-            # raw_data = f.read()
-            tmp = io.BytesIO(f.read())
-            # tmp.name = "a.mp3"
-            y, sr = soundfile.read(tmp)
-            assert y.shape[0] == 24001
-
-    # assert False#
-
-
 def test_list_data():
     tmp_dir = tempfile.mkdtemp()
     data_manager = DataManager(data_dir=tmp_dir)
@@ -163,4 +130,11 @@ def test_list_data():
         data_path = os.path.join(tmp_dir, sub_id[0:2], sub_id[2:4], f"{sub_id}.zip")
         read_zipfile_dir(data_path)
 
+    with data_manager.create_data("ScalarData") as scalar_data:
+        scalar_data.y = [0, 1, 2, 3, 4]
+        scalar_data.time = [0, 2, 4, 6, 8]
+        scalar_data.delta_time = 2.0
+
+    with data_manager.create_data("ListData") as list_data:
+        list_data.add_data(scalar_data)
     assert False

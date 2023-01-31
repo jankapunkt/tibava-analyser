@@ -88,3 +88,18 @@ class ImagesData(Data):
         except Exception as e:
             logging.error(f"Could not load a image with id {image_id} (Exception: {e})")
             return None
+
+    def extract_all(self, data_manager: DataManager) -> None:
+
+        for image in self:
+            logging.info(f"Extract {image.id}")
+            image_id = image.id if isinstance(image, ImageData) else image
+            image_ext = image.ext if isinstance(image, ImageData) else "jpg"
+            output_path = data_manager._create_file_path(image_id, image_ext)
+            with self.fs.open_file(f"{image_id}.{image_ext}", "r") as f_in:
+                with open(output_path, "wb") as f_out:
+                    while True:
+                        chunk = f_in.read(1024)
+                        if not chunk:
+                            break
+                        f_out.write(chunk)
