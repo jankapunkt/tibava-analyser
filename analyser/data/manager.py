@@ -63,10 +63,11 @@ class DataManager:
         data_type = None
         with data:
             data_type = data.type
+            data_id = data.id
 
         assert data_type in self._data_name_lut, f"Unknown data type {data_type}"
 
-        data = self._data_name_lut[data_type]()
+        data = self._data_name_lut[data_type](id=data_id)
         data._register_fs_handler(ZipFSHandler(data_path, mode="r"))
 
         return data
@@ -123,10 +124,6 @@ class DataManager:
 
         output_path = create_data_path(self.data_dir, data_id, "zip")
 
-        if os.path.exists(output_path):
-            logging.error(f"Data with id already exists {data_id}")
-            return None
-
         def data_generator():
             yield first_pkg.data_encoded
 
@@ -134,6 +131,13 @@ class DataManager:
             for x in data_stream:
                 hash_stream.update(x.data_encoded)
                 yield x.data_encoded
+
+        if os.path.exists(output_path):
+            logging.warning(f"Data with id already exists {data_id}")
+            # We trust analyser data
+            for x in data_generator():
+                pass
+            return self.load(data_id), hash_stream.hexdigest()
 
         with open(output_path, "wb") as f_out:
             for x in data_generator():
