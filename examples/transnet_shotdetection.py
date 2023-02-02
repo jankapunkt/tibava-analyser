@@ -30,6 +30,7 @@ def main():
 
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%d-%m-%Y %H:%M:%S", level=level)
 
+    start_time = time.time()
     client = AnalyserClient("localhost", 50051)
     logging.info(f"Start uploading")
     data_id = client.upload_file(args.input_path)
@@ -50,6 +51,8 @@ def main():
     data = client.download_data(shots_id, args.output_path)
     with data:
         logging.info(data)
+
+    print(time.time() - start_time)
 
     return 0
 

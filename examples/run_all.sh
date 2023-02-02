@@ -10,6 +10,6 @@ FILES="$SCRIPT_DIR/*.py"
 for f in $FILES
 do
     fname=$(basename "$f")
-    echo "#### sudo docker-compose exec analyser python3 /app/analyser/test/$fname"
+    echo "#### python3 /app/analyser/test/$fname"
     python3 /app/analyser/examples/$fname 
 done

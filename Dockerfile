@@ -42,6 +42,8 @@ RUN python3 -m pip install ftfy
 RUN python3 -m pip install regex
 
 RUN python3 -m pip install redisai ml2rt
+RUN pip install bentoml[grpc,io-json]
+RUN pip install requests-toolbelt
 
 WORKDIR /app/analyser/
 COPY . /app/analyser/
