@@ -33,17 +33,17 @@
         video: video_id
         bboxes: bboxes
         faces: faces
-      provides:
-        ages: ages
-        genders: genders
+      # provides:
+      #   ages: ages
+      #   genders: genders
   outputs:
     - faces
     - bboxes
     - kpss
     - facialfeatures
     - emotions
-    - ages
-    - genders
+    # - ages
+    # - genders
 - pipeline: face_to_camera_size
   inputs:
     - video_id

@@ -149,22 +149,22 @@
         faces: faces
       provides:
         features: facialfeatures
-    - plugin: insightface_video_gender_age_calculator
-      requires:
-        video: video_id
-        bboxes: bboxes
-        faces: faces
-      provides:
-        ages: ages
-        genders: genders
+    # - plugin: insightface_video_gender_age_calculator
+    #   requires:
+    #     video: video_id
+    #     bboxes: bboxes
+    #     faces: faces
+    #   provides:
+    #     ages: ages
+    #     genders: genders
   outputs:
     - faces
     - bboxes
     - kpss
     - facialfeatures
     - emotions
-    - ages
-    - genders
+    # - ages
+    # - genders
 - pipeline: face_to_camera_size
   inputs:
     - video_id
