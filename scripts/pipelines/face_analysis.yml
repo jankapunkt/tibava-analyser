@@ -2,7 +2,7 @@
   inputs:
     - video_id
   plugins:
-    - plugin: insightface_video_detector
+    - plugin: insightface_video_detector_torch
       parameters:
         fps: 5
         det_thresh: 0.5
@@ -48,7 +48,7 @@
   inputs:
     - video_id
   plugins:
-    - plugin: insightface_video_detector
+    - plugin: insightface_video_detector_torch
       parameters:
         fps: 5
         det_thresh: 0.5

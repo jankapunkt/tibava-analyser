@@ -27,7 +27,6 @@ def audio_amp_analysis_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             ref_id (str): hash id of the reference data package in TIB-AV-A
             y (np.ndarray): 1 amp value for t entries in time (shape t,)
             time (list): time values (length t)
@@ -49,7 +48,6 @@ def audio_freq_analysis_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             hist (np.ndarray): n frequency histogram values for t enties in time (n x t)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -70,7 +68,6 @@ def audio_rms_analysis_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             y (np.ndarray): 1 rms value for t entries in time (shape t,)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -91,7 +88,6 @@ def brightness_analysis_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             y (np.ndarray): 1 brightness value for t entries in time (shape t,)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -112,7 +108,6 @@ def camera_size_classification_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             y (np.ndarray): 5 camera size probabilities for t entries in time (shape t, 5)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -132,7 +127,6 @@ def camera_size_classification_pkl(outputs: dict) -> dict:
 
     output_dict = {
         "id": outputs["camera_size_probs"]["id"],
-        "last_access": outputs["camera_size_probs"]["last_access"],
         "y": camera_sizes,
         "time": time,
         "delta_time": delta_time,
@@ -155,7 +149,6 @@ def clip_image_embeddings_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             embeddings (np.ndarray): 512-dimension clip feature vector for t entries in time (shape t, 512)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -166,15 +159,62 @@ def clip_image_embeddings_pkl(outputs: dict) -> dict:
 
     time = []
     embeddings = []
-    for emb in outputs["embeddings"]["image_embeddings"]:
+    for emb in outputs["embeddings"]["embeddings"]:
         delta_time = emb["delta_time"]
         time.append(emb["time"])
         embeddings.append(np.squeeze(emb["embedding"]))
 
     output_dict = {
         "id": outputs["embeddings"]["id"],
-        "last_access": outputs["embeddings"]["last_access"],
         "embeddings": np.stack(embeddings),
+        "time": time,
+        "delta_time": delta_time,
+    }
+
+    logging.debug("#### Output dict")
+    for key, val in output_dict.items():
+        print_data_info(key, val)
+
+    return output_dict
+
+
+def xclip_video_embeddings_pkl(outputs: dict) -> dict:
+    """Converts outputs from the TIB-AV-A pipeline xclip_image_embeddings
+
+    Args:
+        outputs (dict): dictionary in TIB-AV-A data.py format
+
+    Returns:
+        dict: dictionary ready to write in a .pkl
+            id (str): hash id of the data package in TIB-AV-A
+            embeddings (np.ndarray): 512-dimension clip feature vector for t entries in time (shape t, 512)
+            time (list): t time values (length t)
+            delta_time (float): time duration for which a certain value is created (equals 1 / fps)
+    """
+    logging.debug("#### Input dict for video embeddings")
+    for key, val in outputs["video_embeddings"].items():
+        print_data_info(key, val)
+
+    logging.debug("#### Input dict for image embeddings")
+    for key, val in outputs["image_embeddings"].items():
+        print_data_info(key, val)
+
+    time = []
+    video_embeddings = []
+    for emb in outputs["video_embeddings"]["embeddings"]:
+        delta_time = emb["delta_time"]
+        time.append(emb["time"])
+        video_embeddings.append(np.squeeze(emb["embedding"]))
+
+    image_embeddings = []
+    for emb in outputs["image_embeddings"]["embeddings"]:
+        image_embeddings.append(np.squeeze(emb["embedding"]))
+
+    output_dict = {
+        "video_embeddings_id": outputs["video_embeddings"]["id"],
+        "video_embeddings": np.stack(video_embeddings),
+        "image_embeddings_id": outputs["image_embeddings"]["id"],
+        "image_embeddings": np.stack(image_embeddings),
         "time": time,
         "delta_time": delta_time,
     }
@@ -195,7 +235,6 @@ def color_analysis_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             colors (np.ndarray): 3 color values (RGB) for t entries in time and k color clusters (shape k, t, 3)
             time (list): t time values (length t)
             delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -215,7 +254,6 @@ def color_analysis_pkl(outputs: dict) -> dict:
 
     output_dict = {
         "id": outputs["colors"]["id"],
-        "last_access": outputs["colors"]["last_access"],
         "colors": colors,
         "time": time,
         "delta_time": delta_time,
@@ -314,7 +352,6 @@ def face_to_camera_size_pkl(outputs: dict) -> dict:
 
             camerasize_probs (dict): probabilities for camera shot sizes
                 id (str): hash id of the data package in TIB-AV-A
-                last_access (float): time of last access
                 y (np.ndarray): 5 camera size probabilities for t entries in time (shape t, 5)
                 time (list): t time values (length t)
                 delta_time (float): time duration for which a certain value is created (equals 1 / fps)
@@ -322,7 +359,6 @@ def face_to_camera_size_pkl(outputs: dict) -> dict:
 
             facessizes (dict): size of faces found in the video
                 id (str): hash id of the data package in TIB-AV-A
-                last_access (float): time of last access
                 ref_id (str): hash id of the reference data package in TIB-AV-A
                 y (list): size of the largest face for t entries in time (length t)
                 time (list): t time values (length t)
@@ -344,7 +380,6 @@ def face_to_camera_size_pkl(outputs: dict) -> dict:
     output_dict = {
         "camerasize_probs": {
             "id": outputs["camerasize_probs"]["id"],
-            "last_access": outputs["camerasize_probs"]["last_access"],
             "y": camera_sizes,
             "time": time,
             "delta_time": delta_time,
@@ -366,27 +401,23 @@ def place_classification_pkl(outputs: dict) -> dict:
     output -> dict:
         place_embeddings
             id: str
-            last_access: float
             embeddings: tx2048 (float)
             time: [t] (float)
             delta_time: float
         probs_places365
             id: str
-            last_access: float
             y: tx365 (float)
             time: [t] (float)
             delta_time: float
             index: [365] (str)
         probs_places16
             id: str
-            last_access: float
             y: tx16 (float)
             time: [t] (float)
             delta_time: float
             index: [16] (str)
         probs_places3
             id: str
-            last_access: float
             y: tx3 (float)
             time: [t] (float)
             delta_time: float
@@ -396,14 +427,13 @@ def place_classification_pkl(outputs: dict) -> dict:
     embeddings = []
 
     output_dict = {}
-    for emb in outputs["place_embeddings"]["image_embeddings"]:
+    for emb in outputs["place_embeddings"]["embeddings"]:
         delta_time = emb["delta_time"]
         time.append(emb["time"])
         embeddings.append(np.squeeze(emb["embedding"]))
 
     output_dict["place_embeddings"] = {
         "id": outputs["place_embeddings"]["id"],
-        "last_access": outputs["place_embeddings"]["last_access"],
         "embeddings": np.stack(embeddings),
         "time": time,
         "delta_time": delta_time,
@@ -418,7 +448,6 @@ def place_classification_pkl(outputs: dict) -> dict:
 
         output_dict[key] = {
             "id": outputs[key]["id"],
-            "last_access": outputs[key]["last_access"],
             "y": probs,
             "time": time,
             "delta_time": delta_time,
@@ -437,7 +466,6 @@ def shot_density_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             ref_id (str): hash id of the reference data package in TIB-AV-A
             y (np.ndarray): 1 brightness value for t entries in time (shape t,)
             time (list): t time values (length t)
@@ -458,7 +486,6 @@ def transnet_shotdetection_pkl(outputs: dict) -> dict:
     Returns:
         dict: dictionary ready to write in a .pkl
             id (str): hash id of the data package in TIB-AV-A
-            last_access (float): time of last access
             shots (list): list of n shots containing a dictionary with (length n)
                 start (float): start time of the shot
                 end (float): end time of the shot
@@ -481,6 +508,7 @@ def write_pkl(pipeline: dict, outputs: dict, output_path: str):
         "brightness_analysis": brightness_analysis_pkl,
         "camera_size_classification": camera_size_classification_pkl,
         "clip_image_embeddings": clip_image_embeddings_pkl,
+        "xclip_video_embeddings": xclip_video_embeddings_pkl,
         "color_analysis": color_analysis_pkl,
         "face_analysis": face_analysis_pkl,
         "face_to_camera_size": face_to_camera_size_pkl,
@@ -555,8 +583,8 @@ def main():
         for output in pipeline["outputs"]:
             for output_name, output_id in output.items():
                 try:
-                    data = dm.load(output_id)
-                    outputs[output_name] = data.to_dict()
+                    with dm.load(output_id) as data:
+                        outputs[output_name] = data.to_dict()
                 except Exception as e:
                     logging.error(f"Data package with id {output_id} does not exist")
                     valid_pipeline = False

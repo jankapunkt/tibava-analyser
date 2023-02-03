@@ -74,6 +74,21 @@
         embeddings: embeddings
   outputs:
     - embeddings
+- pipeline: xclip_video_embeddings
+  inputs:
+    - video_id
+  plugins:
+    - plugin: x_clip_video_embedding
+      parameters:
+        fps: 5
+      requires:
+        video: video_id
+      provides:
+        image_features: image_embeddings
+        video_features: video_embeddings
+  outputs:
+    - image_embeddings
+    - video_embeddings
 - pipeline: color_analysis
   inputs:
     - video_id
@@ -108,7 +123,7 @@
   inputs:
     - video_id
   plugins:
-    - plugin: insightface_video_detector
+    - plugin: insightface_video_detector_torch
       parameters:
         fps: 5
         det_thresh: 0.5
@@ -154,7 +169,7 @@
   inputs:
     - video_id
   plugins:
-    - plugin: insightface_video_detector
+    - plugin: insightface_video_detector_torch
       parameters:
         fps: 5
         det_thresh: 0.5
