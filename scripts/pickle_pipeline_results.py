@@ -293,7 +293,7 @@ def face_analysis_pkl(outputs: dict) -> dict:
                 gender (np.ndarray): probabilities for female and male (shape 2,)
     """
     logging.debug("#### Input dict")
-    for dkey in ["faces", "bboxes", "kpss", "facialfeatures", "emotions", "ages", "genders"]:
+    for dkey in ["faces", "bboxes", "kpss", "facialfeatures", "emotions"]:  # , "ages", "genders"]:
         for key, val in outputs[dkey].items():
             print_data_info(key, val)
 
@@ -316,10 +316,10 @@ def face_analysis_pkl(outputs: dict) -> dict:
     for kps in outputs["kpss"]["kpss"]:
         faces[kps["ref_id"]]["kps"] = np.stack((kps["x"], kps["y"]), axis=-1)
 
-    for emb in outputs["facialfeatures"]["image_embeddings"]:
+    for emb in outputs["facialfeatures"]["embeddings"]:
         faces[emb["ref_id"]]["embedding"] = emb["embedding"]
 
-    for key in ["emotions", "ages", "genders"]:
+    for key in ["emotions"]:  # , "ages", "genders"]:
         for entry in outputs[key]["data"]:  # iter over emotion
             for i in range(len(entry["ref_id"])):  # iter over faces
                 ref_id = entry["ref_id"][i]
