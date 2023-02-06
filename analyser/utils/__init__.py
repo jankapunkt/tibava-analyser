@@ -3,6 +3,7 @@ import re
 from .video_decoder import *
 from .byte_fifo import *
 from .imageops import *
+from .cache import *
 
 
 def read_chunk(iterator, chunksize=64):

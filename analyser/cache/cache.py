@@ -24,7 +24,7 @@ class CacheManager(Factory):
     @classmethod
     def build(cls, name: str, config: Dict = None):
         if name not in cls._plugins:
-            logging.error(f"Unknown inference server: {name}")
+            logging.error(f"Unknown cache server: {name}")
             return None
 
         return cls._plugins[name](config)

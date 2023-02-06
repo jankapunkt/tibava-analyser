@@ -6,12 +6,15 @@ from typing import Dict, List, Any, Type, Callable
 import traceback
 import sys
 import importlib
+import time
 
 from analyser.utils import convert_name
 from analyser.utils.plugin import Plugin, Manager
 from analyser.data import Data, DataManager
 from analyser import analyser_pb2
 from analyser.plugin.callback import AnalyserPluginCallback
+from analyser.utils import get_hash_for_plugin
+from analyser.cache import Cache
 
 
 class AnalyserPlugin(Plugin):
@@ -37,12 +40,12 @@ class AnalyserPlugin(Plugin):
     @classmethod
     @property
     def requires(cls):
-        return cls.requires
+        return cls._requires
 
     @classmethod
     @property
     def provides(cls):
-        return cls.provides
+        return cls._provides
 
     @classmethod
     def update_callbacks(cls, callbacks: List[AnalyserPluginCallback], **kwargs):
@@ -124,15 +127,15 @@ class AnalyserPlugin(Plugin):
 class AnalyserPluginManager(Manager):
     _plugins = {}
 
-    def __init__(self, **kwargs):
+    def __init__(self, cache: Cache = None, **kwargs):
         super().__init__(**kwargs)
+        self.cache = cache
         self.find()
         self.plugin_list = self.init_plugins()
 
     @classmethod
     def export(cls, name):
         def export_helper(plugin):
-            print(f"### {name}", flush=True)
             cls._plugins[name] = plugin
             return plugin
 
@@ -160,23 +163,66 @@ class AnalyserPluginManager(Manager):
         parameters: Dict = None,
         callbacks: Callable = None,
     ):
-        print(self._plugins.keys())
+
         run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
             return None
-        print([x.get("plugin").name for x in self.plugin_list], flush=True)
-        print(plugin, flush=True)
         plugin_to_run = None
         for plugin_candidate in self.plugin_list:
             if plugin_candidate.get("plugin").name == plugin:
                 plugin_to_run = plugin_candidate["plugin"]
+
         if plugin_to_run is None:
             logging.error(f"[AnalyserPluginManager] {run_id} plugin: {plugin} not found")
             return None
 
-        logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
-        logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
-        logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-        results = plugin_to_run(inputs, data_manager, parameters, callbacks)
-        logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
+        cached = False
+        if self.cache:
+            results = {}
+            print(f"########### {plugin_to_run}")
+            print(f"########### {plugin_to_run.provides}")
+            print(f"########### {plugin_to_run.requires}")
+
+            cached = True
+            for output in plugin_to_run.provides:
+
+                result_hash = get_hash_for_plugin(
+                    plugin=plugin,
+                    output=output,
+                    inputs=[x.id for _, x in inputs.items()],
+                    parameters=parameters,
+                    version=plugin_to_run.version,
+                    config=plugin_to_run.config,
+                )
+
+                print(f"++++++++++++++ {result_hash}", flush=True)
+                cached_data = self.cache.get(result_hash)
+                if cached_data is None:
+                    cached = False
+                    break
+
+                print(f"### Get cache {result_hash} {cached_data}")
+                results[output] = data_manager.load(cached_data.get("data_id"))
+
+        if not cached:
+            logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
+            logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
+            logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
+            results = plugin_to_run(inputs, data_manager, parameters, callbacks)
+            logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
+
+        if self.cache:
+            for output, data in results.items():
+
+                result_hash = get_hash_for_plugin(
+                    plugin=plugin,
+                    output=output,
+                    inputs=[x.id for _, x in inputs.items()],
+                    parameters=parameters,
+                    version=plugin_to_run.version,
+                    config=plugin_to_run.config,
+                )
+                print(f"### Set cache {result_hash} {data.id}")
+                self.cache.set(result_hash, {"data_id": data.id, "time": time.time(), "type": "plugin_result"})
+
         return results

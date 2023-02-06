@@ -4,7 +4,7 @@ data:
       type: redis
       params:
         db: 0
-        host: analyser_redisai
+        host: analyser_redis
         port: 6379
         tag: data_test
 plugins:

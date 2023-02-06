@@ -1,4 +1,5 @@
 from typing import Any, List, Iterator
+import logging
 
 import redis
 import msgpack
@@ -27,36 +28,57 @@ class RedisCache(Cache, config=default_config, version="0.1"):
         self.r = redis.Redis(host=self.config.get("host"), port=self.config.get("port"), db=self.config.get("db"))
 
     def set(self, id: str, data: Any) -> bool:
-        packed = msgpack.packb(data)
-        tag = self.config.get("tag")
-        self.r.set(f"{tag}:{id}", packed)
+        try:
+            packed = msgpack.packb(data)
+            tag = self.config.get("tag")
+            self.r.set(f"{tag}:{id}", packed)
+        except Exception as e:
+            logging.error(f"RedisCache {e}")
 
     def delete(self, id: str) -> bool:
-        tag = self.config.get("tag")
-        return self.r.delete(f"{tag}:{id}")
+        try:
+            tag = self.config.get("tag")
+            return self.r.delete(f"{tag}:{id}")
+        except Exception as e:
+            logging.error(f"RedisCache {e}")
+            return None
 
     def get(self, id: str) -> Any:
-        tag = self.config.get("tag")
-        packed = self.r.get(f"{tag}:{id}")
-        return msgpack.unpackb(packed)
+        try:
+            tag = self.config.get("tag")
+            packed = self.r.get(f"{tag}:{id}")
+            if packed is None:
+                return None
+            return msgpack.unpackb(packed)
+        except Exception as e:
+            logging.error(f"RedisCache {e}")
+            return None
 
     def keys(self) -> List[str]:
-        tag = self.config.get("tag")
-        start = len(f"{tag}:")
-        keys = self.r.scan_iter(f"{tag}:*", 500)
+        try:
+            tag = self.config.get("tag")
+            start = len(f"{tag}:")
+            keys = self.r.scan_iter(f"{tag}:*", 500)
 
-        # print([x for x in Batcher(keys, 2)])
-        return [key[start:].decode("utf-8") for key in keys]
+            # print([x for x in Batcher(keys, 2)])
+            return [key[start:].decode("utf-8") for key in keys]
+        except Exception as e:
+            logging.error(f"RedisCache {e}")
+            return []
 
     def __iter__(self) -> Iterator:
+        try:
+            tag = self.config.get("tag")
+            start = len(f"{tag}:")
+            keys = list(self.r.scan_iter(f"{tag}:*", 500))
+            while len(keys) > 0:
+                batch_keys = keys[:500]
+                keys = keys[500:]
 
-        tag = self.config.get("tag")
-        start = len(f"{tag}:")
-        keys = list(self.r.scan_iter(f"{tag}:*", 500))
-        while len(keys) > 0:
-            batch_keys = keys[:500]
-            keys = keys[500:]
+                values = self.r.mget(batch_keys)
+                for k, v in zip(batch_keys, values):
+                    yield k[start:].decode("utf-8"), msgpack.unpackb(v)
 
-            values = self.r.mget(batch_keys)
-            for k, v in zip(batch_keys, values):
-                yield k[start:].decode("utf-8"), msgpack.unpackb(v)
+        except Exception as e:
+            logging.error(f"RedisCache {e}")
+            yield from []

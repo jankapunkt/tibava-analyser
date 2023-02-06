@@ -56,4 +56,3 @@ class VideoData(Data):
             f.write(first_pkg.data_encoded)
             for x in data_stream:
                 f.write(x.data_encoded)
-                print(f"{self.ext} {self.filename}", flush=True)

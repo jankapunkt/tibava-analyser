@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import os
 import logging
 import json
@@ -13,6 +14,7 @@ from dataclasses import field
 from .data import Data
 from .fs_handler import ZipFSHandler
 from .utils import create_data_path, generate_id
+from analyser.cache import Cache
 
 
 class DataManager:
@@ -20,7 +22,7 @@ class DataManager:
     _data_enum_lut = {}
     _data_minetype_lut = {}
 
-    def __init__(self, data_dir=None, cache=None):
+    def __init__(self, data_dir=None, cache: Cache = None):
         self.cache = cache
         if not data_dir:
             data_dir = tempfile.mkdtemp()
@@ -72,6 +74,11 @@ class DataManager:
 
         return data
 
+    def delete(self, data_id: str):
+        data_path = create_data_path(self.data_dir, data_id, "zip")
+        if os.path.exists(data_path):
+            os.remove(data_path)
+
     def load_file_from_stream(self, data_stream: Iterable) -> tuple(Data, str):
 
         data_stream = iter(data_stream)
@@ -110,6 +117,21 @@ class DataManager:
 
         with data as d:
             d.load_file_from_stream(data_generator())
+
+        file_hash = hash_stream.hexdigest()
+
+        if self.cache:
+            cached_data = self.cache.get(file_hash)
+            if cached_data is not None:
+                logging.info("Found data for file upload in cache")
+                print(cached_data)
+                new_data = self.load(cached_data.get("data_id"))
+
+                self.delete(data.id)
+                data = new_data
+            else:
+                self.cache.set(file_hash, {"data_id": data.id, "time": time.time(), "type": "file"})
+
         return data, hash_stream.hexdigest()
 
     def load_data_from_stream(self, data_stream: Iterable) -> tuple(Data, str):
@@ -118,7 +140,6 @@ class DataManager:
         first_pkg = next(data_stream)
 
         data_id = first_pkg.id
-        print(f"FIRST_PKG_ID {data_id}", flush=True)
 
         hash_stream = hashlib.sha1()
 

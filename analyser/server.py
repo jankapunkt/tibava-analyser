@@ -47,6 +47,7 @@ def run_plugin(args):
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
                 if parameter.get("type") == "BOOL_TYPE":
                     plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
+
         callbacks = [AnalyserProgressCallback(shared)]
         results = plugin_manager(
             plugin=params.get("plugin"),
@@ -82,10 +83,6 @@ def run_plugin(args):
 def init_plugins(config):
     data_dict = {}
 
-    manager = AnalyserPluginManager(configs=config.get("plugins", []))
-    manager.find()
-    data_dict["plugin_manager"] = manager
-
     # building datamanager
     data_config = config.get("data", None)
     if not data_config:
@@ -97,6 +94,10 @@ def init_plugins(config):
         cache = CacheManager.build(name=cache_config["type"], config=cache_config["params"])
     data_manager = DataManager(data_dir=data_dir, cache=cache)
     data_dict["data_manager"] = data_manager
+
+    manager = AnalyserPluginManager(cache=cache, configs=config.get("plugins", []))
+    manager.find()
+    data_dict["plugin_manager"] = manager
 
     return data_dict
 
@@ -131,7 +132,6 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             data_id = None
             with data:
                 data_id = data.id
-            print(f"UPLOADED {data}", flush=True)
 
             return analyser_pb2.UploadDataResponse(success=True, id=data_id, hash=hash)
 
