@@ -263,8 +263,6 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
                 for i in range(len(frame_bboxes)):
                     # store bboxes, kpss, and faces
-                    ref_id = frame.get("ref_id", None)
-                    print(f"############## {ref_id} {type(ref_id)}", flush=True)
                     face = FaceData(ref_id=frame.get("ref_id", None))
                     bbox = BboxData(**frame_bboxes[i], ref_id=face.id)
                     kps = KpsData(**frame_kpss[i], ref_id=face.id)
