@@ -63,7 +63,7 @@ def main():
         logging.info(data)
 
     # aggregate emotions per frame (multiple faces and thus emotions are depicted)
-    job_id = client.run_plugin("aggregate_scalar_per_time", [{"id": output_id, "name": "timelines"}], [])
+    job_id = client.run_plugin("aggregate_list_scalar_per_time", [{"id": output_id, "name": "scalars"}], [])
     logging.info(f"Job aggregate_scalar_per_time started: {job_id}")
 
     result = client.get_plugin_results(job_id=job_id)
@@ -73,7 +73,7 @@ def main():
 
     output_id = None
     for output in result.outputs:
-        if output.name == "aggregated_timeline":
+        if output.name == "aggregated_scalars":
             output_id = output.id
     data = client.download_data(output_id, args.output_path)
     with data:

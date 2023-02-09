@@ -26,7 +26,18 @@ def flat_dict(data_dict, parse_json=False):
 def get_hash_for_plugin(
     plugin: str, output: str, version: str = None, parameters: List = [], inputs: List = [], config: Dict = {}
 ):
-    return hashlib.sha256(
+    plugin_call_dict = {
+        "plugin": plugin,
+        "output": output,
+        "parameters": parameters,
+        "inputs": inputs,
+        "config": config,
+        "version": version,
+    }
+    logging.info(f"[HASH] {plugin_call_dict}")
+
+    logging.info(f"[HASH] {flat_dict(plugin_call_dict)}")
+    plugin_hash = hashlib.sha256(
         json.dumps(
             flat_dict(
                 {
@@ -40,3 +51,6 @@ def get_hash_for_plugin(
             )
         ).encode()
     ).hexdigest()
+
+    logging.info(f"[HASH] {plugin_hash}")
+    return plugin_hash

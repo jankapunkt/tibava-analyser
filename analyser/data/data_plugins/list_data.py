@@ -50,21 +50,17 @@ class ListData(Data):
         return data
 
     def add_data(self, data: Data, index: str = None) -> None:
-        print(f"1 {data.id}", flush=True)
         with data:
-            print(data)
             local_fs = LocalFSHandler(self.fs, data.id)
-            print(f"2 {data.id} {list(data.fs.list_files())}", flush=True)
 
             for file in data.fs.list_files():
-                print(file, flush=True)
                 with data.fs.open_file(file) as f_in, local_fs.open_file(file, "w") as f_out:
                     while True:
                         chunk = f_in.read(1024)
                         if not chunk:
                             break
                         f_out.write(chunk)
-        print(f"3 {data.id}", flush=True)
+
         self.data.append(data.id)
         if index is None:
             index = len(self.index)

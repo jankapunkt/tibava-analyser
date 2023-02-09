@@ -10,6 +10,7 @@ data:
 plugins:
   - plugin: aggregate_scalar
   - plugin: aggregate_scalar_per_time
+  - plugin: aggregate_list_scalar_per_time
   - plugin: cosine_similarity
   - plugin: video_to_audio
   - plugin: audio_amp_analysis

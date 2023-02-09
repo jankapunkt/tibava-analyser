@@ -64,6 +64,8 @@ class CosineSimilarity(
                 tfs.append(tf.embedding)
                 delta_time = tf.delta_time
 
+            unique_times = sorted(unique_times)
+
             qfs = [qf.embedding for qf in query_features]
 
             tfs = np.asarray(tfs)
@@ -96,8 +98,10 @@ class CosineSimilarity(
                 else:
                     cossim_t = (cossim_t - np.min(cossim_t)) / (np.max(cossim_t) - np.min(cossim_t))
 
-            output_data.y = np.squeeze(cossim)
+            output_data.y = np.squeeze(cossim_t)
             output_data.time = list(unique_times)
             output_data.delta_time = delta_time
+
+            print(unique_times)
 
             return {"probs": output_data}

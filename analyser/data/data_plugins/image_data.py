@@ -72,7 +72,7 @@ class ImagesData(Data):
             with self.fs.open_file(f"{image_data.id}.jpg", "w") as f:
                 f.write(encoded)
         except:
-            logging.error("Could not add a new image")
+            logging.error("[ImagesData] Could not add a new image")
             return None
 
         self.images.append(image_data)
@@ -86,13 +86,13 @@ class ImagesData(Data):
             with self.fs.open_file(f"{image_id}.{image_ext}", "r") as f:
                 return iio.imread(f.read(), extension=f".{image_ext}")
         except Exception as e:
-            logging.error(f"Could not load a image with id {image_id} (Exception: {e})")
+            logging.error(f"[ImagesData] Could not load a image with id {image_id} (Exception: {e})")
             return None
 
     def extract_all(self, data_manager: DataManager) -> None:
 
         for image in self:
-            logging.info(f"Extract {image.id}")
+            logging.debug(f"[ImagesData] Extract {image.id}")
             image_id = image.id if isinstance(image, ImageData) else image
             image_ext = image.ext if isinstance(image, ImageData) else "jpg"
             output_path = data_manager._create_file_path(image_id, image_ext)
