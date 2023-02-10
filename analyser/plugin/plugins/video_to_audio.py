@@ -8,7 +8,12 @@ from typing import Callable, Optional, Dict
 default_config = {"data_dir": "/data/"}
 
 
-default_parameters = {}
+default_parameters = {
+    "sample_rate":48000,
+    "sample_format": "pcm_s16le",
+    "layout": "mono",
+    "extension": "wav"
+}
 
 requires = {
     "video": VideoData,
@@ -39,23 +44,16 @@ class VideoToAudio(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
         with inputs["video"] as input_data, data_manager.create_data("AudioData") as output_data:
-            output_data.ext = "wav"
+            output_data.ext = parameters.get("extension")
 
             with input_data.open_video() as f_video, output_data.open_audio("w") as f_audio:
 
                 with av.open(f_video, format=input_data.ext) as in_container:
                     in_stream = in_container.streams.audio[0]
-                    with av.open(f_audio, "w", "wav") as out_container:
-                        out_stream = out_container.add_stream("pcm_s16le", rate=48000, layout="mono")
+                    with av.open(f_audio, "w", output_data.ext) as out_container:
+                        out_stream = out_container.add_stream(parameters.get("sample_format"), rate=parameters.get("sample_rate"), layout=parameters.get("layout"))
                         for frame in in_container.decode(in_stream):
                             for packet in out_stream.encode(frame):
                                 out_container.mux(packet)
-                # process = (
-                #     ffmpeg.input("pipe:", f=input_data.ext)
-                #     .audio.output("pipe:", format="wav")
-                #     .run_async(pipe_stdin=True, pipe_stdout=True)
-                # )
-                # outputs, _ = process.communicate(input=f_video.read())
-                # f_audio.write(outputs)
-
+                                
             return {"audio": output_data}

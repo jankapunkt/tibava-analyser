@@ -25,18 +25,25 @@ try:
             self.service = config.get("service")
 
         def __call__(self, inputs: Dict, outputs: List):
+
+            start_time = time.time()
             transformer_inputs = {}
             for k, v in inputs.items():
                 if isinstance(v, np.ndarray):
                     print(f"{k}: {v.shape}", flush=True)
                     v = json.dumps(v.tolist())
+                else:
+                    v = str(v)
                 transformer_inputs[k] = v
-
+                print(k)
             m = MultipartEncoder(fields=transformer_inputs)
+            # print(m)
+            print(f"ENCODER {time.time() - start_time}")
             raw_output = requests.post(
                 f"http://{self.host}:{self.port}/{self.service}", data=m, headers={"Content-Type": m.content_type}
             )
 
+            start_time = time.time()
             multipart_data = MultipartDecoder.from_response(raw_output)
 
             output_dict = {}
@@ -47,6 +54,8 @@ try:
 
             for k, v in output_dict.items():
                 print(f"{k} {v.shape}")
+
+            print(f"DECODER {time.time() - start_time}")
             return output_dict
 
 except:

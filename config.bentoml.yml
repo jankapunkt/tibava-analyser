@@ -101,7 +101,7 @@ plugins:
         params:
           host: inference
           port: 3000
-          service: insightface_detector
+          service: insightface_detector_nms
   - plugin: insightface_image_detector_torch
     params:
       inference:
@@ -109,7 +109,7 @@ plugins:
         params:
           host: inference
           port: 3000
-          service: insightface_detector
+          service: insightface_detector_nms
   - plugin: deepface_emotion
     params:
       inference:
@@ -134,6 +134,14 @@ plugins:
           host: inference
           port: 3000
           service: insightface_feature_extraction
+  - plugin: whisper
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: whisper
 
   # - plugin: insightface_video_gender_age_calculator
   #   params:
