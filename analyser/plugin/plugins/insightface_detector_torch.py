@@ -50,7 +50,7 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
             {"data": np.expand_dims(det_img, axis=0), "det_thresh": det_thresh, "nms_thresh": nms_thresh},
             ["boxes", "scores", "kpss"],
         )
-        print(f"INFERENCE {time.time() - start_time}")
+
         bboxes = result["boxes"] / det_scale
         kpss = result["kpss"] / det_scale
         scores = result["scores"]
@@ -87,16 +87,13 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         return bbox_list, kps_list
 
     def predict_faces(self, iterator, num_frames, parameters, data_manager, callbacks):
-
         with data_manager.create_data("ImagesData") as images_data, data_manager.create_data(
             "BboxesData"
         ) as bboxes_data, data_manager.create_data("FacesData") as faces_data, data_manager.create_data(
             "KpssData"
         ) as kpss_data:
-
             # iterate through images to get face_images and bboxes
             for i, frame in enumerate(iterator):
-
                 self.update_callbacks(callbacks, progress=i / num_frames)
                 frame_bboxes, frame_kpss = self.detect(
                     frame,
@@ -186,9 +183,7 @@ class InsightfaceVideoDetectorTorch(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["video"] as input_data:
-
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
                     f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}", ref_id=input_data.id
@@ -246,7 +241,6 @@ class InsightfaceImageDetectorTorch(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["images"] as input_data:
 
             def image_generator():

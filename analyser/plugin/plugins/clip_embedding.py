@@ -132,11 +132,7 @@ class ClipTextEmbedding(
             return {"embeddings": output_data}
 
 
-prob_parameters = {
-    "search_term": "",
-    "normalize": True,
-    "softmax": False,
-}
+prob_parameters = {"search_term": "", "softmax": False}
 
 prob_requires = {
     "embeddings": ImageEmbeddings,
@@ -152,7 +148,7 @@ class ClipProbs(
     AnalyserPlugin,
     config=default_config,
     parameters=prob_parameters,
-    version="0.3",
+    version="0.53",
     requires=prob_requires,
     provides=prob_provides,
 ):
@@ -180,13 +176,10 @@ class ClipProbs(
 
                 text_embedding = normalize(result["embedding"])
                 pos_embeddings.append(text_embedding)
-                print(f"################1 {text_embedding.shape}")
             pos_embeddings = np.concatenate(pos_embeddings, axis=0)
-            print(f"################2 {pos_embeddings.shape}")
             pos_embeddings = np.mean(pos_embeddings, axis=0, keepdims=True)
-            print(f"################3 {pos_embeddings.shape}")
+
             text_embedding = normalize(pos_embeddings)
-            print(f"################4 {text_embedding.shape}")
 
             neg_text = "Not " + parameters["search_term"]
             neg_result = self.server({"data": neg_text}, ["embedding"])
@@ -195,7 +188,6 @@ class ClipProbs(
 
             text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
             for embedding in input_data.embeddings:
-
                 if parameters["softmax"]:
                     result = 100 * text_embedding @ embedding.embedding.T
                     prob = scipy.special.softmax(result, axis=0)
@@ -208,8 +200,6 @@ class ClipProbs(
                 delta_time = embedding.delta_time
 
             y = np.array(probs)
-            if parameters["normalize"]:
-                y = (y - np.min(y)) / (np.max(y) - np.min(y))
 
             self.update_callbacks(callbacks, progress=1.0)
             output_data.y = y

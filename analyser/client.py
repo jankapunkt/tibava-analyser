@@ -53,7 +53,6 @@ class AnalyserClient:
         return response
 
     def upload_data(self, data):
-
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(data, chunk_size=128 * 1024):
@@ -65,8 +64,6 @@ class AnalyserClient:
             # data = data_manager.load(data.id)
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
-            print("#########################")
-            print(data.id)
             for x in data_manager.dump_to_stream(data.id):
                 yield analyser_pb2.UploadDataRequest(id=data.id, data_encoded=x["data_encoded"])
 
@@ -79,7 +76,6 @@ class AnalyserClient:
         return None
 
     def upload_file(self, path, id=None):
-
         ext = os.path.splitext(path)[-1][1:]
         filename = os.path.basename(path)
 
@@ -130,7 +126,6 @@ class AnalyserClient:
         return None
 
     def check_data(self, data_id):
-
         run_request = analyser_pb2.CheckDataRequest(id=data_id)
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
@@ -139,7 +134,6 @@ class AnalyserClient:
         return response.exists
 
     def run_plugin(self, plugin, inputs, parameters):
-
         run_request = analyser_pb2.RunPluginRequest()
         run_request.plugin = plugin
         for i in inputs:
@@ -169,7 +163,6 @@ class AnalyserClient:
         return None
 
     def get_plugin_status(self, job_id):
-
         get_plugin_request = analyser_pb2.GetPluginStatusRequest(id=job_id)
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
@@ -202,7 +195,6 @@ class AnalyserClient:
         return result
 
     def download_data(self, data_id, output_path: str = None):
-
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
@@ -216,7 +208,6 @@ class AnalyserClient:
         return data
 
     def download_data_to_blob(self, data_id, output_path):
-
         download_data_request = analyser_pb2.DownloadDataRequest(id=data_id)
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)

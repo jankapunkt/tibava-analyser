@@ -43,7 +43,6 @@ class TransnetShotdetection(
         inference_config = self.config.get("inference", None)
 
         self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
-        print(self.server)
 
     def predict_frames(self, frames: np.ndarray, callbacks):
         def input_iterator():
@@ -113,10 +112,8 @@ class TransnetShotdetection(
     ) -> Dict[str, Data]:
         self.update_callbacks(callbacks, progress=0.0)
         with inputs["video"] as input_data, data_manager.create_data("ShotsData") as output_data:
-
             frames = []
             with input_data.open_video() as f_video:
-
                 video_decoder = VideoDecoder(
                     path=f_video,
                     max_dimension=[27, 48],

@@ -23,6 +23,8 @@ plugins:
   - plugin: shot_annotator
   - plugin: thumbnail_generator
   - plugin: insightface_facesize
+  - plugin: scalar_threshold
+  - plugin: min_max_norm
   - plugin: x_clip_video_embedding
     params:
       inference:

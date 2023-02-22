@@ -56,10 +56,6 @@ class InsightfaceFacesize(
             facesizes_dict = {}
             delta_time = None
 
-            print(input_data)
-
-            print(len(input_data.bboxes))
-
             for i, bbox in enumerate(input_data.bboxes):
                 if bbox.time not in facesizes_dict:
                     facesizes_dict[bbox.time] = []

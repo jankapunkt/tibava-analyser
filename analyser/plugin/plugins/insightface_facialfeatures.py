@@ -107,7 +107,6 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
 
     def get_facial_features(self, iterator, num_faces, parameters, data_manager, callbacks):
         with data_manager.create_data("ImageEmbeddings") as image_embeddings_data:
-
             # iterate through images to get face_images and bboxes
             for i, face in enumerate(iterator):
                 kps = face.get("kps")
@@ -123,7 +122,7 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
                         ref_id=face.get("face_id"),
                         embedding=self.get_feat(aimg).flatten(),
                         time=kps.time,
-                        delta_time=1 / parameters.get("fps",1.0),
+                        delta_time=1 / parameters.get("fps", 1.0),
                     )
                 )
 
@@ -224,7 +223,7 @@ default_config = {
 
 default_parameters = {"input_size": (640, 640)}
 
-requires = {"images": ImagesData, "kpss": KpssData,  "faces": FacesData}
+requires = {"images": ImagesData, "kpss": KpssData, "faces": FacesData}
 provides = {"features": ImageEmbeddings}
 
 
@@ -256,9 +255,7 @@ class InsightfaceImageFeatureExtractor(
             image_lut = {image.id: image for image in images_data}
             face_image_lut = {face.id: face.ref_id for face in faces}
             kps_face_lut = {kps.ref_id: kps for kps in kpss}
-            print(f"{faces_data}", flush=True)
-            print(f"{face_image_lut}", flush=True)
-            print(f"{kps_face_lut}", flush=True)
+
             def get_iterator():
                 for face_id, kps in kps_face_lut.items():
                     if face_id not in face_image_lut:
@@ -266,15 +263,13 @@ class InsightfaceImageFeatureExtractor(
                     image_id = face_image_lut[face_id]
                     if image_id not in image_lut:
                         continue
-                    
+
                     image_data = image_lut[image_id]
-                    
+
                     image = images_data.load_image(image_data)
-                    
+
                     yield {"frame": image, "kps": kps, "face_id": face_id}
-            
-            print(f"{list(get_iterator())}", flush=True)
-            
+
             return self.get_facial_features(
                 iterator=get_iterator(),
                 num_faces=len(kps_face_lut),

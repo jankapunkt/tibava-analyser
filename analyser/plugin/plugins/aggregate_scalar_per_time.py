@@ -65,16 +65,11 @@ class AggregateListScalarPerTime(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["scalars"] as input_data, data_manager.create_data("ListData") as output_data:
             aggregated_y = []
-            print(len(input_data))
-            print(input_data.to_dict())
 
             for i, (index, data) in enumerate(input_data):
-                print(data)
                 with data:
-
                     y_per_t = {}
                     for n in range(len(data.time)):
                         if data.time[n] not in y_per_t:
@@ -88,7 +83,6 @@ class AggregateListScalarPerTime(
             self.update_callbacks(callbacks, progress=1.0)
 
             for index, y in zip(input_data.index, aggregated_y):
-
                 with output_data.create_data("ScalarData", index=index) as scalar_data:
                     scalar_data.y = np.asarray(y)
                     scalar_data.time = np.asarray(list(y_per_t.keys()))
@@ -153,11 +147,8 @@ class AggregateScalarPerTime(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["scalar"] as input_data, data_manager.create_data("ScalarData") as scalar_data:
-
             with input_data as data:
-
                 y_per_t = {}
                 for n in range(len(data.time)):
                     if data.time[n] not in y_per_t:

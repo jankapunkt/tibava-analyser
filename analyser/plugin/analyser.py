@@ -163,7 +163,6 @@ class AnalyserPluginManager(Manager):
         parameters: Dict = None,
         callbacks: Callable = None,
     ):
-
         run_id = uuid.uuid4().hex[:4]
         if plugin not in self._plugins:
             return None
@@ -179,13 +178,12 @@ class AnalyserPluginManager(Manager):
         cached = False
         if self.cache:
             results = {}
-            print(f"########### {plugin_to_run}")
-            print(f"########### {plugin_to_run.provides}")
-            print(f"########### {plugin_to_run.requires}")
+            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run}")
+            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run.provides}")
+            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run.requires}")
 
             cached = True
             for output in plugin_to_run.provides:
-
                 result_hash = get_hash_for_plugin(
                     plugin=plugin,
                     output=output,
@@ -195,13 +193,13 @@ class AnalyserPluginManager(Manager):
                     config=plugin_to_run.config,
                 )
 
-                print(f"++++++++++++++ {result_hash}", flush=True)
+                logging.info(f"[AnalyserPluginManager] Cache {result_hash}")
                 cached_data = self.cache.get(result_hash)
                 if cached_data is None:
                     cached = False
                     break
 
-                print(f"### Get cache {result_hash} {cached_data}")
+                logging.info(f"[AnalyserPluginManager] Cache get {result_hash} {cached_data}")
                 results[output] = data_manager.load(cached_data.get("data_id"))
 
         if not cached:
@@ -213,7 +211,6 @@ class AnalyserPluginManager(Manager):
 
         if self.cache:
             for output, data in results.items():
-
                 result_hash = get_hash_for_plugin(
                     plugin=plugin,
                     output=output,
@@ -222,7 +219,8 @@ class AnalyserPluginManager(Manager):
                     version=plugin_to_run.version,
                     config=plugin_to_run.config,
                 )
-                print(f"### Set cache {result_hash} {data.id}")
+                logging.info(f"[AnalyserPluginManager] Cache set {result_hash} {data.id}")
+
                 self.cache.set(result_hash, {"data_id": data.id, "time": time.time(), "type": "plugin_result"})
 
         return results

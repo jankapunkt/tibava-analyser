@@ -324,7 +324,6 @@ class XClipTextEmbedding(
     ):
         with data_manager.create_data("TextEmbeddings") as text_data:
             text = self.preprocess(parameters["search_term"])
-            # print(text.shape)
 
             result = self.server({"text": text}, ["text_features"])
             text_data.embeddings.append(
@@ -335,11 +334,7 @@ class XClipTextEmbedding(
             return {"embeddings": text_data}
 
 
-prob_parameters = {
-    "search_term": "",
-    "normalize": True,
-    "softmax": False,
-}
+prob_parameters = {"search_term": "", "normalize": True, "softmax": False, "threshold": 0.2}
 
 prob_requires = {
     "image_features": ImageEmbeddings,
@@ -356,7 +351,7 @@ class XClipProbs(
     AnalyserPlugin,
     config=default_config,
     parameters=prob_parameters,
-    version="0.1",
+    version="0.43",
     requires=prob_requires,
     provides=prob_provides,
 ):
@@ -387,7 +382,6 @@ class XClipProbs(
         parameters: Dict = None,
         callbacks: Callable = None,
     ):
-
         with inputs["image_features"] as image_data, inputs["video_features"] as video_data, data_manager.create_data(
             "ScalarData"
         ) as scalar_data:
@@ -409,9 +403,6 @@ class XClipProbs(
 
             text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
             for image_feature, video_feature in zip(image_features.embeddings, video_features.embeddings):
-                # print(f"#### {text_embedding.shape}", flush=True)
-                # print(f"#### {video_feature.embedding.shape}", flush=True)
-                # print(f"#### {image_feature.embedding.shape}", flush=True)
                 result = self.sim_server(
                     {
                         "text_features": text_embedding,
@@ -421,23 +412,19 @@ class XClipProbs(
                     ["probs", "scale"],
                 )
                 # result = 100 * text_embedding @ embedding.embedding.T
-                # print("##################", flush=True)
-                # print(result["probs"], flush=True)
 
                 if parameters["softmax"]:
                     prob = np.squeeze(result["probs"]) * result["scale"]
                     prob = scipy.special.softmax(prob, axis=0)
                 else:
                     prob = np.squeeze(result["probs"])
-                # print(prob, flush=True)
 
                 # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
                 probs.append(prob[0])
                 time.append(image_feature.time)
                 delta_time = image_feature.delta_time
             y = np.array(probs)
-            if parameters["normalize"]:
-                y = (y - np.min(y)) / (np.max(y) - np.min(y))
+
             scalar_data.y = y
             scalar_data.time = time
             scalar_data.delta_time = delta_time

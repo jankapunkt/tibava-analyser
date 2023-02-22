@@ -48,7 +48,6 @@ class CosineSimilarity(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["query_features"] as query_features_data, inputs[
             "target_features"
         ] as target_features_data, data_manager.create_data("ScalarData") as output_data:
@@ -101,7 +100,5 @@ class CosineSimilarity(
             output_data.y = np.squeeze(cossim_t)
             output_data.time = list(unique_times)
             output_data.delta_time = delta_time
-
-            print(unique_times)
 
             return {"probs": output_data}

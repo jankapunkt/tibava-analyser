@@ -45,7 +45,6 @@ class AudioRMSAnalysis(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-
         with inputs["audio"] as input_data, data_manager.create_data("ScalarData") as output_data:
             with input_data.open_audio("r") as f_audio:
                 y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
@@ -70,5 +69,4 @@ class AudioRMSAnalysis(
                 output_data.y = y
                 output_data.time = np.arange(len(y)) * parameters.get("hop_length") / sr
                 output_data.delta_time = parameters.get("hop_length") / sr
-                print(output_data.id)
             return {"rms": output_data}
