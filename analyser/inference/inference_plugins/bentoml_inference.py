@@ -1,16 +1,34 @@
 from ..inference import Device, Backend, generate_id, InferenceServer
 import logging
 
+import base64
 import time
 from typing import AnyStr, Union, List, Dict
+from numpy.typing import NDArray
 
 import numpy as np
+
+def numpy_to_dict(nd_array:NDArray):
+    return {
+        "data": base64.b64encode(nd_array).decode("utf-8"),
+        "dtype": str(nd_array.dtype),
+        "shape": nd_array.shape,
+    }
+
+def dict_to_numpy(data:Dict):
+    if "data" not in data or "dtype" not in data or "shape" not in data:
+        return 
+    try:
+
+        return np.frombuffer(base64.decodebytes(data["data"].encode()), dtype=data["dtype"]).reshape(data["shape"])
+        # return np.frombuffer(base64.decodebytes(data["data"]).encode(), dtype=data["dtype"], shape=data["shape"])
+    except Exception as e:
+        logging.error(f"[BentoMLInferenceServer] dict_to_numpy {e}")
+
 
 try:
     import requests
 
-    from requests_toolbelt.multipart.encoder import MultipartEncoder
-    from requests_toolbelt.multipart.decoder import MultipartDecoder
     import json
     import re
 
@@ -30,25 +48,32 @@ try:
             for k, v in inputs.items():
                 if isinstance(v, np.ndarray):
                     logging.debug(f"{k}: {v.shape}", flush=True)
-                    v = json.dumps(v.tolist())
-                else:
-                    v = str(v)
+                    # v = json.dumps(v.tolist())
+                    v = numpy_to_dict(v)
+                # else:
+                #     v = str(v)
                 transformer_inputs[k] = v
-            m = MultipartEncoder(fields=transformer_inputs)
-            # logging.debug(m)
-            logging.debug(f"ENCODER {time.time() - start_time}")
+
+            data = json.dumps(transformer_inputs)
+            
             raw_output = requests.post(
-                f"http://{self.host}:{self.port}/{self.service}", data=m, headers={"Content-Type": m.content_type}
-            )
-
+                f"http://{self.host}:{self.port}/{self.service}",
+                headers={"content-type": "application/json"},
+                data=data,
+            ).json()
+            
             start_time = time.time()
-            multipart_data = MultipartDecoder.from_response(raw_output)
-
+            
             output_dict = {}
-            for part in multipart_data.parts:
-                m = re.match(r'.*?name="(.*?)".*?', part.headers.get(b"Content-Disposition", "").decode("utf-8"))
-                if m:
-                    output_dict[m.group(1)] = np.asarray(json.loads(part.text))
+            for x in outputs:
+                if x not in raw_output:
+                    logging.error("Unknown output field {x}")
+                    return None
+                v = dict_to_numpy(raw_output[x])
+                if v is not None:
+                    output_dict[x] = v
+                else:
+                    output_dict[x] = raw_output[x]
 
             for k, v in output_dict.items():
                 logging.debug(f"{k} {v.shape}")
