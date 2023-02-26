@@ -8,18 +8,19 @@ from numpy.typing import NDArray
 
 import numpy as np
 
-def numpy_to_dict(nd_array:NDArray):
+
+def numpy_to_dict(nd_array: NDArray):
     return {
-        "data": base64.b64encode(nd_array).decode("utf-8"),
+        "data": base64.b64encode(np.ascontiguousarray(nd_array)).decode("utf-8"),
         "dtype": str(nd_array.dtype),
         "shape": nd_array.shape,
     }
 
-def dict_to_numpy(data:Dict):
-    if "data" not in data or "dtype" not in data or "shape" not in data:
-        return 
-    try:
 
+def dict_to_numpy(data: Dict):
+    if "data" not in data or "dtype" not in data or "shape" not in data:
+        return
+    try:
         return np.frombuffer(base64.decodebytes(data["data"].encode()), dtype=data["dtype"]).reshape(data["shape"])
         # return np.frombuffer(base64.decodebytes(data["data"]).encode(), dtype=data["dtype"], shape=data["shape"])
     except Exception as e:
@@ -55,28 +56,31 @@ try:
                 transformer_inputs[k] = v
 
             data = json.dumps(transformer_inputs)
-            
+
             raw_output = requests.post(
                 f"http://{self.host}:{self.port}/{self.service}",
                 headers={"content-type": "application/json"},
                 data=data,
             ).json()
-            
+
             start_time = time.time()
-            
+
             output_dict = {}
             for x in outputs:
                 if x not in raw_output:
                     logging.error("Unknown output field {x}")
                     return None
-                v = dict_to_numpy(raw_output[x])
-                if v is not None:
-                    output_dict[x] = v
+                if isinstance(raw_output[x], dict):
+                    v = dict_to_numpy(raw_output[x])
+                    if v is not None:
+                        output_dict[x] = v
+                    else:
+                        output_dict[x] = raw_output[x]
                 else:
                     output_dict[x] = raw_output[x]
 
-            for k, v in output_dict.items():
-                logging.debug(f"{k} {v.shape}")
+            # for k, v in output_dict.items():
+            #     logging.debug(f"{k} {v.shape}")
 
             logging.debug(f"DECODER {time.time() - start_time}")
             return output_dict

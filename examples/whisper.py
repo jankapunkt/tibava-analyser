@@ -52,13 +52,13 @@ def main():
         logging.error("Job is crashing")
         return
 
-    annotation_id = None
+    annotations_id = None
     for output in result.outputs:
-        if output.name == "annotation":
-            annotation_id = output.id
+        if output.name == "annotations":
+            annotations_id = output.id
 
-    logging.info(f"Job audio_amp done: {annotation_id}")
-    data = client.download_data(annotation_id, args.output_path)
+    logging.info(f"Job audio_amp done: {annotations_id}")
+    data = client.download_data(annotations_id, args.output_path)
     with data:
         logging.info(data)
 
