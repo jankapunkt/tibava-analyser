@@ -51,13 +51,14 @@ class ImagesData(PluginData):
         logging.debug(f"[ImagesData::load_blob_args]")
         with open(create_data_path(data.get("data_dir"), data.get("id"), "msg"), "rb") as f:
             packdata = msgpack.unpackb(f.read())
+
             dictdata = {
                 "images": [
                     ImageData(
                         time=x["time"],
                         delta_time=x["delta_time"],
                         id=x["id"],
-                        ref_id=x["ref_id"],
+                        ref_id=x.get("ref_id", None),
                         ext=x["ext"],
                         data_dir=data.get("data_dir"),
                     )

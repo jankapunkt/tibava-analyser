@@ -40,10 +40,10 @@ class DataManager:
 
         return export_helper
 
-    def create_data(self, data_type: str):
+    def create_data(self, data_type: str, data_id: str = None):
         assert data_type in self._data_name_lut, f"Unknown data type {data_type}"
 
-        data = self._data_name_lut[data_type]()
+        data = self._data_name_lut[data_type](id=data_id)
         data_path = create_data_path(self.data_dir, data.id, "zip")
         data._register_fs_handler(ZipFSHandler(data_path, mode="w"))
         return data
@@ -80,7 +80,6 @@ class DataManager:
             os.remove(data_path)
 
     def load_file_from_stream(self, data_stream: Iterable) -> tuple(Data, str):
-
         data_stream = iter(data_stream)
         first_pkg = next(data_stream)
 
@@ -135,7 +134,6 @@ class DataManager:
         return data, hash_stream.hexdigest()
 
     def load_data_from_stream(self, data_stream: Iterable) -> tuple(Data, str):
-
         data_stream = iter(data_stream)
         first_pkg = next(data_stream)
 
