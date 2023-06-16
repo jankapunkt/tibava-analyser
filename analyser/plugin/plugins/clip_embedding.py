@@ -3,7 +3,15 @@ import numpy as np
 
 import scipy
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import VideoData, ScalarData, ImageEmbedding, TextEmbedding, ImageEmbeddings, TextEmbeddings
+from analyser.data import (
+    VideoData,
+    ScalarData,
+    ImageEmbedding,
+    TextEmbedding,
+    ImageEmbeddings,
+    TextEmbeddings,
+    ListData,
+)
 from analyser.data import DataManager, Data
 
 from typing import Callable, Optional, Dict
@@ -136,11 +144,92 @@ prob_parameters = {"search_term": "", "softmax": False}
 
 prob_requires = {
     "embeddings": ImageEmbeddings,
+    "concepts": ListData,
 }
 
 prob_provides = {
-    "probs": ScalarData,
+    "probs": ListData,
 }
+
+
+@AnalyserPluginManager.export("clip_ontology_probs")
+class ClipOntologyProbs(
+    AnalyserPlugin,
+    config=default_config,
+    parameters=prob_parameters,
+    version="0.53",
+    requires=prob_requires,
+    provides=prob_provides,
+):
+    def __init__(self, config=None, **kwargs):
+        super().__init__(config, **kwargs)
+
+        inference_config = self.config.get("inference", None)
+        self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
+
+    def call(
+        self,
+        inputs: Dict[str, Data],
+        data_manager: DataManager,
+        parameters: Dict = None,
+        callbacks: Callable = None,
+    ) -> Dict[str, Data]:
+        with inputs["embeddings"] as input_data, inputs["concepts"] as concepts, data_manager.create_data(
+            "ListData"
+        ) as output_data:
+            probs = []
+            time = []
+            delta_time = None
+            text_embeddings = []
+            print(concepts, flush=True)
+            print(len(concepts), flush=True)
+            indexes = []
+            for index, concept in concepts:
+                print(concept, flush=True)
+                indexes.append(index)
+                # print(concept.text, flush=True)
+                with concept:
+                    print(concept, flush=True)
+                    print(concept.text, flush=True)
+                    result = self.server({"data": concept.text}, ["embedding"])
+                    text_embedding = normalize(result["embedding"])
+                    text_embeddings.append(text_embedding)
+            # pos_embeddings = []
+            # for t in openai_imagenet_template:
+            #     pos_text = t(parameters["search_term"])
+            #     result = self.server({"data": pos_text}, ["embedding"])
+
+            #     text_embedding = normalize(result["embedding"])
+            #     pos_embeddings.append(text_embedding)
+            # pos_embeddings = np.concatenate(pos_embeddings, axis=0)
+            # pos_embeddings = np.mean(pos_embeddings, axis=0, keepdims=True)
+
+            # text_embedding = normalize(pos_embeddings)
+
+            # neg_text = "Not " + parameters["search_term"]
+            # neg_result = self.server({"data": neg_text}, ["embedding"])
+
+            # neg_text_embedding = normalize(neg_result["embedding"])
+
+            text_embedding = np.concatenate([text_embeddings], axis=0)
+            for embedding in input_data.embeddings:
+                result = 100 * text_embedding @ embedding.embedding.T
+                prob = scipy.special.softmax(result, axis=0)
+
+                # sim = 1 - spatial.distance.cosine(embedding.embedding, text_embedding)
+                probs.append(prob)
+                time.append(embedding.time)
+                delta_time = embedding.delta_time
+
+            y = np.array(probs)
+            print(y.shape, flush=True)
+            self.update_callbacks(callbacks, progress=1.0)
+            for i, (index, concept) in enumerate(zip(indexes, concepts)):
+                with output_data.create_data("ScalarData", index) as scalar_data:
+                    scalar_data.y = np.asarray(y[:, i, 0, 0])
+                    scalar_data.time = time
+                    scalar_data.delta_time = delta_time
+            return {"probs": output_data}
 
 
 @AnalyserPluginManager.export("clip_probs")

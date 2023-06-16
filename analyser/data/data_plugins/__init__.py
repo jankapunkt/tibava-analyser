@@ -5,6 +5,7 @@ from .image_data import ImageData, ImagesData
 from .image_data import ImageData
 from .hist_data import HistData
 from .rgb_data import RGBData
+from .string_data import StringData
 from .scalar_data import ScalarData
 from .list_data import ListData
 from .image_embedding import ImageEmbedding, ImageEmbeddings

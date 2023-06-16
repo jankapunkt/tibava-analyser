@@ -170,7 +170,6 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             return analyser_pb2.CheckDataResponse(exists=False)
 
     def run_plugin(self, request, context):
-
         if request.plugin not in self.managers["plugin_manager"].plugins():
             return analyser_pb2.RunPluginResponse(success=False)
 
@@ -236,7 +235,6 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def download_data(self, request, context):
         try:
-
             for x in self.managers["data_manager"].dump_to_stream(request.id):
                 yield analyser_pb2.DownloadDataResponse(id=x["id"], data_encoded=x["data_encoded"])
 
@@ -321,6 +319,7 @@ def main():
     if args.port:
         config["grpc"]["port"] = args.port
 
+    print(config, flush=True)
     server = Server(config)
     server.run()
     return 0

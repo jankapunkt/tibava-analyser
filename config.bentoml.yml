@@ -136,6 +136,14 @@ plugins:
           host: inference
           port: 3000
           service: insightface_feature_extraction
+  - plugin: clip_ontology_probs
+    params:
+      inference:
+        type: bentoml
+        params:
+          host: inference
+          port: 3000
+          service: clip_text_encoder
   - plugin: whisper
     params:
       inference:
