@@ -48,7 +48,7 @@ class VideoToAudio(
 
             with input_data.open_video() as f_video, output_data.open_audio("w") as f_audio:
 
-                with av.open(f_video, format=input_data.ext) as in_container:
+                with av.open(f_video, format=input_data.ext, metadata_errors="ignore") as in_container:
                     in_stream = in_container.streams.audio[0]
                     with av.open(f_audio, "w", output_data.ext) as out_container:
                         out_stream = out_container.add_stream(parameters.get("sample_format"), rate=parameters.get("sample_rate"), layout=parameters.get("layout"))
