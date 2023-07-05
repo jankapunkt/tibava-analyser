@@ -66,6 +66,22 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
 
     cache = {}
     for pipeline in pipelines:
+        out_file = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
+
+        # check if file exists and successfully performed
+        if os.path.isfile(out_file):
+            with open(out_file, "r") as f:
+                content = yaml.safe_load(f)
+                output_empty = False
+                for output in content["outputs"]:
+                    if not output or len(output.keys()) < 1:
+                        output_empty = True
+                        break
+
+                if not output_empty:
+                    logging.info(f"{pipeline['pipeline']}: Already processed")
+                    continue
+
         # print(pipeline["outputs"])
         logging.info(f"{pipeline['pipeline']}: STARTED!")
         logging.debug(pipeline)
@@ -129,22 +145,19 @@ def analyse_video(client: AnalyserClient, video_path: Path, output_path: Path, p
             logging.info(f"{pipeline['pipeline']}/{plugin['plugin']}: DONE!")
 
         # store results
-        filename = os.path.join(output_path, video_fname, f"{pipeline['pipeline']}.yml")
-        store_output_ids(copy.deepcopy(pipeline), data, filename)
-        logging.info(f"{pipeline['pipeline']}: DONE! Output IDs written to {filename}")
+        store_output_ids(copy.deepcopy(pipeline), data, out_file)
+        logging.info(f"{pipeline['pipeline']}: DONE! Output IDs written to {out_file}")
 
     return True
 
 
 def store_output_ids(pipeline: dict, data: dict, filename: str):
-
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
 
     outputs = {}
 
     for out in pipeline["outputs"]:
-
         # print(out)
         if out not in data:
             outputs[out] = {}
