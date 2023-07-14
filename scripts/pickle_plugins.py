@@ -327,6 +327,24 @@ def compute_color_brightness_analyser(client, video_id, output_path):
     data = client.download_data(output_id, output_path)
     return data.to_dict(), output.name, {}
 
+def compute_face_clustering(client, video_id, output_path):
+    
+    job_id = client.run_plugin("face_clustering", [{"id": video_id, "name": "video"}], [])
+    logging.info(f"Job face_clustering started: {job_id}")
+
+    result = client.get_plugin_results(job_id=job_id)
+    if result is None:
+        logging.error("Job is crashing")
+        return
+
+    output_id = None
+    for output in result.outputs:
+        if output.name == "face_clusters":
+            output_id = output.id
+
+    data = client.download_data(output_id, output_path)
+    return data.to_dict(), output.name, {}
+
 def compute_color_analyser(client, video_id, output_path):
     
     job_id = client.run_plugin("color_analyser", [{"id": video_id, "name": "video"}], [])
@@ -434,6 +452,7 @@ def analyse_video(client, video_path, out_path):
         compute_shot_density,
         compute_shot_type,
         compute_face_detection,
+        compute_face_clustering,
         compute_facial_features,
         compute_face_sizes,
         compute_emotions,

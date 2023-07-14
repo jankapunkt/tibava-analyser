@@ -55,6 +55,7 @@ enum PluginDataType {
   CONTAINER_DATA = 17;
   VIDEO_TEMPORAL_EMBEDDING_DATA = 18;
   STRING_DATA = 19;
+  FACE_CLUSTER_DATA = 20;
 }
 
 message PluginInfoData {

@@ -42,6 +42,9 @@ plugins:
   - plugin: deepface_emotion
     params:
       host: analyser_redisai
+  - plugin: face_clustering
+    params:
+      host: analyser_redisai
   - plugin: shot_type_classifier
     params:
       host: analyser_redisai
