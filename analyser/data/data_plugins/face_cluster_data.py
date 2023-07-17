@@ -9,24 +9,18 @@ from ..manager import DataManager
 from ..data import Data
 from analyser import analyser_pb2
 
-
-@dataclass(kw_only=True)
-class FaceClusterData(Data):
-    pass
-
-
 @DataManager.export("FaceClusterData", analyser_pb2.FACE_CLUSTER_DATA)
 @dataclass(kw_only=True)
 class FaceClusterData(Data):
     type: str = field(default="FaceClusterData")
-    faces: List[FaceClusterData] = field(default_factory=list)
+    clusters: List[List[str]] = field(default_factory=list)
 
     def load(self) -> None:
         super().load()
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("face_cluster_data.yml")
-        self.faces = [FaceClusterData(**x) for x in data.get("facecluster")]
+        self.clusters = data.get("facecluster")
 
     def save(self) -> None:
         super().save()
@@ -35,11 +29,11 @@ class FaceClusterData(Data):
 
         self.save_dict(
             "face_cluster_data.yml",
-            {"facecluster": [face.to_dict() for face in self.facecluster]},
+            {"facecluster": self.clusters},
         )
 
     def to_dict(self) -> dict:
         return {
             **super().to_dict(),
-            "facecluster": [face.to_dict() for face in self.facecluster],
+            "facecluster": self.clusters,
         }

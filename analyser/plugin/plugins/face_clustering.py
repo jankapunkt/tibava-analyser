@@ -48,13 +48,19 @@ class FaceClustering(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["embeddings"] as face_embeddings, data_manager.create_data("FaceClusterData") as output_data:
+        with inputs["embeddings"] as face_embeddings, inputs["faces"] as faces, data_manager.create_data("FaceClusterData") as output_data:
+
+            embeddings = [qf.embedding for qf in face_embeddings.embeddings]
+            faces = [f.id for f in faces.faces]
 
             cluster_threshold=0.4
             metric="cosine"
-            result = fclusterdata(X=face_embeddings, t=cluster_threshold, criterion="distance", metric=metric)
-            print("<<<<<<<<<<<<")
-            print(result)
+            result = fclusterdata(X=embeddings, t=cluster_threshold, criterion="distance", metric=metric)
+            # result format: list of cluster ids [1 2 1 3]
+            # sort face refs into clusters
 
-            output_data = result
+            output_data.clusters = [[] for _ in np.unique(result)]
+            for id, cluster_id in enumerate(result):
+                output_data.clusters[cluster_id-1].append(faces[id])
+         
             return {"face_cluster_data": output_data}
