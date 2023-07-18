@@ -48,10 +48,15 @@ class FaceClustering(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["embeddings"] as face_embeddings, inputs["faces"] as faces, data_manager.create_data("FaceClusterData") as output_data:
+        with inputs["embeddings"] as face_embeddings,\
+                inputs["faces"] as faces,\
+                inputs["bboxes"] as bboxes, \
+                inputs["kpss"] as kpss,\
+                inputs["images"] as images,\
+                data_manager.create_data("FaceClusterData") as output_data:
 
-            embeddings = [qf.embedding for qf in face_embeddings.embeddings]
-            faces = [f.id for f in faces.faces]
+            embeddings = [em.embedding for em in face_embeddings.embeddings]
+            face_ids = [f.id for f in faces.faces]
 
             cluster_threshold=0.4
             metric="cosine"
@@ -61,6 +66,11 @@ class FaceClustering(
 
             output_data.clusters = [[] for _ in np.unique(result)]
             for id, cluster_id in enumerate(result):
-                output_data.clusters[cluster_id-1].append(faces[id])
+                output_data.clusters[cluster_id-1].append(face_ids[id])
+
+            output_data.faces = faces
+            output_data.bboxes = bboxes
+            output_data.kpss = kpss
+            output_data.images = images
          
             return {"face_cluster_data": output_data}
