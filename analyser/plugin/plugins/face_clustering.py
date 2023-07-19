@@ -1,5 +1,5 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import ScalarData, ImageEmbeddings, FaceClusterData
+from analyser.data import ScalarData, ImageEmbeddings, FaceClusterData, Cluster
 
 import logging
 import numpy as np
@@ -62,11 +62,22 @@ class FaceClustering(
             metric="cosine"
             result = fclusterdata(X=embeddings, t=cluster_threshold, criterion="distance", metric=metric)
             # result format: list of cluster ids [1 2 1 3]
-            # sort face refs into clusters
+            
+            clustered_embeddings = [[] for _ in np.unique(result)]
+            output_data.clusters = [Cluster() for _ in np.unique(result)]
 
-            output_data.clusters = [[] for _ in np.unique(result)]
+            for c in output_data.clusters:
+                c.face_refs = []
+
+            # sort face refs into clusters
             for id, cluster_id in enumerate(result):
-                output_data.clusters[cluster_id-1].append(face_ids[id])
+                output_data.clusters[cluster_id-1].face_refs.append(face_ids[id])
+                clustered_embeddings[cluster_id-1].append(embeddings[id])
+
+            # compute mean embedding for each cluster
+            for id, embedding_cluster in enumerate(clustered_embeddings):
+                output_data.clusters[id].embedding_repr = np.mean(embedding_cluster, axis=0).tolist()
+                #print(np.mean(embedding_cluster).shape)
 
             output_data.faces = faces
             output_data.bboxes = bboxes

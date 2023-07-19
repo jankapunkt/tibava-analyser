@@ -13,11 +13,24 @@ from .bounding_box_data import BboxesData, BboxData
 from .image_data import ImagesData, ImageData
 from analyser import analyser_pb2
 
+@dataclass(kw_only=True)
+class Cluster(Data):
+    face_refs: List[str] = field(default_factory=list)
+    embedding_repr: List[float] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        meta = super().to_dict()
+        return {
+            **meta,
+            "face_refs": self.face_refs,
+            "embedding_repr": self.embedding_repr,
+        }
+
 @DataManager.export("FaceClusterData", analyser_pb2.FACE_CLUSTER_DATA)
 @dataclass(kw_only=True)
 class FaceClusterData(Data):
     type: str = field(default="FaceClusterData")
-    clusters: List[List[str]] = field(default_factory=list)
+    clusters: List[Cluster] = field(default_factory=list)
     faces: FacesData = field(default_factory=list)
     kpss: KpssData = field(default_factory=list)
     bboxes: BboxesData = field(default_factory=list)
@@ -28,7 +41,7 @@ class FaceClusterData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("face_cluster_data.yml")
-        self.clusters = data.get("facecluster")
+        self.clusters = [Cluster(**x) for x in data.get("facecluster")]
         self.faces = [FaceData(**x) for x in data.get("faces")]
         self.kpss = [KpsData(**x) for x in data.get("kpss")]
         self.bboxes = [BboxData(**x) for x in data.get("bboxes")]
@@ -42,7 +55,7 @@ class FaceClusterData(Data):
         self.save_dict(
             "face_cluster_data.yml",
             {
-                "facecluster": self.clusters, 
+                "facecluster": [c.to_dict() for c in self.clusters], 
                 "faces": [face.to_dict() for face in self.faces.faces],
                 "kpss": [kp.to_dict() for kp in self.kpss.kpss],
                 "bboxes": [box.to_dict() for box in self.bboxes.bboxes],
@@ -53,7 +66,7 @@ class FaceClusterData(Data):
     def to_dict(self) -> dict:
         return {
             **super().to_dict(),
-            "facecluster": self.clusters,
+            "facecluster": [c.to_dict() for c in self.clusters],
             "faces": [face.to_dict() for face in self.faces],
             "kpss": [kp.to_dict() for kp in self.kpss],
             "bboxes": [box.to_dict() for box in self.bboxes],
