@@ -15,7 +15,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"aggregation": "max", "normalize": 0, "normalize_min_val": None, "normalize_max_val": None}
+default_parameters = {"aggregation": "max", "normalize": 0, "normalize_min_val": None, "normalize_max_val": None, "index" : None}
 
 requires = {
     "query_features": ImageEmbeddings,
@@ -51,7 +51,13 @@ class CosineSimilarity(
         with inputs["query_features"] as query_features_data, inputs[
             "target_features"
         ] as target_features_data, data_manager.create_data("ScalarData") as output_data:
-            query_features = query_features_data.embeddings
+            if (parameters.get("index") == None):
+                query_features = query_features_data.embeddings
+                qfs = [qf.embedding for qf in query_features]
+            else:
+                query_features = query_features_data.embeddings[parameters.get("index")]
+                qfs = [query_features.embedding]
+            
             target_features = target_features_data.embeddings
 
             unique_times = set()
@@ -64,8 +70,6 @@ class CosineSimilarity(
                 delta_time = tf.delta_time
 
             unique_times = sorted(unique_times)
-
-            qfs = [qf.embedding for qf in query_features]
 
             tfs = np.asarray(tfs)
             qfs = np.asarray(qfs)
