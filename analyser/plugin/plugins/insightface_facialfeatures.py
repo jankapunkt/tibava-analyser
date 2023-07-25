@@ -169,8 +169,8 @@ class InsightfaceVideoFeatureExtractor(
     ) -> Dict[str, Data]:
         with inputs["video"] as video_data, inputs["kpss"] as kpss_data:
             kpss = kpss_data.kpss
-            parameters["fps"] = 1 / kpss[0].delta_time
             assert len(kpss) > 0
+            parameters["fps"] = 1 / kpss[0].delta_time
 
             faceid_lut = {}
             for kps in kpss:

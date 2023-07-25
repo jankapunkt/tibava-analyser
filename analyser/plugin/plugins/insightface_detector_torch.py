@@ -63,6 +63,12 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
             w, h = round(bboxes[i][2] - x), round(bboxes[i][3] - y)
             det_score = scores[i]
 
+            # number of pixels that is required to be considered a (useful) face
+            threshold = 7500
+
+            if (w * h < threshold):
+                continue
+
             # store bbox
             bbox = {
                 "x": float(x / img.shape[1]),
