@@ -15,7 +15,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {}
+default_parameters = {"normalize": 1}
 
 requires = {
     "scalar": ScalarData,
@@ -49,9 +49,9 @@ class MinMaxNorm(
     ) -> Dict[str, Data]:
         with inputs["scalar"] as scalar_data, data_manager.create_data("ScalarData") as output_data:
             y = scalar_data.y
-
-            if (np.max(y) - np.min(y)) >= 0.01:
-                y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            if parameters.get("normalize") > 0:
+                if (np.max(y) - np.min(y)) >= 0.01:
+                    y = (y - np.min(y)) / (np.max(y) - np.min(y))
 
             output_data.y = y
             output_data.time = scalar_data.time

@@ -181,16 +181,11 @@ class ClipOntologyProbs(
             time = []
             delta_time = None
             text_embeddings = []
-            print(concepts, flush=True)
-            print(len(concepts), flush=True)
             indexes = []
             for index, concept in concepts:
-                print(concept, flush=True)
                 indexes.append(index)
                 # print(concept.text, flush=True)
                 with concept:
-                    print(concept, flush=True)
-                    print(concept.text, flush=True)
                     result = self.server({"data": concept.text}, ["embedding"])
                     text_embedding = normalize(result["embedding"])
                     text_embeddings.append(text_embedding)
@@ -222,7 +217,6 @@ class ClipOntologyProbs(
                 delta_time = embedding.delta_time
 
             y = np.array(probs)
-            print(y.shape, flush=True)
             self.update_callbacks(callbacks, progress=1.0)
             for i, (index, concept) in enumerate(zip(indexes, concepts)):
                 with output_data.create_data("ScalarData", index) as scalar_data:

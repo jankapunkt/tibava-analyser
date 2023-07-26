@@ -64,9 +64,10 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
             det_score = scores[i]
 
             # number of pixels that is required to be considered a (useful) face
-            threshold = 7500
+            threshold_width = 0.06
+            threshold_height = 0.12
 
-            if (w * h < threshold):
+            if (w < threshold_width or h < threshold_height):
                 continue
 
             # store bbox

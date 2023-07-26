@@ -16,7 +16,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"min_threshold": None, "max_threshold": None}
+default_parameters = {"min_threshold": None, "max_threshold": None, "cluster_threshold": 0.4}
 
 requires = {
     "embeddings": ImageEmbeddings,
@@ -59,9 +59,8 @@ class FaceClustering(
             embeddings = [em.embedding for em in face_embeddings.embeddings]
             face_ids = [f.id for f in faces.faces]
 
-            cluster_threshold=0.4
             metric="cosine"
-            result = fclusterdata(X=embeddings, t=cluster_threshold, criterion="distance", metric=metric)
+            result = fclusterdata(X=embeddings, t=parameters.get("cluster_threshold"), criterion="distance", metric=metric)
             # result format: list of cluster ids [1 2 1 3]
             
             clustered_embeddings = [[] for _ in np.unique(result)]
