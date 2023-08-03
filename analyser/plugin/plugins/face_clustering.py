@@ -65,7 +65,8 @@ class FaceClustering(
             
             clustered_embeddings = [[] for _ in np.unique(result)]
             output_data.clusters = [Cluster() for _ in np.unique(result)]
-
+            
+            
             for c in output_data.clusters:
                 c.face_refs = []
 
@@ -74,10 +75,17 @@ class FaceClustering(
                 output_data.clusters[cluster_id-1].face_refs.append(face_ids[id])
                 clustered_embeddings[cluster_id-1].append(embeddings[id])
 
+
             # compute mean embedding for each cluster
             for id, embedding_cluster in enumerate(clustered_embeddings):
                 img_emb = ImageEmbedding(embedding=np.mean(embedding_cluster, axis=0).tolist())
                 mean_embeddings.embeddings.append(img_emb)
+
+            # sort clusters and embeddings together by cluster length
+            zipped = sorted(zip(output_data.clusters, mean_embeddings.embeddings), key=lambda cluster: (len(cluster[0].face_refs)), reverse=True)
+            unzipped_clusters, unzipped_embeddings = zip(*zipped)
+            output_data.clusters = list(unzipped_clusters)
+            mean_embeddings.embeddings = list(unzipped_embeddings)
 
             output_data.faces = faces
             output_data.bboxes = bboxes
