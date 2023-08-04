@@ -16,7 +16,7 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"min_threshold": None, "max_threshold": None, "cluster_threshold": 0.4}
+default_parameters = {"min_threshold": None, "max_threshold": None, "cluster_threshold": 0.5}
 
 requires = {
     "embeddings": ImageEmbeddings,
