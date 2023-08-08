@@ -1,0 +1,9 @@
+data:
+  data_dir: /data
+  cache:
+      type: redis
+      params:
+        db: 0
+        host: analyser_redis
+        port: 6379
+        tag: data_test

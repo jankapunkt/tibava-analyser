@@ -1,0 +1,13 @@
+pydantic<2
+ray
+ray[serve]
+numpy
+torch
+imageio
+imageio[pyav]
+imageio[ffmpeg]
+msgpack
+PyYAML
+grpcio
+grpcio-tools
+redis

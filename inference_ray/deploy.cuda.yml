@@ -1,0 +1,208 @@
+proxy_location: EveryNode
+http_options:
+  host: 0.0.0.0
+  port: 8000
+
+applications:
+  - name: video_to_audio
+    route_prefix: /video_to_audio
+    import_path: main:app_builder
+    args:
+      model: video_to_audio
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - requests==2.26.0
+  - name: audio_amp_analysis
+    route_prefix: /audio_amp_analysis
+    import_path: main:app_builder
+    args:
+      model: audio_amp_analysis
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - librosa
+  - name: audio_freq_analysis
+    route_prefix: /audio_freq_analysis
+    import_path: main:app_builder
+    args:
+      model: audio_freq_analysis
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - librosa
+  - name: audio_rms_analysis
+    route_prefix: /audio_rms_analysis
+    import_path: main:app_builder
+    args:
+      model: audio_rms_analysis
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - librosa
+  - name: clip_image_embedding
+    route_prefix: /clip_image_embedding
+    import_path: main:app_builder
+    args:
+      model: clip_image_embedding
+      data_path: /data
+      params: 
+        model: xlm-roberta-base-ViT-B-32
+        pretrained: laion5b_s13b_b90k
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - open_clip_torch
+              - imageio
+              - torch
+              - scikit-learn
+              - transformers==4.30.0
+  - name: clip_text_embedding
+    route_prefix: /clip_text_embedding
+    import_path: main:app_builder
+    args:
+      model: clip_text_embedding
+      data_path: /data
+      params: 
+        model: xlm-roberta-base-ViT-B-32
+        pretrained: laion5b_s13b_b90k
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - open_clip_torch
+              - imageio
+              - torch
+              - scikit-learn
+              - transformers==4.30.0
+  - name: clip_ontology_probs
+    route_prefix: /clip_ontology_probs
+    import_path: main:app_builder
+    args:
+      model: clip_ontology_probs
+      data_path: /data
+      params: 
+        model: xlm-roberta-base-ViT-B-32
+        pretrained: laion5b_s13b_b90k
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - open_clip_torch
+              - imageio
+              - torch
+              - scikit-learn
+              - transformers==4.30.0
+  - name: clip_probs
+    route_prefix: /clip_probs
+    import_path: main:app_builder
+    args:
+      model: clip_probs
+      data_path: /data
+      params: 
+        model: xlm-roberta-base-ViT-B-32
+        pretrained: laion5b_s13b_b90k
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - open_clip_torch
+              - imageio
+              - torch
+              - scikit-learn
+              - transformers==4.30.0
+  - name: color_analyser
+    route_prefix: /color_analyser
+    import_path: main:app_builder
+    args:
+      model: color_analyser
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - scikit-learn
+  - name: color_brightness_analyser
+    route_prefix: /color_brightness_analyser
+    import_path: main:app_builder
+    args:
+      model: color_brightness_analyser
+      data_path: /data
+      params: {}
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - scikit-learn
+              - opencv-python
+  - name: deepface_emotion
+    route_prefix: /deepface_emotion
+    import_path: main:app_builder
+    args:
+      model: deepface_emotion
+      data_path: /data
+      params: 
+        model_path: /model/facial_expression_model.onnx
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          runtime_env:
+            pip:
+              - scikit-learn
+              - opencv-python
+              - onnxruntime-gpu
+              - onnx
+
+
+
+
+
