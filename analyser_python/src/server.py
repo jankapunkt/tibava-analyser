@@ -12,6 +12,7 @@ import multiprocessing as mp
 
 from google.protobuf.json_format import MessageToDict
 
+
 import grpc
 
 
@@ -19,32 +20,41 @@ from analyser.proto import analyser_pb2
 from analyser.proto import analyser_pb2_grpc
 from analyser.inference.plugin import AnalyserProgressCallback
 from analyser.inference.plugin import AnalyserPluginManager
-from analyser.data import DataManager
+from analyser.data import DataManager, Data
 from analyser.utils.cache import get_hash_for_plugin
 from analyser.utils.cache import CacheManager
 
 
 class AnalyserCacheWrapper:
-    def __init__(self, cache):
+    def __init__(self, plguin_manager, cache):
+        self.plguin_manager = plguin_manager
         self.cache = cache
 
-    def __call__(self, plugin, plugin_to_run, inputs, data_manager, parameters, callbacks, run_id):
+    def __call__(self, plugin, inputs, parameters, data_manager, callbacks):
         cached = False
         if self.cache:
+            plugins = {x["plugin"]: x for x in self.plguin_manager.plugin_status()}
+
+            run_id = uuid.uuid4().hex[:4]
+            if plugin not in plugins:
+                logging.error(f"[AnalyserCacheWrapper] {run_id} plugin: {plugin} not found")
+                return None
+
+            plugin_to_run = plugins[plugin]
             results = {}
             logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run}")
-            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run.provides}")
-            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run.requires}")
+            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run['provides']}")
+            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run['requires']}")
 
             cached = True
-            for output in plugin_to_run.provides:
+            for output in plugin_to_run["provides"]:
                 result_hash = get_hash_for_plugin(
                     plugin=plugin,
                     output=output,
                     inputs=[x.id for _, x in inputs.items()],
                     parameters=parameters,
-                    version=plugin_to_run.version,
-                    config=plugin_to_run.config,
+                    version=plugin_to_run["version"],
+                    config={},  # plugin_to_run.config, TODO
                 )
 
                 logging.info(f"[AnalyserPluginManager] Cache {result_hash}")
@@ -54,28 +64,33 @@ class AnalyserCacheWrapper:
                     break
 
                 logging.info(f"[AnalyserPluginManager] Cache get {result_hash} {cached_data}")
-                results[output] = data_manager.load(cached_data.get("data_id"))
+                results[output] = cached_data.get("data_id")
 
         if not cached:
             logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
             logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
             logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-            results = plugin_to_run(inputs, data_manager, parameters, callbacks)
-            logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
+            results = self.plguin_manager(
+                plugin=plugin, inputs=inputs, data_manager=data_manager, parameters=parameters, callbacks=callbacks
+            )
+            logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x} for k,x in results.items()]}")
 
         if self.cache:
             for output, data in results.items():
+                data_id = data
+                logging.error(f"#####DEBUG {data_id} {data} {isinstance(data, Data)}")
+
                 result_hash = get_hash_for_plugin(
                     plugin=plugin,
                     output=output,
                     inputs=[x.id for _, x in inputs.items()],
                     parameters=parameters,
-                    version=plugin_to_run.version,
-                    config=plugin_to_run.config,
+                    version=plugin_to_run["version"],
+                    config={},  # plugin_to_run.config, TODO
                 )
-                logging.info(f"[AnalyserPluginManager] Cache set {result_hash} {data.id}")
+                logging.info(f"[AnalyserPluginManager] Cache set {result_hash} {data_id}")
 
-                self.cache.set(result_hash, {"data_id": data.id, "time": time.time(), "type": "plugin_result"})
+                self.cache.set(result_hash, {"data_id": data_id, "time": time.time(), "type": "plugin_result"})
         return results
 
 
@@ -149,10 +164,11 @@ def init_plugins(config):
         data_dir = data_config.get("data_dir", None)
         cache_config = data_config.get("cache")
         cache = CacheManager.build(name=cache_config["type"], config=cache_config["params"])
+
     data_manager = DataManager(data_dir=data_dir, cache=cache)
     data_dict["data_manager"] = data_manager
 
-    manager = AnalyserPluginManager()
+    manager = AnalyserCacheWrapper(AnalyserPluginManager(), cache=cache)
     data_dict["plugin_manager"] = manager
 
     return data_dict

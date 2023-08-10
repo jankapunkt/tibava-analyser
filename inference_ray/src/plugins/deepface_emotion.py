@@ -109,10 +109,10 @@ class DeepfaceEmotion(
 
             self.model = onnx.load(self.model_path)
             self.session = onnxruntime.InferenceSession(
-                self.model, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
             )
             self.input_name = self.session.get_inputs()[0].name
-            self.output_names = self.session.get_outputs().name
+            self.output_name = self.session.get_outputs()[0].name
         # print(input_name)
         # print(output_name)
 
@@ -130,8 +130,9 @@ class DeepfaceEmotion(
                 self.update_callbacks(callbacks, progress=i / len(faceimages))
                 image = input_data.load_image(entry)
                 image = self.preprocess(image)
-                result = self.session.run(self.output_name, {self.input_name: image})
-                prediction = result[0] if result else None
+                result = self.session.run([self.output_name], {self.input_name: image})
+                logging.error(f"######## {result}")
+                prediction = result[0][0] if result else None
                 face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
 
                 time.append(entry.time)

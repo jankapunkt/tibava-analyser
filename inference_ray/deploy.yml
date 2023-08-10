@@ -254,7 +254,7 @@ applications:
         ray_actor_options:
           runtime_env:
             pip:
-              - scikit-learn
+              - scikit-learn==0.23.2
   - name: insightface_video_feature_extractor
     route_prefix: /insightface_video_feature_extractor
     import_path: main:app_builder
@@ -339,9 +339,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
               
   - name: shot_annotator
     route_prefix: /shot_annotator
@@ -354,9 +351,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
   - name: shot_density
     route_prefix: /shot_density
     import_path: main:app_builder
@@ -383,9 +377,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
   - name: shot_type_classifier
     route_prefix: /shot_type_classifier
     import_path: main:app_builder
@@ -414,9 +405,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
 
             
   - name: transnet_shotdetection
@@ -448,9 +436,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
 
 
   - name: aggregate_list_scalar_per_time
@@ -464,9 +449,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
 
   - name: aggregate_scalar
     route_prefix: /aggregate_scalar
@@ -479,9 +461,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
 
   - name: cosine_similarity
     route_prefix: /cosine_similarity
@@ -496,7 +475,8 @@ applications:
           min_replicas: 0
         ray_actor_options:
           runtime_env:
-            pip: {}
+            pip:
+              - scipy
   
   - name: aggregate_scalar_per_time
     route_prefix: /aggregate_scalar_per_time
@@ -509,9 +489,6 @@ applications:
       - name: Deployment
         autoscaling_config:
           min_replicas: 0
-        ray_actor_options:
-          runtime_env:
-            pip: {}
   - name: whisper
     route_prefix: /whisper
     import_path: main:app_builder
@@ -602,3 +579,23 @@ applications:
               - cuda-python==12.2.0
               - regex
               - ftfy
+  - name: face_clustering
+    route_prefix: /face_clustering
+    import_path: main:app_builder
+    args:
+      model: face_clustering
+      data_path: /data
+      params: 
+        text_model_path: /models/xclip/xclip_16_8_text.onnx
+        sim_model_path: /models/xclip/xclip_16_8_sim.onnx
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - scipy
+
+              

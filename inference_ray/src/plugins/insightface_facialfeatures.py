@@ -95,6 +95,7 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
         return warped
 
     def get_feat(self, imgs):
+        import cv2
         import onnx
         import onnxruntime
 
@@ -103,7 +104,9 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
             logging.error(f"LOAD")
 
             self.model = onnx.load(self.model_path)
-            self.session = onnxruntime.InferenceSession(self.model, None)
+            self.session = onnxruntime.InferenceSession(
+                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+            )
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
 
@@ -115,7 +118,7 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
             imgs, 1.0 / self.input_std, input_size, (self.input_mean, self.input_mean, self.input_mean), swapRB=True
         )
 
-        result = self.session.run(self.output_name, {self.input_name: blob})
+        result = self.session.run([self.output_name], {self.input_name: blob})[0]
         return result
 
     def get_facial_features(self, iterator, num_faces, parameters, data_manager, callbacks):

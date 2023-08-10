@@ -115,6 +115,7 @@ class AnalyserPluginManager(Manager):
             status = requests.get("http://inference_ray:52365/api/serve/applications/").json()
         except:
             return []
+        logging.error(f"status {json.dumps(status, indent=2)}")
 
         running_model_map = {}
         for _, app in status.get("applications", {}).items():
@@ -133,7 +134,7 @@ class AnalyserPluginManager(Manager):
             if name not in running_model_map:
                 logging.warning(f"Plugin {name} is not running")
                 continue
-            running_model_map[name].update({"requires": plugin_cls.requires, "provides": plugin_cls.provides})
+            running_model_map[name].update({"requires": plugin_cls.requires, "provides": plugin_cls.provides, "version": plugin_cls.version})
             # print(f"{name} {plugin_cls.requires} {plugin_cls.provides}")
         # print(json.dumps(status, indent=2))
 
@@ -175,9 +176,8 @@ class AnalyserPluginManager(Manager):
     ):
         plugins = {x["plugin"]: x for x in self.plugin_status()}
 
-        run_id = uuid.uuid4().hex[:4]
         if plugin not in plugins:
-            logging.error(f"[AnalyserPluginManager] {run_id} plugin: {plugin} not found")
+            logging.error(f"[AnalyserPluginManager] plugin: {plugin} not found")
             return None
 
         plugin_to_run = plugins[plugin]

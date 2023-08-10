@@ -153,7 +153,7 @@ class ClipImageEmbedding(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/model", device=device
+                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
             )
 
             self.model = model.visual
@@ -231,7 +231,7 @@ class ClipTextEmbedding(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/model", device=device
+                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
@@ -292,7 +292,7 @@ class ClipOntologyProbs(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/model", device=device
+                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
@@ -400,7 +400,7 @@ class ClipProbs(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/model", device=device
+                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
