@@ -1,0 +1,9 @@
+data:
+  data_dir: /data
+  cache:
+      type: redis
+      params:
+        db: 1
+        host: backend_redis
+        port: 6380
+        tag: analyser
