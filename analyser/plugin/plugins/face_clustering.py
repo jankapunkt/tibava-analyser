@@ -53,8 +53,7 @@ class FaceClustering(
                 inputs["bboxes"] as bboxes, \
                 inputs["kpss"] as kpss,\
                 inputs["images"] as images,\
-                data_manager.create_data("FaceClusterData") as output_data,\
-                data_manager.create_data("ImageEmbeddings") as mean_embeddings:
+                data_manager.create_data("FaceClusterData") as output_data:
 
             embeddings = [em.embedding for em in face_embeddings.embeddings]
             face_ids = [f.id for f in faces.faces]
@@ -75,21 +74,16 @@ class FaceClustering(
                 output_data.clusters[cluster_id-1].face_refs.append(face_ids[id])
                 clustered_embeddings[cluster_id-1].append(embeddings[id])
 
-
-            # compute mean embedding for each cluster
+            # # compute mean embedding for each cluster
             for id, embedding_cluster in enumerate(clustered_embeddings):
-                img_emb = ImageEmbedding(embedding=np.mean(embedding_cluster, axis=0).tolist())
-                mean_embeddings.embeddings.append(img_emb)
+                converted_clusters = [ImageEmbedding(embedding=x) for x in embedding_cluster]
+                output_data.clusters[id].embedding_repr=converted_clusters
 
             # sort clusters and embeddings together by cluster length
-            zipped = sorted(zip(output_data.clusters, mean_embeddings.embeddings), key=lambda cluster: (len(cluster[0].face_refs)), reverse=True)
-            unzipped_clusters, unzipped_embeddings = zip(*zipped)
-            output_data.clusters = list(unzipped_clusters)
-            mean_embeddings.embeddings = list(unzipped_embeddings)
-
+            output_data.clusters = sorted(output_data.clusters, key=lambda cluster: (len(cluster.face_refs)), reverse=True)
             output_data.faces = faces
             output_data.bboxes = bboxes
             output_data.kpss = kpss
             output_data.images = images
          
-            return {"face_cluster_data": output_data, "mean_embeddings": mean_embeddings}
+            return {"face_cluster_data": output_data}

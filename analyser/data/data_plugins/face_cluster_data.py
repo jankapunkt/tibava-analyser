@@ -11,21 +11,22 @@ from .face_data import FacesData, FaceData
 from .keypoint_data import KpssData, KpsData
 from .bounding_box_data import BboxesData, BboxData
 from .image_data import ImagesData, ImageData
+from .image_embedding import ImageEmbeddings, ImageEmbedding
 from analyser import analyser_pb2
 
 @dataclass(kw_only=True)
 class Cluster(Data):
     face_refs: List[str] = field(default_factory=list)
-    embedding_repr: List[float] = field(default_factory=list)
+    embedding_repr: List[ImageEmbedding] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {
             **meta,
             "face_refs": self.face_refs,
-            "embedding_repr": self.embedding_repr,
+            "embedding_repr": [x.to_dict() for x in self.embedding_repr],
         }
-
+    
 @DataManager.export("FaceClusterData", analyser_pb2.FACE_CLUSTER_DATA)
 @dataclass(kw_only=True)
 class FaceClusterData(Data):
@@ -42,6 +43,11 @@ class FaceClusterData(Data):
 
         data = self.load_dict("face_cluster_data.yml")
         self.clusters = [Cluster(**x) for x in data.get("facecluster")]
+        for cluster in self.clusters:
+            cluster.embedding_repr = [ImageEmbedding(**x) for x in cluster.embedding_repr]
+            for img_emb in cluster.embedding_repr:
+                img_emb.embedding = np.asarray(img_emb.embedding)
+
         self.faces = [FaceData(**x) for x in data.get("faces")]
         self.kpss = [KpsData(**x) for x in data.get("kpss")]
         self.bboxes = [BboxData(**x) for x in data.get("bboxes")]
@@ -64,6 +70,7 @@ class FaceClusterData(Data):
         )
 
     def to_dict(self) -> dict:
+        print(type(self.clusters[0]))
         return {
             **super().to_dict(),
             "facecluster": [c.to_dict() for c in self.clusters],

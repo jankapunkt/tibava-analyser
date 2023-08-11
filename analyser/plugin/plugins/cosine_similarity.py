@@ -1,5 +1,5 @@
 from analyser.plugin.analyser import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import ScalarData, ImageEmbeddings
+from analyser.data import ScalarData, ImageEmbeddings, Cluster
 
 import logging
 import numpy as np
@@ -15,7 +15,14 @@ default_config = {
     "port": 6379,
 }
 
-default_parameters = {"aggregation": "max", "normalize": 0, "normalize_min_val": None, "normalize_max_val": None, "index" : None}
+default_parameters = {
+    "aggregation": "max", 
+    "normalize": 0, 
+    "normalize_min_val": None, 
+    "normalize_max_val": None, 
+    "index" : None,
+    "cluster_id" : None
+}
 
 requires = {
     "query_features": ImageEmbeddings,
@@ -48,15 +55,22 @@ class CosineSimilarity(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["query_features"] as query_features_data, inputs[
-            "target_features"
-        ] as target_features_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["query_features"] as query_features_data,\
+                inputs["target_features"] as target_features_data,\
+                data_manager.create_data("ScalarData") as output_data:
+            
             if (parameters.get("index") == None):
                 query_features = query_features_data.embeddings
                 qfs = [qf.embedding for qf in query_features]
             else:
-                query_features = query_features_data.embeddings[parameters.get("index")]
-                qfs = [query_features.embedding]
+                cluster_id = parameters.get("cluster_id")
+                index = parameters.get("index").split(",")
+                cluster_repr = [c.embedding_repr for c in query_features_data.clusters if c.id == cluster_id][0]
+                cluster_embeddings = []
+                for i in index:
+                    cluster_embeddings.append(cluster_repr[int(i)].embedding)
+
+                qfs = [np.mean(cluster_embeddings, axis=0)]
             
             target_features = target_features_data.embeddings
 
