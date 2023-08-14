@@ -78,6 +78,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - open_clip_torch
@@ -99,6 +100,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - open_clip_torch
@@ -120,6 +122,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - open_clip_torch
@@ -192,6 +195,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -211,6 +215,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -229,6 +234,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -262,6 +268,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -281,6 +288,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -313,6 +321,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -381,6 +390,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - torch
@@ -410,6 +420,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - torch
@@ -511,6 +522,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -533,6 +545,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -556,6 +569,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scikit-learn
@@ -579,6 +593,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_gpus: 0.2
           runtime_env:
             pip:
               - scipy
