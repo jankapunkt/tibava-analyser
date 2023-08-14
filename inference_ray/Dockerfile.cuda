@@ -7,7 +7,7 @@ COPY ./requirements.txt /app/analyser/inference/
 RUN pip install -r requirements.txt
 
 COPY ./src/ /app/analyser/inference/
-COPY ./deploy.yml /app/analyser/deploy.yml
+COPY ./deploy.cuda.yml /app/analyser/deploy.yml
 
 RUN mkdir -p /data
 # Switching to a non-root user, please refer to https://aka.ms/vscode-docker-python-user-rights
