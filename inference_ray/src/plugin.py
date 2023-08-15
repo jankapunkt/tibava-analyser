@@ -112,19 +112,29 @@ class AnalyserPluginManager(Manager):
 
     def plugin_status(self):
         try:
-            status = requests.get("http://inference_ray:52365/api/serve/applications/").json()
+            status = requests.get(
+                "http://inference_ray:52365/api/serve/applications/"
+            ).json()
         except:
             return []
-        logging.error(f"status {json.dumps(status, indent=2)}")
+        # logging.error(f"status {json.dumps(status, indent=2)}")
 
         running_model_map = {}
         for _, app in status.get("applications", {}).items():
-            model_name = app.get("deployed_app_config", {}).get("args", {}).get("model", "")
+            model_name = (
+                app.get("deployed_app_config", {}).get("args", {}).get("model", "")
+            )
             route = app.get("deployed_app_config", {}).get("route_prefix", "")
             is_running = app.get("status", "DEPLOY_FAILED") == "RUNNING"
             if model_name in running_model_map:
-                logging.warning(f"The same plugin is running several times {model_name}")
-            running_model_map[model_name] = {"plugin": model_name, "route": route, "is_running": is_running}
+                logging.warning(
+                    f"The same plugin is running several times {model_name}"
+                )
+            running_model_map[model_name] = {
+                "plugin": model_name,
+                "route": route,
+                "is_running": is_running,
+            }
             # print(app.get("deployed_app_config", {}))
             # print(model_name)
             # print(route)
@@ -134,7 +144,13 @@ class AnalyserPluginManager(Manager):
             if name not in running_model_map:
                 logging.warning(f"Plugin {name} is not running")
                 continue
-            running_model_map[name].update({"requires": plugin_cls.requires, "provides": plugin_cls.provides, "version": plugin_cls.version})
+            running_model_map[name].update(
+                {
+                    "requires": plugin_cls.requires,
+                    "provides": plugin_cls.provides,
+                    "version": plugin_cls.version,
+                }
+            )
             # print(f"{name} {plugin_cls.requires} {plugin_cls.provides}")
         # print(json.dumps(status, indent=2))
 
@@ -150,7 +166,9 @@ class AnalyserPluginManager(Manager):
         for pl in os.listdir(path):
             match = re.match(file_re, pl)
             if match:
-                importlib.import_module("analyser.inference.plugins.{}".format(match.group(1)))
+                importlib.import_module(
+                    "analyser.inference.plugins.{}".format(match.group(1))
+                )
 
     def build_plugin(self, plugin: str, config: Dict = None) -> AnalyserPlugin:
         if plugin not in self._plugins:
@@ -185,7 +203,10 @@ class AnalyserPluginManager(Manager):
 
         results = requests.post(
             f"http://inference_ray:8000{plugin_to_run['route']}",
-            json={"inputs": {x: y.id for x, y in inputs.items()}, "parameters": parameters},
+            json={
+                "inputs": {x: y.id for x, y in inputs.items()},
+                "parameters": parameters,
+            },
         ).json()
 
         print("##########", flush=True)

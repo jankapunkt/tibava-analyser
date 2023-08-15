@@ -13,12 +13,12 @@ default_config = {
 }
 
 default_parameters = {
-    "aggregation": "max", 
-    "normalize": 0, 
-    "normalize_min_val": None, 
-    "normalize_max_val": None, 
-    "index" : None,
-    "cluster_id" : None
+    "aggregation": "max",
+    "normalize": 0,
+    "normalize_min_val": None,
+    "normalize_max_val": None,
+    "index": None,
+    "cluster_id": None,
 }
 
 requires = {
@@ -51,23 +51,29 @@ class CosineSimilarity(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
         from scipy.spatial.distance import cdist
-        with inputs["query_features"] as query_features_data,\
-                inputs["target_features"] as target_features_data,\
-                data_manager.create_data("ScalarData") as output_data:
-            
-            if (parameters.get("index") == None):
+
+        with inputs["query_features"] as query_features_data, inputs[
+            "target_features"
+        ] as target_features_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
+            if parameters.get("index") == None:
                 query_features = query_features_data.embeddings
                 qfs = [qf.embedding for qf in query_features]
             else:
                 cluster_id = parameters.get("cluster_id")
                 index = parameters.get("index").split(",")
-                cluster_repr = [c.embedding_repr for c in query_features_data.clusters if c.id == cluster_id][0]
+                cluster_repr = [
+                    c.embedding_repr
+                    for c in query_features_data.clusters
+                    if c.id == cluster_id
+                ][0]
                 cluster_embeddings = []
                 for i in index:
                     cluster_embeddings.append(cluster_repr[int(i)].embedding)
 
                 qfs = [np.mean(cluster_embeddings, axis=0)]
-            
+
             target_features = target_features_data.embeddings
 
             unique_times = set()
@@ -81,7 +87,7 @@ class CosineSimilarity(
 
             unique_times = sorted(unique_times)
 
-            qfs = [qf.embedding for qf in query_features]
+            # qfs = [qf.embedding for qf in query_features]
 
             tfs = np.asarray(tfs)
             qfs = np.asarray(qfs)
@@ -106,12 +112,17 @@ class CosineSimilarity(
             cossim_t = np.squeeze(np.asarray(cossim_t))
 
             if parameters.get("normalize") > 0:
-                if parameters.get("normalize_min_val") and parameters.get("normalize_max_val"):
+                if parameters.get("normalize_min_val") and parameters.get(
+                    "normalize_max_val"
+                ):
                     cossim_t = (cossim_t - parameters.get("normalize_min_val")) / (
-                        parameters.get("normalize_max_val") - parameters.get("normalize_min_val")
+                        parameters.get("normalize_max_val")
+                        - parameters.get("normalize_min_val")
                     )
                 else:
-                    cossim_t = (cossim_t - np.min(cossim_t)) / (np.max(cossim_t) - np.min(cossim_t))
+                    cossim_t = (cossim_t - np.min(cossim_t)) / (
+                        np.max(cossim_t) - np.min(cossim_t)
+                    )
 
             output_data.y = np.squeeze(cossim_t)
             output_data.time = list(unique_times)

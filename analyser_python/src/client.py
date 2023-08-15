@@ -26,7 +26,15 @@ def parse_args():
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", default=50051, type=int)
     parser.add_argument(
-        "-t", "--task", choices=["list_plugins", "upload_file", "run_plugin", "download_data", "get_plugin_status"]
+        "-t",
+        "--task",
+        choices=[
+            "list_plugins",
+            "upload_file",
+            "run_plugin",
+            "download_data",
+            "get_plugin_status",
+        ],
     )
     parser.add_argument("--path")
     parser.add_argument("--plugin")
@@ -64,7 +72,9 @@ class AnalyserClient:
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
             for x in data_manager.dump_to_stream(data.id):
-                yield analyser_pb2.UploadDataRequest(id=data.id, data_encoded=x["data_encoded"])
+                yield analyser_pb2.UploadDataRequest(
+                    id=data.id, data_encoded=x["data_encoded"]
+                )
 
         response = stub.upload_data(generate_requests(data))
 
@@ -103,7 +113,11 @@ class AnalyserClient:
                             break
                         self.hash_stream.update(data)
                         yield analyser_pb2.UploadFileRequest(
-                            type=data_type, data_encoded=data, id=None, ext=ext, filename=filename
+                            type=data_type,
+                            data_encoded=data,
+                            id=None,
+                            ext=ext,
+                            filename=filename,
                         )
 
             def hash(self):
@@ -228,28 +242,29 @@ def main():
     elif args.verbose:
         level = logging.INFO
 
-    logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%d-%m-%Y %H:%M:%S", level=level)
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%d-%m-%Y %H:%M:%S",
+        level=level,
+    )
     client = AnalyserClient(args.host, args.port)
 
     if args.task == "list_plugins":
         result = client.list_plugins()
-        print(result)
 
     if args.task == "upload_file":
         result = client.upload_file(args.path)
-        print(result)
 
     if args.task == "run_plugin":
-        result = client.run_plugin(args.plugin, json.loads(args.inputs), json.loads(args.parameters))
-        print(result)
+        result = client.run_plugin(
+            args.plugin, json.loads(args.inputs), json.loads(args.parameters)
+        )
 
     if args.task == "get_plugin_status":
         result = client.get_plugin_status(args.id)
-        print(result)
 
     if args.task == "download_data":
         result = client.download_data(args.id, args.path)
-        print(result)
 
     return 0
 

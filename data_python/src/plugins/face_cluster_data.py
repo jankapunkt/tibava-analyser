@@ -11,12 +11,8 @@ from .face_data import FacesData, FaceData
 from .keypoint_data import KpssData, KpsData
 from .bounding_box_data import BboxesData, BboxData
 from .image_data import ImagesData, ImageData
-<<<<<<< HEAD:analyser/data/data_plugins/face_cluster_data.py
-from .image_embedding import ImageEmbeddings, ImageEmbedding
-from analyser import analyser_pb2
-=======
 from analyser.proto import analyser_pb2
->>>>>>> af45325c1facaf103bf6d05800844ef835356156:data_python/src/plugins/face_cluster_data.py
+from .image_embedding import ImageEmbedding
 
 @dataclass(kw_only=True)
 class Cluster(Data):
