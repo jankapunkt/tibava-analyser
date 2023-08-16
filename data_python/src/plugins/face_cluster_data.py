@@ -14,19 +14,20 @@ from .image_data import ImagesData, ImageData
 from analyser.proto import analyser_pb2
 from .image_embedding import ImageEmbedding
 
+
 @dataclass(kw_only=True)
 class Cluster(Data):
     face_refs: List[str] = field(default_factory=list)
-    embedding_repr: List[ImageEmbedding] = field(default_factory=list)
+    embedding_repr: List[npt.NDArray] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {
             **meta,
             "face_refs": self.face_refs,
-            "embedding_repr": [x.to_dict() for x in self.embedding_repr],
         }
-    
+
+
 @DataManager.export("FaceClusterData", analyser_pb2.FACE_CLUSTER_DATA)
 @dataclass(kw_only=True)
 class FaceClusterData(Data):
@@ -43,25 +44,39 @@ class FaceClusterData(Data):
 
         data = self.load_dict("face_cluster_data.yml")
         self.clusters = [Cluster(**x) for x in data.get("facecluster")]
-        for cluster in self.clusters:
-            cluster.embedding_repr = [ImageEmbedding(**x) for x in cluster.embedding_repr]
-            for img_emb in cluster.embedding_repr:
-                img_emb.embedding = np.asarray(img_emb.embedding)
 
         self.faces = [FaceData(**x) for x in data.get("faces")]
         self.kpss = [KpsData(**x) for x in data.get("kpss")]
         self.bboxes = [BboxData(**x) for x in data.get("bboxes")]
         self.images = [ImageData(**x) for x in data.get("images")]
 
+        with self.fs.open_file("face_cluster_embeddings.npz", "r") as f:
+            embeddings = np.load(f)
+
+        cluster_feature_lut = data.get("cluster_feature_lut")
+
+        for i in range(len(self.clusters)):
+            self.clusters[i].embedding_repr = embeddings[
+                cluster_feature_lut[i][0] : cluster_feature_lut[i][1]
+            ]
+
     def save(self) -> None:
         super().save()
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
 
+        cluster_feature_lut = {}
+
+        i = 0
+        for j, cluster in enumerate(self.clusters):
+            cluster_feature_lut[j] = (i, i + len(cluster.embedding_repr))
+            i += len(cluster.embedding_repr)
+
         self.save_dict(
             "face_cluster_data.yml",
             {
-                "facecluster": [c.to_dict() for c in self.clusters], 
+                "facecluster": [c.to_dict() for c in self.clusters],
+                "cluster_feature_lut": cluster_feature_lut,
                 "faces": [face.to_dict() for face in self.faces.faces],
                 "kpss": [kp.to_dict() for kp in self.kpss.kpss],
                 "bboxes": [box.to_dict() for box in self.bboxes.bboxes],
@@ -69,8 +84,12 @@ class FaceClusterData(Data):
             },
         )
 
+        with self.fs.open_file("face_cluster_embeddings.npz", "w") as f:
+            np.save(
+                f, np.concatenate([x.embedding_repr for x in self.clusters], axis=0)
+            )
+
     def to_dict(self) -> dict:
-        print(type(self.clusters[0]))
         return {
             **super().to_dict(),
             "facecluster": [c.to_dict() for c in self.clusters],

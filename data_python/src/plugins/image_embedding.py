@@ -56,7 +56,9 @@ class ImageEmbeddings(Data):
         with self.fs.open_file("embeddings.npz", "r") as f:
             embeddings = np.load(f)
         if len(self.embeddings) != embeddings.shape[0]:
-            logging.error(f"Data has invalid shape {len(self.embeddings)} vs. {embeddings.shape[0]}")
+            logging.error(
+                f"Data has invalid shape {len(self.embeddings)} vs. {embeddings.shape[0]}"
+            )
             return
 
         for i in range(embeddings.shape[0]):
@@ -67,10 +69,16 @@ class ImageEmbeddings(Data):
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
 
-        self.save_dict("image_embeddings_data.yml", {"embeddings": [x.to_save() for x in self.embeddings]})
+        self.save_dict(
+            "image_embeddings_data.yml",
+            {"embeddings": [x.to_save() for x in self.embeddings]},
+        )
 
         with self.fs.open_file("embeddings.npz", "w") as f:
             np.save(f, np.stack([x.embedding for x in self.embeddings], axis=0))
 
     def to_dict(self) -> dict:
-        return {**super().to_dict(), "embeddings": [x.to_dict() for x in self.embeddings]}
+        return {
+            **super().to_dict(),
+            "embeddings": [x.to_dict() for x in self.embeddings],
+        }

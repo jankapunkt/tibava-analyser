@@ -16,6 +16,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - requests==2.26.0
@@ -31,6 +32,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - librosa
@@ -46,6 +48,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - librosa
@@ -61,6 +64,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - librosa
@@ -78,6 +82,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - open_clip_torch
@@ -99,6 +104,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - open_clip_torch
@@ -120,6 +126,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - open_clip_torch
@@ -141,6 +148,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - open_clip_torch
@@ -160,6 +168,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -175,6 +184,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -192,6 +202,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -211,6 +222,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -229,6 +241,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -246,6 +259,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn==0.23.2
@@ -262,6 +276,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -281,6 +296,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -313,6 +329,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -354,6 +371,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip: 
               - scikit-learn
@@ -381,6 +399,8 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
+          num_cpus: 2
           runtime_env:
             pip:
               - torch
@@ -410,6 +430,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - torch
@@ -463,6 +484,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scipy
@@ -491,6 +513,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - librosa
@@ -511,6 +534,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -533,6 +557,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -556,6 +581,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scikit-learn
@@ -579,6 +605,7 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
+          num_cpus: 2
           runtime_env:
             pip:
               - scipy

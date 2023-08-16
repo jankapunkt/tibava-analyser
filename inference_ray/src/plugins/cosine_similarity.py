@@ -70,7 +70,7 @@ class CosineSimilarity(
                 ][0]
                 cluster_embeddings = []
                 for i in index:
-                    cluster_embeddings.append(cluster_repr[int(i)].embedding)
+                    cluster_embeddings.append(cluster_repr[int(i)])
 
                 qfs = [np.mean(cluster_embeddings, axis=0)]
 
