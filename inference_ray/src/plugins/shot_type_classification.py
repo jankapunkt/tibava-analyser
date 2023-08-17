@@ -85,8 +85,7 @@ class ShotTypeClassifier(
                     frame = image_pad(frame["frame"])
 
                     with torch.no_grad(), torch.cuda.amp.autocast():
-                        frame = torch.from_numpy(np.expand_dims(frame, 0)).to(self.device)
-                        # logging.error(frame)
+                        frame = torch.from_numpy(frame).to(self.device)
                         raw_result = self.model(frame)
                     result = raw_result.cpu().detach().numpy()
                     # result = self.server({"data": np.expand_dims(frame, 0)}, ["prob"])
