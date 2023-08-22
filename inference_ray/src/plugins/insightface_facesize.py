@@ -1,5 +1,5 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
-from analyser.data import BboxesData, ListData, ScalarData
+from analyser.data import BboxesData, ListData, ScalarData, AnnotationData, Annotation, ShotsData
 
 import numpy as np
 import pickle
@@ -11,13 +11,14 @@ default_config = {
     "data_dir": "/data/",
     "host": "localhost",
     "port": 6379,
-    "model_file": "/models/naivebayes_facesize/naivebayes_facesize.pkl",
 }
 
 default_parameters = {"reduction": "max"}
 
 requires = {
     "bboxes": BboxesData,
+    "shot_annotation": AnnotationData,
+    "shots": ShotsData,
 }
 
 provides = {
@@ -39,7 +40,6 @@ class InsightfaceFacesize(
         super().__init__(config, **kwargs)
         # self.host = self.config["host"]
         # self.port = self.config["port"]
-        self.model = None
 
     def call(
         self,
@@ -48,17 +48,15 @@ class InsightfaceFacesize(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        if self.model is None:
-            with open(self.config["model_file"], "rb") as pklfile:
-                self.model = pickle.load(pklfile)
-
-        with inputs["bboxes"] as input_data, data_manager.create_data(
-            "ListData"
-        ) as probs_data, data_manager.create_data("ScalarData") as facesizes_data:
+        with inputs["bboxes"] as bbox_data,\
+            inputs["shot_annotation"] as shot_annotation,\
+            inputs["shots"] as shots,\
+            data_manager.create_data("AnnotationData") as facesizes_data:
             facesizes_dict = {}
             delta_time = None
 
-            for i, bbox in enumerate(input_data.bboxes):
+            
+            for i, bbox in enumerate(bbox_data.bboxes):
                 if bbox.time not in facesizes_dict:
                     facesizes_dict[bbox.time] = []
                 facesizes_dict[bbox.time].append(bbox.w * bbox.h)
@@ -69,23 +67,26 @@ class InsightfaceFacesize(
             else:  # parameters.get("reduction") == "mean":
                 facesizes = [np.mean(x).tolist() for x in facesizes_dict.values()]
 
-            # predict shot size based on facesizes
-            predictions = self.model.predict_proba(np.asarray(facesizes).reshape(-1, 1))
+            for shot_index, shot in enumerate(shots.shots):
+                faces_in_annotation = [t for t in facesizes_dict.keys() if t >= shot.start and t < shot.end]
+                if len(faces_in_annotation) > 0:
+                    face_label = shot_annotation.annotations[shot_index].labels[0]
+                else:
+                    face_label = "None"
+                
+                facesizes_data.annotations.append(
+                    Annotation(
+                        start=shot.start, 
+                        end=shot.end,
+                        labels=[face_label]
+                    )
+                )
 
-            self.update_callbacks(callbacks, progress=1.0)
+                self.update_callbacks(callbacks, progress=1.0/len(shots.shots))
 
             facesizes_data.y = facesizes
             facesizes_data.time = list(facesizes_dict.keys())
-            facesizes_data.delta_time = delta_time
-
-            index = ["p_ECU", "p_CU", "p_MS", "p_FS", "p_LS"]
-            for i, y in zip(index, zip(*predictions)):
-                with probs_data.create_data("ScalarData", index=i) as d:
-                    d.y = np.asarray(y)
-                    d.time = list(facesizes_dict.keys())
-                    d.delta_time = delta_time
 
             return {
-                "probs": probs_data,
-                "facesizes": facesizes_data,
+                "annotations": facesizes_data,
             }

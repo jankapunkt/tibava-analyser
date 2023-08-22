@@ -81,6 +81,8 @@ class ShotAnnotator(
                             Annotation(start=shot.start, end=shot.end, labels=[max_label])
                         )  # Maybe store max_mean_class_prob as well?
                     self.update_callbacks(callbacks, progress=i / len(inputs["shots"].shots))
+                
+        print(annotation_data, flush=True)
 
         self.update_callbacks(callbacks, progress=1.0)
         return {"annotations": annotation_data}
