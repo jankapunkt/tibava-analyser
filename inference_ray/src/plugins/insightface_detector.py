@@ -252,11 +252,11 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         return bbox_list, kps_list
 
     def predict_faces(self, iterator, num_frames, parameters, data_manager, callbacks):
-        with data_manager.create_data("ImagesData") as images_data, data_manager.create_data(
-            "BboxesData"
-        ) as bboxes_data, data_manager.create_data("FacesData") as faces_data, data_manager.create_data(
-            "KpssData"
-        ) as kpss_data:
+        with data_manager.create_data("ImagesData") as images_data,\
+            data_manager.create_data("BboxesData") as bboxes_data,\
+            data_manager.create_data("FacesData") as faces_data,\
+            data_manager.create_data("KpssData") as kpss_data:
+            
             # iterate through images to get face_images and bboxes
             for i, frame in enumerate(iterator):
                 self.update_callbacks(callbacks, progress=i / num_frames)

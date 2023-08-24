@@ -8,6 +8,8 @@ from .rgb_data import RGBData
 from .string_data import StringData
 from .scalar_data import ScalarData
 from .face_cluster_data import FaceClusterData, Cluster
+from .place_cluster_data import PlaceClusterData
+from .place_data import PlaceData
 from .list_data import ListData
 from .image_embedding import ImageEmbedding, ImageEmbeddings
 from .text_embedding import TextEmbedding, TextEmbeddings

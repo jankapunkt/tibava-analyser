@@ -173,6 +173,8 @@ class PlacesClassifier(
                 probs_data[level] = probs_places
 
         self.update_callbacks(callbacks, progress=1.0)
+        print(embeddings_data, flush=True)
+        print(probs_data)
         return {
             "embeddings": embeddings_data,
             "probs_places365": probs_data["places365"],

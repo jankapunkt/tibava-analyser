@@ -581,9 +581,21 @@ applications:
     args:
       model: face_clustering
       data_path: /data
-      params: 
-        text_model_path: /models/xclip/xclip_16_8_text.onnx
-        sim_model_path: /models/xclip/xclip_16_8_sim.onnx
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - scipy
+  - name: place_clustering
+    route_prefix: /place_clustering
+    import_path: main:app_builder
+    args:
+      model: place_clustering
+      data_path: /data
     deployments:
       - name: Deployment
         autoscaling_config:
