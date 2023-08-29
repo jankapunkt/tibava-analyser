@@ -8,8 +8,6 @@ import numpy as np
 from ..manager import DataManager
 from ..data import Data
 from .place_data import PlacesData, PlaceData
-from .keypoint_data import KpssData, KpsData
-from .bounding_box_data import BboxesData, BboxData
 from .image_data import ImagesData, ImageData
 from analyser.proto import analyser_pb2
 from .image_embedding import ImageEmbedding
@@ -21,8 +19,6 @@ class PlaceClusterData(Data):
     type: str = field(default="PlaceClusterData")
     clusters: List[Cluster] = field(default_factory=list)
     places: PlacesData = field(default_factory=list)
-    kpss: KpssData = field(default_factory=list)
-    bboxes: BboxesData = field(default_factory=list)
     images: ImagesData = field(default_factory=list)
 
     def load(self) -> None:
@@ -33,8 +29,6 @@ class PlaceClusterData(Data):
         self.clusters = [Cluster(**x) for x in data.get("placecluster")]
 
         self.places = [PlaceData(**x) for x in data.get("places")]
-        self.kpss = [KpsData(**x) for x in data.get("kpss")]
-        self.bboxes = [BboxData(**x) for x in data.get("bboxes")]
         self.images = [ImageData(**x) for x in data.get("images")]
 
         with self.fs.open_file("place_cluster_embeddings.npz", "r") as f:
@@ -52,6 +46,9 @@ class PlaceClusterData(Data):
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
 
+        print(self.places, flush=True)
+        print("^^^^^^5^^^^", flush=True)
+
         cluster_feature_lut = {}
 
         i = 0
@@ -65,8 +62,6 @@ class PlaceClusterData(Data):
                 "placecluster": [c.to_dict() for c in self.clusters],
                 "cluster_feature_lut": cluster_feature_lut,
                 "places": [place.to_dict() for place in self.places.places],
-                "kpss": [kp.to_dict() for kp in self.kpss.kpss],
-                "bboxes": [box.to_dict() for box in self.bboxes.bboxes],
                 "images": [image.to_dict() for image in self.images.images],
             },
         )
@@ -81,7 +76,5 @@ class PlaceClusterData(Data):
             **super().to_dict(),
             "placecluster": [c.to_dict() for c in self.clusters],
             "places": [place.to_dict() for place in self.places],
-            "kpss": [kp.to_dict() for kp in self.kpss],
-            "bboxes": [box.to_dict() for box in self.bboxes],
             "images": [image.to_dict() for image in self.images],
         }

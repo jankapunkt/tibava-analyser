@@ -1,6 +1,6 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 
-from analyser.data import ImageEmbeddings, PlaceClusterData, Cluster
+from analyser.data import ImageEmbeddings, PlaceClusterData, Cluster, PlacesData
 
 import logging
 import numpy as np
@@ -23,6 +23,7 @@ default_parameters = {
 
 requires = {
     "embeddings": ImageEmbeddings,
+    "places": PlacesData
 }
 
 provides = {
@@ -55,13 +56,15 @@ class PlaceClustering(
 
         with inputs["embeddings"] as place_embeddings,\
             inputs["places"] as places,\
-            inputs["bboxes"] as bboxes,\
-            inputs["kpss"] as kpss,\
-            inputs["images"] as images,\
             data_manager.create_data("PlaceClusterData") as output_data:
             
             embeddings = [em.embedding for em in place_embeddings.embeddings]
             place_ids = [f.id for f in places.places]
+
+            print(type(embeddings[0]), flush=True)
+            print(embeddings[0].shape, flush=True)
+            print(place_ids, flush=True)
+            print("^^^^^^^^^6^^^^^^^^^^", flush=True)
 
             metric = "cosine"
             result = fclusterdata(
@@ -70,6 +73,7 @@ class PlaceClustering(
                 criterion="distance",
                 metric=metric,
             )
+            
             # result format: list of cluster ids [1 2 1 3]
 
             clustered_embeddings = [[] for _ in np.unique(result)]
@@ -95,8 +99,5 @@ class PlaceClustering(
                 reverse=True,
             )
             output_data.places = places
-            output_data.bboxes = bboxes
-            output_data.kpss = kpss
-            output_data.images = images
 
             return {"place_cluster_data": output_data}

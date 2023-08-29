@@ -53,13 +53,13 @@ class FaceClustering(
     ) -> Dict[str, Data]:
         from scipy.cluster.hierarchy import fclusterdata
 
-        with inputs["embeddings"] as face_embeddings, inputs["faces"] as faces, inputs[
-            "bboxes"
-        ] as bboxes, inputs["kpss"] as kpss, inputs[
-            "images"
-        ] as images, data_manager.create_data(
-            "FaceClusterData"
-        ) as output_data:
+        with inputs["embeddings"] as face_embeddings,\
+            inputs["faces"] as faces,\
+            inputs["bboxes"] as bboxes,\
+            inputs["kpss"] as kpss,\
+            inputs["images"] as images,\
+            data_manager.create_data("FaceClusterData") as output_data:
+            
             embeddings = [em.embedding for em in face_embeddings.embeddings]
             face_ids = [f.id for f in faces.faces]
 

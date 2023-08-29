@@ -1,6 +1,6 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
-from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings
+from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, PlaceData, PlacesData
 
 import logging
 
@@ -33,6 +33,7 @@ requires = {
 
 provides = {
     "embedding": ImageEmbeddings,
+    "places": PlacesData,
     "probs_places365": ListData,
     "probs_places16": ListData,
     "probs_places3": ListData,
@@ -119,18 +120,22 @@ class PlacesClassifier(
             self.model = torch.jit.load(self.model_path, map_location=torch.device(device))
             self.device = device
 
-        with inputs["video"] as input_data, data_manager.create_data("ImageEmbeddings") as embeddings_data:
+        with inputs["video"] as input_data,\
+             data_manager.create_data("ImageEmbeddings") as embeddings_data,\
+             data_manager.create_data("PlacesData") as places_data:
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
                     f_video,
                     max_dimension=self.image_resolution,
                     fps=parameters.get("fps"),
-                    extension=f".{input_data.ext}",
+                    extension=f".{input_data.ext}", 
                 )
 
                 probs = {"places365": [], "places16": [], "places3": []}
                 time = []
                 num_frames = video_decoder.duration() * video_decoder.fps()
+                places_data.places = []
+
                 for i, frame in enumerate(video_decoder):
                     with torch.no_grad(), torch.cuda.amp.autocast():
                         raw_result = self.model(torch.from_numpy(frame["frame"]).to(self.device))
@@ -140,13 +145,6 @@ class PlacesClassifier(
                     #     {"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"]
                     # )
                     # store embeddings
-                    embeddings_data.embeddings.append(
-                        ImageEmbedding(
-                            embedding=normalize(embedding),
-                            time=frame.get("time"),
-                            delta_time=1 / parameters.get("fps"),
-                        )
-                    )
 
                     # store places365 probabilities
                     probs["places365"].append(np.squeeze(np.asarray(prob)))
@@ -159,6 +157,26 @@ class PlacesClassifier(
 
                     # store time
                     time.append(i / parameters.get("fps"))
+
+                    places_data.places.append(
+                        PlaceData(
+                            place365prob = np.squeeze(np.asarray(prob)),
+                            # place365class = 
+                            place16prob = np.matmul(prob, self.hierarchy["places16"])[0],
+                            # place16class = 
+                            place3prob = np.matmul(prob, self.hierarchy["places3"])[0]
+                            # place3class = 
+                        )
+                    )
+
+                    embeddings_data.embeddings.append(
+                        ImageEmbedding(
+                            embedding=normalize(embedding),
+                            time=frame.get("time"),
+                            delta_time=1 / parameters.get("fps"),
+                        )
+                    )
+
                     self.update_callbacks(callbacks, progress=i / num_frames)
 
         probs_data = {}
@@ -174,10 +192,12 @@ class PlacesClassifier(
 
         self.update_callbacks(callbacks, progress=1.0)
         print(embeddings_data, flush=True)
-        print(probs_data)
+        print(len(places_data.places), flush=True)
+        print("^^^^^^^^^^^^^0^^^^^^^^^^^^", flush=True)
         return {
             "embeddings": embeddings_data,
+            "places": places_data,
             "probs_places365": probs_data["places365"],
-            "probs_places16": probs_data["places16"],
+            "probs_places16": probs_data["places16"], 
             "probs_places3": probs_data["places3"],
         }

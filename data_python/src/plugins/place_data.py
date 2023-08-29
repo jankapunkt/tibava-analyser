@@ -12,7 +12,12 @@ from analyser.proto import analyser_pb2
 
 @dataclass(kw_only=True)
 class PlaceData(Data):
-    pass
+    place365prob: float = None
+    place365class: str = "None"
+    place16prob: float = None
+    place16class: str = "None"
+    place3prob: float = None
+    place3class: str = "None"
 
 
 @DataManager.export("PlacesData", analyser_pb2.PLACES_DATA)
