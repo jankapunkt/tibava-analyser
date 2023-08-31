@@ -17,14 +17,14 @@ from .image_embedding import ImageEmbedding
 
 @dataclass(kw_only=True)
 class Cluster(Data):
-    face_refs: List[str] = field(default_factory=list)
+    object_refs: List[str] = field(default_factory=list)
     embedding_repr: List[npt.NDArray] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         meta = super().to_dict()
         return {
             **meta,
-            "face_refs": self.face_refs,
+            "object_refs": self.object_refs,
         }
 
 

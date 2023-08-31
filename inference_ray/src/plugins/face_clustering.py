@@ -76,11 +76,11 @@ class FaceClustering(
             output_data.clusters = [Cluster() for _ in np.unique(result)]
 
             for c in output_data.clusters:
-                c.face_refs = []
+                c.object_refs = []
 
             # sort face refs into clusters
             for id, cluster_id in enumerate(result):
-                output_data.clusters[cluster_id - 1].face_refs.append(face_ids[id])
+                output_data.clusters[cluster_id - 1].object_refs.append(face_ids[id])
                 clustered_embeddings[cluster_id - 1].append(embeddings[id])
 
             # compute mean embedding for each cluster
@@ -91,7 +91,7 @@ class FaceClustering(
             # sort clusters and embeddings together by cluster length
             output_data.clusters = sorted(
                 output_data.clusters,
-                key=lambda cluster: (len(cluster.face_refs)),
+                key=lambda cluster: (len(cluster.object_refs)),
                 reverse=True,
             )
             output_data.faces = faces

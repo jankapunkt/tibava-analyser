@@ -22,8 +22,7 @@ default_parameters = {
 }
 
 requires = {
-    "embeddings": ImageEmbeddings,
-    "places": PlacesData
+    "embeddings": ImageEmbeddings
 }
 
 provides = {
@@ -58,13 +57,8 @@ class PlaceClustering(
             inputs["places"] as places,\
             data_manager.create_data("PlaceClusterData") as output_data:
             
-            embeddings = [em.embedding for em in place_embeddings.embeddings]
+            embeddings = np.asarray([em.embedding for em in place_embeddings.embeddings])
             place_ids = [f.id for f in places.places]
-
-            print(type(embeddings[0]), flush=True)
-            print(embeddings[0].shape, flush=True)
-            print(place_ids, flush=True)
-            print("^^^^^^^^^6^^^^^^^^^^", flush=True)
 
             metric = "cosine"
             result = fclusterdata(

@@ -18,8 +18,8 @@ from .face_cluster_data import Cluster
 class PlaceClusterData(Data):
     type: str = field(default="PlaceClusterData")
     clusters: List[Cluster] = field(default_factory=list)
-    places: PlacesData = field(default_factory=list)
-    images: ImagesData = field(default_factory=list)
+    places: PlacesData = field(default_factory=PlacesData)
+    images: ImagesData = field(default_factory=ImagesData)
 
     def load(self) -> None:
         super().load()
@@ -45,9 +45,6 @@ class PlaceClusterData(Data):
         super().save()
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
-
-        print(self.places, flush=True)
-        print("^^^^^^5^^^^", flush=True)
 
         cluster_feature_lut = {}
 

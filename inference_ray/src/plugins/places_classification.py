@@ -1,6 +1,6 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
-from analyser.data import ListData, ScalarData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, PlaceData, PlacesData
+from analyser.data import ListData, ImagesData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, PlaceData, PlacesData
 
 import logging
 
@@ -122,6 +122,7 @@ class PlacesClassifier(
 
         with inputs["video"] as input_data,\
              data_manager.create_data("ImageEmbeddings") as embeddings_data,\
+             data_manager.create_data("ImagesData") as images_data,\
              data_manager.create_data("PlacesData") as places_data:
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
@@ -157,9 +158,9 @@ class PlacesClassifier(
 
                     # store time
                     time.append(i / parameters.get("fps"))
-
-                    places_data.places.append(
-                        PlaceData(
+                    
+                    place = PlaceData(
+                            ref_id=frame.get("ref_id", None),
                             place365prob = np.squeeze(np.asarray(prob)),
                             # place365class = 
                             place16prob = np.matmul(prob, self.hierarchy["places16"])[0],
@@ -167,11 +168,20 @@ class PlacesClassifier(
                             place3prob = np.matmul(prob, self.hierarchy["places3"])[0]
                             # place3class = 
                         )
+
+                    places_data.places.append(place)
+
+                    images_data.save_image(
+                        image=frame.get("frame"),
+                        ext="jpg",
+                        time=frame.get("time"),
+                        delta_time=1 / parameters.get("fps"),
+                        ref_id=place.id,
                     )
 
                     embeddings_data.embeddings.append(
                         ImageEmbedding(
-                            embedding=normalize(embedding),
+                            embedding=normalize(embedding).flatten(),
                             time=frame.get("time"),
                             delta_time=1 / parameters.get("fps"),
                         )
@@ -191,12 +201,10 @@ class PlacesClassifier(
                 probs_data[level] = probs_places
 
         self.update_callbacks(callbacks, progress=1.0)
-        print(embeddings_data, flush=True)
-        print(len(places_data.places), flush=True)
-        print("^^^^^^^^^^^^^0^^^^^^^^^^^^", flush=True)
         return {
             "embeddings": embeddings_data,
             "places": places_data,
+            "images": images_data,
             "probs_places365": probs_data["places365"],
             "probs_places16": probs_data["places16"], 
             "probs_places3": probs_data["places3"],
