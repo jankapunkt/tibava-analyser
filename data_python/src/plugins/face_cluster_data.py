@@ -43,7 +43,7 @@ class FaceClusterData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("face_cluster_data.yml")
-        self.clusters = [Cluster(**x) for x in data.get("facecluster")]
+        self.clusters = [Cluster(**x) for x in data.get("cluster")]
 
         self.faces = [FaceData(**x) for x in data.get("faces")]
         self.kpss = [KpsData(**x) for x in data.get("kpss")]
@@ -75,7 +75,7 @@ class FaceClusterData(Data):
         self.save_dict(
             "face_cluster_data.yml",
             {
-                "facecluster": [c.to_dict() for c in self.clusters],
+                "cluster": [c.to_dict() for c in self.clusters],
                 "cluster_feature_lut": cluster_feature_lut,
                 "faces": [face.to_dict() for face in self.faces.faces],
                 "kpss": [kp.to_dict() for kp in self.kpss.kpss],
@@ -92,7 +92,7 @@ class FaceClusterData(Data):
     def to_dict(self) -> dict:
         return {
             **super().to_dict(),
-            "facecluster": [c.to_dict() for c in self.clusters],
+            "cluster": [c.to_dict() for c in self.clusters],
             "faces": [face.to_dict() for face in self.faces],
             "kpss": [kp.to_dict() for kp in self.kpss],
             "bboxes": [box.to_dict() for box in self.bboxes],

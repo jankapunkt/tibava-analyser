@@ -26,7 +26,7 @@ class PlaceClusterData(Data):
         assert self.check_fs(), "No filesystem handler installed"
 
         data = self.load_dict("place_cluster_data.yml")
-        self.clusters = [Cluster(**x) for x in data.get("placecluster")]
+        self.clusters = [Cluster(**x) for x in data.get("cluster")]
 
         self.places = [PlaceData(**x) for x in data.get("places")]
         self.images = [ImageData(**x) for x in data.get("images")]
@@ -56,7 +56,7 @@ class PlaceClusterData(Data):
         self.save_dict(
             "place_cluster_data.yml",
             {
-                "placecluster": [c.to_dict() for c in self.clusters],
+                "cluster": [c.to_dict() for c in self.clusters],
                 "cluster_feature_lut": cluster_feature_lut,
                 "places": [place.to_dict() for place in self.places.places],
                 "images": [image.to_dict() for image in self.images.images],
@@ -71,7 +71,7 @@ class PlaceClusterData(Data):
     def to_dict(self) -> dict:
         return {
             **super().to_dict(),
-            "placecluster": [c.to_dict() for c in self.clusters],
+            "cluster": [c.to_dict() for c in self.clusters],
             "places": [place.to_dict() for place in self.places],
             "images": [image.to_dict() for image in self.images],
         }

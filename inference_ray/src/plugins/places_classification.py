@@ -161,12 +161,13 @@ class PlacesClassifier(
                     
                     place = PlaceData(
                             ref_id=frame.get("ref_id", None),
+                            time=frame.get("time"),
                             place365prob = np.squeeze(np.asarray(prob)),
-                            # place365class = 
+                            place365class = self.classes["places365"][np.argmax(np.squeeze(np.asarray(prob)))],
                             place16prob = np.matmul(prob, self.hierarchy["places16"])[0],
-                            # place16class = 
-                            place3prob = np.matmul(prob, self.hierarchy["places3"])[0]
-                            # place3class = 
+                            place16class = self.classes["places16"][np.argmax(np.matmul(prob, self.hierarchy["places16"])[0])],
+                            place3prob = np.matmul(prob, self.hierarchy["places3"])[0],
+                            place3class = self.classes["places3"][np.argmax(np.matmul(prob, self.hierarchy["places3"])[0])]
                         )
 
                     places_data.places.append(place)

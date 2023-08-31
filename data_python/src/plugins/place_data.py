@@ -12,12 +12,27 @@ from analyser.proto import analyser_pb2
 
 @dataclass(kw_only=True)
 class PlaceData(Data):
+    time: float = None
     place365prob: float = None
     place365class: str = "None"
     place16prob: float = None
     place16class: str = "None"
     place3prob: float = None
     place3class: str = "None"
+
+    def to_dict(self) -> dict:
+        meta = super().to_dict()
+        return {
+            **meta,
+            "time": self.time,
+            # "place365prob": self.place365prob.tolist(),
+            # "place16prob": self.place16prob.tolist(),
+            # "place3prob": self.place3prob.tolist(),
+            "place365class": self.place365class,
+            "place16class": self.place16class,
+            "place3class": self.place3class,
+        }
+
 
 
 @DataManager.export("PlacesData", analyser_pb2.PLACES_DATA)

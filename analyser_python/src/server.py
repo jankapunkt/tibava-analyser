@@ -26,14 +26,14 @@ from analyser.utils.cache import CacheManager
 
 
 class AnalyserCacheWrapper:
-    def __init__(self, plguin_manager, cache):
-        self.plguin_manager = plguin_manager
+    def __init__(self, plugin, cache):
+        self.plugin = plugin
         self.cache = cache
 
     def __call__(self, plugin, inputs, parameters, data_manager, callbacks):
         cached = False
         if self.cache:
-            plugins = {x["plugin"]: x for x in self.plguin_manager.plugin_status()}
+            plugins = {x["plugin"]: x for x in self.plugin.plugin_status()}
 
             run_id = uuid.uuid4().hex[:4]
             if plugin not in plugins:
@@ -70,7 +70,7 @@ class AnalyserCacheWrapper:
             logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
             logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
             logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-            results = self.plguin_manager(
+            results = self.plugin(
                 plugin=plugin, inputs=inputs, data_manager=data_manager, parameters=parameters, callbacks=callbacks
             )
             logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x} for k,x in results.items()]}")

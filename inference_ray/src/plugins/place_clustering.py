@@ -74,11 +74,11 @@ class PlaceClustering(
             output_data.clusters = [Cluster() for _ in np.unique(result)]
 
             for c in output_data.clusters:
-                c.place_refs = []
+                c.object_refs = []
 
             # sort place refs into clusters
             for id, cluster_id in enumerate(result):
-                output_data.clusters[cluster_id - 1].place_refs.append(place_ids[id])
+                output_data.clusters[cluster_id - 1].object_refs.append(place_ids[id])
                 clustered_embeddings[cluster_id - 1].append(embeddings[id])
 
             # compute mean embedding for each cluster
@@ -89,7 +89,7 @@ class PlaceClustering(
             # sort clusters and embeddings together by cluster length
             output_data.clusters = sorted(
                 output_data.clusters,
-                key=lambda cluster: (len(cluster.place_refs)),
+                key=lambda cluster: (len(cluster.object_refs)),
                 reverse=True,
             )
             output_data.places = places
