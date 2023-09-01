@@ -18,7 +18,7 @@ default_config = {
 default_parameters = {
     "min_threshold": None,
     "max_threshold": None,
-    "cluster_threshold": 0.4,
+    "cluster_threshold": 0.25,
 }
 
 requires = {
