@@ -63,11 +63,7 @@ class CosineSimilarity(
             else:
                 cluster_id = parameters.get("cluster_id")
                 index = parameters.get("index").split(",")
-                cluster_repr = [
-                    c.embedding_repr
-                    for c in query_features_data.clusters
-                    if c.id == cluster_id
-                ][0]
+                cluster_repr = [c.embedding_repr for c in query_features_data.clusters if c.id == cluster_id][0]
                 cluster_embeddings = []
                 for i in index:
                     cluster_embeddings.append(cluster_repr[int(i)])

@@ -108,9 +108,11 @@ class PlacesClassifier(
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
         from sklearn.preprocessing import normalize
+        from sklearn.decomposition import PCA
 
         import cv2
         import torch
+        import math
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -137,6 +139,8 @@ class PlacesClassifier(
                 num_frames = video_decoder.duration() * video_decoder.fps()
                 places_data.places = []
 
+                embeddings = []
+
                 for i, frame in enumerate(video_decoder):
                     with torch.no_grad(), torch.cuda.amp.autocast():
                         raw_result = self.model(torch.from_numpy(frame["frame"]).to(self.device))
@@ -146,6 +150,8 @@ class PlacesClassifier(
                     #     {"data": np.expand_dims(image_pad(frame["frame"]), axis=0)}, ["embedding", "prob"]
                     # )
                     # store embeddings
+
+                    embeddings.append(normalize(embedding).flatten())
 
                     # store places365 probabilities
                     probs["places365"].append(np.squeeze(np.asarray(prob)))
@@ -180,15 +186,31 @@ class PlacesClassifier(
                         ref_id=place.id,
                     )
 
-                    embeddings_data.embeddings.append(
-                        ImageEmbedding(
-                            embedding=normalize(embedding).flatten(),
-                            time=frame.get("time"),
-                            delta_time=1 / parameters.get("fps"),
-                        )
-                    )
+
 
                     self.update_callbacks(callbacks, progress=i / num_frames)
+            
+                # to reduce the dimensionality, we have to have at least 512 samples
+                # if there are not enough samples, duplicate the dataset temporarily
+                # the 512 comes from the dimensionality of the insightface_facialfeatures.py model
+                if len(embeddings) < 512:
+                    factor = math.ceil(512 / len(embeddings))
+                    temp_data = np.asarray(embeddings)
+                    for i in range(factor-1):
+                        temp_data = np.concatenate([temp_data, np.asarray(embeddings)])
+
+                    pca = PCA(n_components=512)
+                    pca.fit(temp_data)
+                    reduced_data = pca.transform(temp_data)
+                    embeddings = list(np.delete(reduced_data, slice(len(embeddings)), 0))
+
+                for em in embeddings:
+                    embeddings_data.embeddings.append(
+                            ImageEmbedding(
+                                embedding=em,
+                                delta_time=1 / parameters.get("fps"),
+                            )
+                        )
 
         probs_data = {}
         for level in probs.keys():
