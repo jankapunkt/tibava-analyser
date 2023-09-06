@@ -1,0 +1,19 @@
+# For more information, please refer to https://aka.ms/vscode-docker-python
+Bootstrap: docker
+From: python:3.10
+
+%post
+    pip install "pydantic<2"
+    pip install "ray"
+    pip install "ray[serve]"
+    pip install "numpy"
+    pip install "torch"
+    pip install "imageio"
+    pip install "imageio[pyav]"
+    pip install "imageio[ffmpeg]"
+    pip install "msgpack"
+    pip install "PyYAML"
+    pip install "grpcio"
+    pip install "grpcio-tools"
+    pip install "redis"
+

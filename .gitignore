@@ -1,5 +1,6 @@
 /media*
 /resources
+*.sif
 .pip_env
 
 # Byte-compiled / optimized / DLL files
