@@ -607,3 +607,53 @@ applications:
               - scipy
 
               
+  - name: blip_image_embedding
+    route_prefix: /blip_image_embedding
+    import_path: main:app_builder
+    args:
+      model: blip_image_embedding
+      data_path: /data
+      params: 
+        model: Salesforce/instructblip-flan-t5-xl
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          # num_cpus: 2
+          num_gpus: 0.2
+          runtime_env:
+            pip:
+              - imageio
+              - torch
+              - pillow
+              - scikit-learn
+              - transformers 
+              - accelerate      
+              - bitsandbytes
+              - peft   
+  - name: blip_vqa
+    route_prefix: /blip_vqa
+    import_path: main:app_builder
+    args:
+      model: blip_vqa
+      data_path: /data
+      params: 
+        model: Salesforce/instructblip-flan-t5-xl
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          # num_cpus: 2
+          num_gpus: 0.8
+          runtime_env:
+            pip:
+              - imageio
+              - torch
+              - pillow
+              - scikit-learn
+              - transformers
+              - accelerate      
+              - bitsandbytes
+              - peft   

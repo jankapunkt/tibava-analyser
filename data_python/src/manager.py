@@ -124,15 +124,17 @@ class DataManager:
 
         if self.cache:
             logging.info(f"Check file cache for {file_hash}")
-            cached_data = self.cache.get(file_hash)
-            if cached_data is not None:
+            cached_data_info = self.cache.get(file_hash)
+            cached_data = None
+            if cached_data_info is not None:
+                logging.info(f"Found data for file upload in cache {cached_data_info}")
+                cached_data = self.load(cached_data_info.get("data_id"))
                 logging.info(f"Found data for file upload in cache {cached_data}")
-                new_data = self.load(cached_data.get("data_id"))
+                if cached_data is not None:
+                    self.delete(data.id)
+                    data = cached_data
 
-                self.delete(data.id)
-                data = new_data
-            else:
-                self.cache.set(file_hash, {"data_id": data.id, "time": time.time(), "type": "file"})
+            self.cache.set(file_hash, {"data_id": data.id, "time": time.time(), "type": "file"})
 
         return data, hash_stream.hexdigest()
 
