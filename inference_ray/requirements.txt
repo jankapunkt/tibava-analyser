@@ -1,6 +1,5 @@
-pydantic<2
-ray
-ray[serve]
+#pydantic<2
+ray[serve,serve-grpc]
 numpy
 torch
 imageio

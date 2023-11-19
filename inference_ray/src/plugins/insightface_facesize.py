@@ -2,7 +2,6 @@ from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.data import BboxesData, ListData, ScalarData, AnnotationData, Annotation, ShotsData
 
 import numpy as np
-import pickle
 from analyser.data import DataManager, Data
 
 from typing import Callable, Optional, Dict

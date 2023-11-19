@@ -262,7 +262,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn==0.23.2
+              - scikit-learn
   - name: insightface_video_feature_extractor
     route_prefix: /insightface_video_feature_extractor
     import_path: main:app_builder
