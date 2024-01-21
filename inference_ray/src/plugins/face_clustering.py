@@ -109,7 +109,8 @@ class FaceClustering(
 
             clusters = sorted(clusters, key= lambda x: x["size"], reverse=True)[:parameters.get("max_cluster")]
             logging.error(f"cluster {len(clusters)}")
-
+            logging.error(f"cluster {[x['size'] for x in clusters]}")
+            
 
             # clustered_embeddings = [[] for _ in np.unique(result)]
             # output_data.clusters = [Cluster() for _ in np.unique(result)]
