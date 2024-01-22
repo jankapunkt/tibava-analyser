@@ -1,6 +1,14 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 
-from analyser.data import ImageEmbeddings, FaceClusterData, Cluster, FacesData, ImagesData, KpssData, BboxesData
+from analyser.data import (
+    ImageEmbeddings,
+    FaceClusterData,
+    Cluster,
+    FacesData,
+    ImagesData,
+    KpssData,
+    BboxesData,
+)
 
 import logging
 import numpy as np
@@ -55,13 +63,13 @@ class FaceClustering(
     ) -> Dict[str, Data]:
         from scipy.cluster.hierarchy import fclusterdata
 
-        with inputs["embeddings"] as face_embeddings,\
-            inputs["faces"] as faces,\
-            inputs["bboxes"] as bboxes,\
-            inputs["kpss"] as kpss,\
-            inputs["images"] as images,\
-            data_manager.create_data("FaceClusterData") as output_data:
-            
+        with inputs["embeddings"] as face_embeddings, inputs["faces"] as faces, inputs[
+            "bboxes"
+        ] as bboxes, inputs["kpss"] as kpss, inputs[
+            "images"
+        ] as images, data_manager.create_data(
+            "FaceClusterData"
+        ) as output_data:
             embeddings = np.asarray([em.embedding for em in face_embeddings.embeddings])
             face_ids = [f.id for f in faces.faces]
 
@@ -75,42 +83,39 @@ class FaceClustering(
             # result format: list of cluster ids [1 2 1 3]
             clusters = []
             for x in np.unique(result):
-                logging.error(f"######################")
-                
                 ids = np.where(result == x)[0]
 
                 cluster_size = len(ids)
 
-                logging.error(f"{cluster_size} {ids}")
-                ids_ids= np.linspace(0, cluster_size-1, min(cluster_size, parameters.get("max_faces")))
-                logging.error(f"a {ids_ids}")
+                ids_ids = np.linspace(
+                    0, cluster_size - 1, min(cluster_size, parameters.get("max_faces"))
+                )
+
                 ids_ids = [round(idx) for idx in ids_ids]
-                logging.error(f"b {ids_ids}")
-                
-                logging.error(f"old {ids}")
+
                 ids = ids[ids_ids]
-                logging.error(f"new {ids}")
+
                 cluster_embeddings = embeddings[ids]
                 cluster_faces = [faces.faces[id] for id in ids]
                 cluster_bboxes = [bboxes.bboxes[id] for id in ids]
                 cluster_kpss = [kpss.kpss[id] for id in ids]
                 cluster_images = [images.images[id] for id in ids]
-                logging.error(cluster_faces)
 
-                clusters.append({
-                    "size": cluster_size,
-                    "ids": ids,
-                    "embeddings": cluster_embeddings,
-                    "faces": cluster_faces,
-                    "bboxes": cluster_bboxes,
-                    "kpss": cluster_kpss,
-                    "images": cluster_images,
-                })
+                clusters.append(
+                    {
+                        "size": cluster_size,
+                        "ids": ids,
+                        "embeddings": cluster_embeddings,
+                        "faces": cluster_faces,
+                        "bboxes": cluster_bboxes,
+                        "kpss": cluster_kpss,
+                        "images": cluster_images,
+                    }
+                )
 
-            clusters = sorted(clusters, key= lambda x: x["size"], reverse=True)[:parameters.get("max_cluster")]
-            logging.error(f"cluster {len(clusters)}")
-            logging.error(f"cluster {[x['size'] for x in clusters]}")
-            
+            clusters = sorted(clusters, key=lambda x: x["size"], reverse=True)[
+                : parameters.get("max_cluster")
+            ]
 
             # clustered_embeddings = [[] for _ in np.unique(result)]
             # output_data.clusters = [Cluster() for _ in np.unique(result)]
@@ -135,12 +140,25 @@ class FaceClustering(
             #     reverse=True,
             # )
 
-            output_data.clusters = [Cluster(embedding_repr=cluster["embeddings"], object_refs=[y.id for y in cluster["faces"]]) for cluster in clusters]
+            output_data.clusters = [
+                Cluster(
+                    embedding_repr=cluster["embeddings"],
+                    object_refs=[y.id for y in cluster["faces"]],
+                )
+                for cluster in clusters
+            ]
 
-            output_data.faces =  FacesData(faces= [x for cluster in clusters for x in cluster["faces"]])
-            output_data.bboxes =  BboxesData(bboxes=[x for cluster in clusters for x in cluster["bboxes"]])
-            output_data.kpss =  KpssData(kpss=[x for cluster in clusters for x in cluster["kpss"]])
-            output_data.images =  ImagesData(images=[x for cluster in clusters for x in cluster["images"]])
-
+            output_data.faces = FacesData(
+                faces=[x for cluster in clusters for x in cluster["faces"]]
+            )
+            output_data.bboxes = BboxesData(
+                bboxes=[x for cluster in clusters for x in cluster["bboxes"]]
+            )
+            output_data.kpss = KpssData(
+                kpss=[x for cluster in clusters for x in cluster["kpss"]]
+            )
+            output_data.images = ImagesData(
+                images=[x for cluster in clusters for x in cluster["images"]]
+            )
 
             return {"face_cluster_data": output_data}

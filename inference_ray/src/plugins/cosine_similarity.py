@@ -17,8 +17,6 @@ default_parameters = {
     "normalize": 0,
     "normalize_min_val": None,
     "normalize_max_val": None,
-    "index": None,
-    "cluster_id": None,
 }
 
 requires = {
@@ -57,18 +55,8 @@ class CosineSimilarity(
         ] as target_features_data, data_manager.create_data(
             "ScalarData"
         ) as output_data:
-            if parameters.get("index") == None:
-                query_features = query_features_data.embeddings
-                qfs = [qf.embedding for qf in query_features]
-            else:
-                cluster_id = parameters.get("cluster_id")
-                index = parameters.get("index").split(",")
-                cluster_repr = [c.embedding_repr for c in query_features_data.clusters if c.id == cluster_id][0]
-                cluster_embeddings = []
-                for i in index:
-                    cluster_embeddings.append(cluster_repr[int(i)])
-
-                qfs = [np.mean(cluster_embeddings, axis=0)]
+            query_features = query_features_data.embeddings
+            qfs = [qf.embedding for qf in query_features]
 
             target_features = target_features_data.embeddings
 

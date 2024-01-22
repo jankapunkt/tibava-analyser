@@ -153,23 +153,32 @@ class ClipImageEmbedding(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
+                self.model_name,
+                pretrained=self.pretrained,
+                cache_dir="/models",
+                device=device,
             )
 
             self.model = model.visual
             self.preprocess = ImagePreprozessorWrapper(model, format=torch.float32)
 
         logging.error(f"START {device}")
-        with inputs["video"] as input_data, data_manager.create_data("ImageEmbeddings") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ImageEmbeddings"
+        ) as output_data:
             with input_data.open_video("r") as f_video:
-                video_decoder = VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}")
+                video_decoder = VideoDecoder(
+                    f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}"
+                )
                 num_frames = video_decoder.duration() * video_decoder.fps()
                 for i, frame in enumerate(video_decoder):
                     logging.error(f"LOOP {device}")
                     self.update_callbacks(callbacks, progress=i / num_frames)
 
                     img = frame.get("frame")
-                    img = self.image_resize_crop(img, parameters.get("resize_size"), parameters.get("crop_size"))
+                    img = self.image_resize_crop(
+                        img, parameters.get("resize_size"), parameters.get("crop_size")
+                    )
                     img = self.preprocess(img).to(device)
 
                     with torch.no_grad(), torch.cuda.amp.autocast():
@@ -231,7 +240,10 @@ class ClipTextEmbedding(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
+                self.model_name,
+                pretrained=self.pretrained,
+                cache_dir="/models",
+                device=device,
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
@@ -242,7 +254,9 @@ class ClipTextEmbedding(
                 text = self.tokenizer([parameters["search_term"]])
                 result = self.model.encode_text(text.to(device))
             result = result.cpu().detach().numpy()
-            output_data.embeddings.append(TextEmbedding(text=parameters["search_term"], embedding=result[0]))
+            output_data.embeddings.append(
+                TextEmbedding(text=parameters["search_term"], embedding=result[0])
+            )
             self.update_callbacks(callbacks, progress=1.0)
             return {"embeddings": output_data}
 
@@ -292,14 +306,17 @@ class ClipOntologyProbs(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
+                self.model_name,
+                pretrained=self.pretrained,
+                cache_dir="/models",
+                device=device,
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
 
-        with inputs["embeddings"] as input_data, inputs["concepts"] as concepts, data_manager.create_data(
-            "ListData"
-        ) as output_data:
+        with inputs["embeddings"] as input_data, inputs[
+            "concepts"
+        ] as concepts, data_manager.create_data("ListData") as output_data:
             probs = []
             time = []
             delta_time = None
@@ -400,12 +417,17 @@ class ClipProbs(
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained, cache_dir="/models", device=device
+                self.model_name,
+                pretrained=self.pretrained,
+                cache_dir="/models",
+                device=device,
             )
             self.tokenizer = open_clip.get_tokenizer(self.model_name)
             self.model = model
 
-        with inputs["embeddings"] as input_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["embeddings"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
             probs = []
             time = []
             delta_time = None
@@ -439,7 +461,9 @@ class ClipProbs(
 
             # neg_text_embedding = normalize(neg_result["embedding"])
 
-            text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
+            text_embedding = np.concatenate(
+                [text_embedding, neg_text_embedding], axis=0
+            )
             for embedding in input_data.embeddings:
                 if parameters["softmax"]:
                     result = 100 * text_embedding @ embedding.embedding.T

@@ -21,9 +21,7 @@ default_parameters = {
     "cluster_threshold": 0.25,
 }
 
-requires = {
-    "embeddings": ImageEmbeddings
-}
+requires = {"embeddings": ImageEmbeddings}
 
 provides = {
     "place_cluster_data": PlaceClusterData,
@@ -53,11 +51,12 @@ class PlaceClustering(
     ) -> Dict[str, Data]:
         from scipy.cluster.hierarchy import fclusterdata
 
-        with inputs["embeddings"] as place_embeddings,\
-            inputs["places"] as places,\
-            data_manager.create_data("PlaceClusterData") as output_data:
-            
-            embeddings = np.asarray([em.embedding for em in place_embeddings.embeddings])
+        with inputs["embeddings"] as place_embeddings, inputs[
+            "places"
+        ] as places, data_manager.create_data("PlaceClusterData") as output_data:
+            embeddings = np.asarray(
+                [em.embedding for em in place_embeddings.embeddings]
+            )
             place_ids = [f.id for f in places.places]
 
             metric = "cosine"
@@ -67,7 +66,7 @@ class PlaceClustering(
                 criterion="distance",
                 metric=metric,
             )
-            
+
             # result format: list of cluster ids [1 2 1 3]
 
             clustered_embeddings = [[] for _ in np.unique(result)]
