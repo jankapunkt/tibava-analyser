@@ -649,7 +649,20 @@ applications:
           min_replicas: 0
         ray_actor_options:
           num_cpus: 2
-              
+  
+  - name: face_size_filter
+    route_prefix: /face_size_filter
+    import_path: main:app_builder
+    args:
+      model: face_size_filter
+      data_path: /data
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 2
+                          
   - name: blip_image_embedding
     route_prefix: /blip_image_embedding
     import_path: main:app_builder

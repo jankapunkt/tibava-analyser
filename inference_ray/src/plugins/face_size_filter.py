@@ -41,14 +41,14 @@ default_config = {
 default_parameters = {"min_face_height": 0.1}
 
 requires = {
-    "images": ImagesData,
-    "kpss": KpssData,
+    "images": Optional[ImagesData],
+    "kpss": Optional[KpssData],
     "faces": FacesData,
     "bboxes": BboxesData,
 }
 provides = {
-    "images": ImagesData,
-    "kpss": KpssData,
+    "images": Optional[ImagesData],
+    "kpss": Optional[KpssData],
     "faces": FacesData,
     "bboxes": BboxesData,
 }
@@ -59,7 +59,7 @@ class FaceSizeFilter(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
-    version="0.1",
+    version="0.1.3",
     requires=requires,
     provides=provides,
 ):
@@ -73,35 +73,46 @@ class FaceSizeFilter(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["images"] as images_data, inputs["kpss"] as kpss_data, inputs[
-            "faces"
-        ] as faces_data:
-            kpss = kpss_data.kpss
-            faces = faces_data.faces
-            assert len(kpss) > 0
+        with inputs["faces"] as faces_data, inputs["bboxes"] as bboxes_data:
+            selected_ref_ids = []
+            for bbox in bboxes_data.bboxes:
+                if bbox.h >= parameters.get("min_face_height"):
+                    selected_ref_ids.append(bbox.ref_id)
 
-            image_lut = {image.id: image for image in images_data}
-            face_image_lut = {face.id: face.ref_id for face in faces}
-            kps_face_lut = {kps.ref_id: kps for kps in kpss}
+            with data_manager.create_data("BboxesData") as bboxes_output_data:
+                for bbox in bboxes_data.bboxes:
+                    if bbox.ref_id in selected_ref_ids:
+                        bboxes_output_data.bboxes.append(bbox)
 
-            def get_iterator():
-                for face_id, kps in kps_face_lut.items():
-                    if face_id not in face_image_lut:
-                        continue
-                    image_id = face_image_lut[face_id]
-                    if image_id not in image_lut:
-                        continue
+            with data_manager.create_data("FacesData") as faces_output_data:
+                for face in faces_data.faces:
+                    if face.id in selected_ref_ids:
+                        faces_output_data.faces.append(face)
 
-                    image_data = image_lut[image_id]
+        output_dict = {"bboxes": bboxes_output_data, "faces": faces_output_data}
 
-                    image = images_data.load_image(image_data)
+        if "images" in inputs:
+            with inputs["images"] as images_data:
+                with data_manager.create_data("ImagesData") as images_output_data:
+                    for image in images_data.images:
+                        if image.ref_id in selected_ref_ids:
+                            np_image = images_data.load_image(image)
+                            images_output_data.save_image(np_image, **image.to_dict())
 
-                    yield {"frame": image, "kps": kps, "face_id": face_id}
+                    logging.error(
+                        f"IMAGES {len(images_data.images)} {len(images_output_data.images)}"
+                    )
+                    output_dict["images"] = images_output_data
 
-            return self.get_facial_features(
-                iterator=get_iterator(),
-                num_faces=len(kps_face_lut),
-                parameters=parameters,
-                data_manager=data_manager,
-                callbacks=callbacks,
-            )
+        if "kpss" in inputs:
+            with inputs["kpss"] as kpss_data:
+                with data_manager.create_data("KpssData") as kpss_output_data:
+                    for kps in kpss_data.kpss:
+                        if kps.ref_id in selected_ref_ids:
+                            kpss_output_data.kpss.append(kps)
+                    logging.error(
+                        f"KPSS {len(kpss_data.kpss)} {len(kpss_output_data.kpss)}"
+                    )
+
+                    output_dict["kpss"] = kpss_output_data
+        return output_dict

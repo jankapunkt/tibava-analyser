@@ -2,7 +2,17 @@ from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
 
 # from analyser.inference import InferenceServer
-from analyser.data import BboxData, BboxesData, FaceData, FacesData, KpsData, KpssData, ImageData, ImagesData, VideoData
+from analyser.data import (
+    BboxData,
+    BboxesData,
+    FaceData,
+    FacesData,
+    KpsData,
+    KpssData,
+    ImageData,
+    ImagesData,
+    VideoData,
+)
 from analyser.data import DataManager, Data
 
 from typing import Callable, Optional, Dict
@@ -143,10 +153,14 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
             if key in center_cache:
                 anchor_centers = center_cache[key]
             else:
-                anchor_centers = np.stack(np.mgrid[:height, :width][::-1], axis=-1).astype(np.float32)
+                anchor_centers = np.stack(
+                    np.mgrid[:height, :width][::-1], axis=-1
+                ).astype(np.float32)
                 anchor_centers = (anchor_centers * stride).reshape((-1, 2))
                 if num_anchors > 1:
-                    anchor_centers = np.stack([anchor_centers] * num_anchors, axis=1).reshape((-1, 2))
+                    anchor_centers = np.stack(
+                        [anchor_centers] * num_anchors, axis=1
+                    ).reshape((-1, 2))
                 if len(center_cache) < 100:
                     center_cache[key] = anchor_centers
 
@@ -197,7 +211,9 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         logging.error(f"DEVICE {device}")
         if self.model is None:
             logging.error(f"LOAD {device}")
-            self.model = torch.jit.load(self.model_path, map_location=torch.device(device))
+            self.model = torch.jit.load(
+                self.model_path, map_location=torch.device(device)
+            )
             self.device = device
 
         img = frame.get("frame")
@@ -214,7 +230,11 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         det_img = np.zeros((input_size[1], input_size[0], 3), dtype=np.uint8)
         det_img[:new_height, :new_width, :] = resized_img
         start_time = time.time()
-        result = self.forward_nms(data=np.expand_dims(det_img, axis=0), det_thresh=det_thresh, nms_thresh=nms_thresh)
+        result = self.forward_nms(
+            data=np.expand_dims(det_img, axis=0),
+            det_thresh=det_thresh,
+            nms_thresh=nms_thresh,
+        )
 
         bboxes = result["boxes"] / det_scale
         kpss = result["kpss"] / det_scale
@@ -252,11 +272,15 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
         return bbox_list, kps_list
 
     def predict_faces(self, iterator, num_frames, parameters, data_manager, callbacks):
-        with data_manager.create_data("ImagesData") as images_data,\
-            data_manager.create_data("BboxesData") as bboxes_data,\
-            data_manager.create_data("FacesData") as faces_data,\
-            data_manager.create_data("KpssData") as kpss_data:
-            
+        with data_manager.create_data(
+            "ImagesData"
+        ) as images_data, data_manager.create_data(
+            "BboxesData"
+        ) as bboxes_data, data_manager.create_data(
+            "FacesData"
+        ) as faces_data, data_manager.create_data(
+            "KpssData"
+        ) as kpss_data:
             # iterate through images to get face_images and bboxes
             for i, frame in enumerate(iterator):
                 self.update_callbacks(callbacks, progress=i / num_frames)
@@ -307,7 +331,12 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
                     )
             self.update_callbacks(callbacks, progress=1.0)
 
-            return {"images": images_data, "bboxes": bboxes_data, "kpss": kpss_data, "faces": faces_data}
+            return {
+                "images": images_data,
+                "bboxes": bboxes_data,
+                "kpss": kpss_data,
+                "faces": faces_data,
+            }
 
 
 default_config = {
@@ -319,13 +348,23 @@ default_config = {
     "model_file": "/models/insightface_detector_torch/scrfd_10g_bnkps.pth",
 }
 
-default_parameters = {"fps": 2, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {
+    "fps": 2,
+    "det_thresh": 0.5,
+    "nms_thresh": 0.4,
+    "input_size": (640, 640),
+}
 
 requires = {
     "video": VideoData,
 }
 
-provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData, "faces": FacesData}
+provides = {
+    "images": ImagesData,
+    "bboxes": BboxesData,
+    "kpss": KpssData,
+    "faces": FacesData,
+}
 
 
 @AnalyserPluginManager.export("insightface_video_detector_torch")
@@ -351,7 +390,10 @@ class InsightfaceVideoDetectorTorch(
         with inputs["video"] as input_data:
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
-                    f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}", ref_id=input_data.id
+                    f_video,
+                    fps=parameters.get("fps"),
+                    extension=f".{input_data.ext}",
+                    ref_id=input_data.id,
                 )
 
                 # decode video to extract bboxes per frame
@@ -377,13 +419,23 @@ default_config = {
     "model_file": "/models/insightface_detector_torch/scrfd_10g_bnkps.pth",
 }
 
-default_parameters = {"fps": 1, "det_thresh": 0.5, "nms_thresh": 0.4, "input_size": (640, 640)}
+default_parameters = {
+    "fps": 1,
+    "det_thresh": 0.5,
+    "nms_thresh": 0.4,
+    "input_size": (640, 640),
+}
 
 requires = {
     "images": ImagesData,
 }
 
-provides = {"images": ImagesData, "bboxes": BboxesData, "kpss": KpssData, "faces": FacesData}
+provides = {
+    "images": ImagesData,
+    "bboxes": BboxesData,
+    "kpss": KpssData,
+    "faces": FacesData,
+}
 
 
 @AnalyserPluginManager.export("insightface_image_detector_torch")
