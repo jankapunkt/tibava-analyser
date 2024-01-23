@@ -11,7 +11,8 @@ from .place_data import PlacesData, PlaceData
 from .image_data import ImagesData, ImageData
 from analyser.proto import analyser_pb2
 from .image_embedding import ImageEmbedding
-from .face_cluster_data import Cluster
+from .cluster_data import Cluster
+
 
 @DataManager.export("PlaceClusterData", analyser_pb2.PLACE_CLUSTER_DATA)
 @dataclass(kw_only=True)

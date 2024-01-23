@@ -14,6 +14,7 @@ default_config = {
 
 default_parameters = {
     "cluster_threshold": 0.5,
+    "max_samples_per_cluster": 30,
 }
 
 requires = {
@@ -30,7 +31,7 @@ class Clustering(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
-    version="0.1",
+    version="0.1.1",
     requires=requires,
     provides=provides,
 ):
@@ -64,12 +65,35 @@ class Clustering(
             clusters = []
             for x in np.unique(result):
                 ids = np.where(result == x)[0]
-                clusters.append([embeddings.embeddings[id].id for id in ids])
 
-            clusters = sorted(clusters, key=lambda x: len(x), reverse=True)
+                cluster_size = len(ids)
+
+                logging.error(f"{cluster_size} {ids}")
+                ids_ids = np.linspace(
+                    0,
+                    cluster_size - 1,
+                    min(cluster_size, parameters.get("max_samples_per_cluster")),
+                )
+                logging.error(f"a {ids_ids}")
+                ids_ids = [round(idx) for idx in ids_ids]
+                logging.error(f"b {ids_ids}")
+
+                logging.error(f"old {ids}")
+                sample_ids = ids[ids_ids]
+                logging.error(f"new {ids}")
+
+                clusters.append(
+                    (
+                        [embeddings.embeddings[id].id for id in ids],
+                        [embeddings.embeddings[id].id for id in sample_ids],
+                    )
+                )
+
+            clusters = sorted(clusters, key=lambda x: len(x[0]), reverse=True)
 
             output_data.clusters = [
-                Cluster(object_refs=cluster) for cluster in clusters
+                Cluster(object_refs=cluster[0], sample_object_refs=cluster[1])
+                for cluster in clusters
             ]
 
             return {"cluster_data": output_data}

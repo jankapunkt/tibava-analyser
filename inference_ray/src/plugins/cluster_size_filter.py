@@ -30,7 +30,7 @@ class ClusterSizeFilter(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
-    version="0.1.1",
+    version="0.1.2",
     requires=requires,
     provides=provides,
 ):
