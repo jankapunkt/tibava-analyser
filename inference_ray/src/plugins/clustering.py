@@ -31,7 +31,7 @@ class Clustering(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
-    version="0.1.1",
+    version="0.1.2",
     requires=requires,
     provides=provides,
 ):
@@ -85,14 +85,21 @@ class Clustering(
                 clusters.append(
                     (
                         [embeddings.embeddings[id].id for id in ids],
+                        [embeddings.embeddings[id].ref_id for id in ids],
                         [embeddings.embeddings[id].id for id in sample_ids],
+                        [embeddings.embeddings[id].ref_id for id in sample_ids],
                     )
                 )
 
             clusters = sorted(clusters, key=lambda x: len(x[0]), reverse=True)
 
             output_data.clusters = [
-                Cluster(object_refs=cluster[0], sample_object_refs=cluster[1])
+                Cluster(
+                    embedding_ids=cluster[0],
+                    embedding_ref_ids=cluster[1],
+                    sample_embedding_ids=cluster[2],
+                    sample_embedding_ref_ids=cluster[3],
+                )
                 for cluster in clusters
             ]
 
