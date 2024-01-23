@@ -636,6 +636,20 @@ applications:
           runtime_env:
             pip:
               - scipy
+
+  - name: cluster_size_filter
+    route_prefix: /cluster_size_filter
+    import_path: main:app_builder
+    args:
+      model: cluster_size_filter
+      data_path: /data
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 2
+              
   - name: blip_image_embedding
     route_prefix: /blip_image_embedding
     import_path: main:app_builder
