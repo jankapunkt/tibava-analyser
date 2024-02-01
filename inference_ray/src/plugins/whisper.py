@@ -66,14 +66,13 @@ class Whisper(
             with input_data.open_audio("r") as f_audio:
                 y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
 
-                # chunk_start = 0
-                # chunk_size = parameters.get("sr") * parameters.get("chunk_length")
-                # start = 0
-                prediction = self.model(y, batch_size=8, return_timestamps=True)["chunks"]
-                logging.error(prediction)
-                # while chunk_start < len(y):
-                #     chunk_y = y[chunk_start : chunk_start + chunk_size]
-                #     result = self.server({"data": chunk_y}, ["text", "times"])
+                prediction = self.model(
+                    y,
+                    batch_size=8,
+                    return_timestamps=True,
+                    generate_kwargs={"task": "transcribe"}
+                )["chunks"]
+
                 for chunk in prediction:
                     start = chunk["timestamp"][0]
                     end = chunk["timestamp"][1]
@@ -82,8 +81,6 @@ class Whisper(
                     if end is None:
                         end = len(y) / sr
                     output_data.annotations.append(Annotation(start=start, end=end, labels=[str(chunk["text"])]))
-                #     chunk_start += chunk_size
-                #     start += parameters.get("chunk_length")
 
                 self.update_callbacks(callbacks, progress=1.0)
                 return {"annotations": output_data}
