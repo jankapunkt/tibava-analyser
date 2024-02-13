@@ -35,7 +35,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - librosa
+              - librosa==0.10.1
   - name: audio_freq_analysis
     route_prefix: /audio_freq_analysis
     import_path: main:app_builder
@@ -51,7 +51,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - librosa
+              - librosa==0.10.1
   - name: audio_rms_analysis
     route_prefix: /audio_rms_analysis
     import_path: main:app_builder
@@ -67,7 +67,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - librosa
+              - librosa==0.10.1
   - name: clip_image_embedding
     route_prefix: /clip_image_embedding
     import_path: main:app_builder
@@ -85,11 +85,11 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - open_clip_torch
-              - imageio
-              - torch
-              - scikit-learn
-              - transformers==4.30.0
+              - "open-clip-torch==2.24.0"
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
+              - scikit-learn==1.4.0
+              - transformers==4.37.2
   - name: clip_text_embedding
     route_prefix: /clip_text_embedding
     import_path: main:app_builder
@@ -107,11 +107,11 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - open_clip_torch
-              - imageio
-              - torch
-              - scikit-learn
-              - transformers==4.30.0
+              - "open-clip-torch==2.24.0"
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
+              - scikit-learn==1.4.0
+              - transformers==4.37.2
   - name: clip_ontology_probs
     route_prefix: /clip_ontology_probs
     import_path: main:app_builder
@@ -129,11 +129,11 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - open_clip_torch
-              - imageio
-              - torch
-              - scikit-learn
-              - transformers==4.30.0
+              - "open-clip-torch==2.24.0"
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
+              - scikit-learn==1.4.0
+              - transformers==4.37.2
   - name: clip_probs
     route_prefix: /clip_probs
     import_path: main:app_builder
@@ -151,11 +151,11 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - open_clip_torch
-              - imageio
-              - torch
-              - scikit-learn
-              - transformers==4.30.0
+              - "open-clip-torch==2.24.0"
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
+              - scikit-learn==1.4.0
+              - transformers==4.37.2
   - name: color_analyser
     route_prefix: /color_analyser
     import_path: main:app_builder
@@ -171,7 +171,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
+              - scikit-learn==1.4.0
   - name: color_brightness_analyser
     route_prefix: /color_brightness_analyser
     import_path: main:app_builder
@@ -187,8 +187,8 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
   - name: deepface_emotion
     route_prefix: /deepface_emotion
     import_path: main:app_builder
@@ -205,9 +205,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
               - onnx
   - name: insightface_video_detector_torch
     route_prefix: /insightface_video_detector_torch
@@ -225,9 +225,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - torch
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - torch==2.2.0
   - name: insightface_image_detector_torch
     route_prefix: /insightface_image_detector_torch
     import_path: main:app_builder
@@ -244,9 +244,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - torch
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - torch==2.2.0
   - name: insightface_facesize
     route_prefix: /insightface_facesize
     import_path: main:app_builder
@@ -262,7 +262,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
+              - scikit-learn==1.4.0
   - name: insightface_video_feature_extractor
     route_prefix: /insightface_video_feature_extractor
     import_path: main:app_builder
@@ -279,9 +279,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
               - onnx
   - name: insightface_image_feature_extractor
     route_prefix: /insightface_image_feature_extractor
@@ -299,9 +299,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
               - onnx
   - name: min_max_norm
     route_prefix: /min_max_norm
@@ -332,9 +332,9 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - torch
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - torch==2.2.0
 
   - name: scalar_threshold
     route_prefix: /scalar_threshold
@@ -374,7 +374,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip: 
-              - scikit-learn
+              - scikit-learn==1.4.0
   - name: shot_scalar_annotator
     route_prefix: /shot_scalar_annotator
     import_path: main:app_builder
@@ -403,7 +403,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - torch
+              - torch==2.2.0
   - name: thumbnail_generator
     route_prefix: /thumbnail_generator
     import_path: main:app_builder
@@ -433,7 +433,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - torch
+              - torch==2.2.0
 
   - name: video_to_video
     route_prefix: /video_to_video
@@ -487,7 +487,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scipy
+              - scipy==1.12.0
   
   - name: aggregate_scalar_per_time
     route_prefix: /aggregate_scalar_per_time
@@ -516,10 +516,10 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - librosa
-              - torch
-              - scikit-learn
-              - transformers==4.30.0
+              - librosa==0.10.1
+              - torch==2.2.0
+              - scikit-learn==1.4.0
+              - transformers==4.37.2
 
   - name: x_clip_video_embedding
     route_prefix: /x_clip_video_embedding
@@ -537,10 +537,10 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
-              - onnx
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
+              - onnx==1.15.0
               - cuda-python==12.2.0
               - regex
               - ftfy
@@ -560,10 +560,10 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
-              - onnx
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
+              - onnx==1.15.0
               - cuda-python==12.2.0
               - regex
               - ftfy
@@ -584,13 +584,13 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scikit-learn
-              - opencv-python-headless
-              - onnxruntime-gpu
-              - onnx
+              - scikit-learn==1.4.0
+              - opencv-python-headless==4.9.0.80
+              - onnxruntime-gpu==1.17.0
+              - onnx==1.15.0
               - cuda-python==12.2.0
-              - regex
-              - ftfy
+              - regex==2023.12.25
+              - ftfy==6.1.3
   - name: face_clustering
     route_prefix: /face_clustering
     import_path: main:app_builder
@@ -605,7 +605,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scipy  
+              - scipy==1.12.0  
   - name: place_clustering
     route_prefix: /place_clustering
     import_path: main:app_builder
@@ -620,7 +620,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scipy
+              - scipy==1.12.0
   - name: clustering
     route_prefix: /clustering
     import_path: main:app_builder
@@ -635,7 +635,7 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - scipy
+              - scipy==1.12.0
 
   - name: cluster_size_filter
     route_prefix: /cluster_size_filter
@@ -679,11 +679,11 @@ applications:
           num_cpus: 2
           runtime_env:
             pip:
-              - imageio
-              - torch
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
               - pillow
-              - scikit-learn
-              - transformers          
+              - scikit-learn==1.4.0
+              - transformers==4.37.2          
   - name: blip_vqa
     route_prefix: /blip_vqa
     import_path: main:app_builder
@@ -700,8 +700,8 @@ applications:
           num_cpus: 8
           runtime_env:
             pip:
-              - imageio
-              - torch
+              - git+https://github.com/SpringsteinM/imageio.git
+              - torch==2.2.0
               - pillow
-              - scikit-learn
-              - transformers
+              - scikit-learn==1.4.0
+              - transformers==4.37.2

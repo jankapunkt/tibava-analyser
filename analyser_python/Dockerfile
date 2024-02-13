@@ -14,20 +14,20 @@ ENV NUMBA_CACHE_DIR=/tmp/
 
 # Install pip requirements
 
-RUN python3 -m pip install imageio
+RUN python3 -m pip install "git+https://github.com/SpringsteinM/imageio.git" --ignore-installed
 RUN python3 -m pip install "imageio[pyav]"
 RUN python3 -m pip install "imageio[ffmpeg]"
-RUN python3 -m pip install msgpack
+RUN python3 -m pip install "msgpack==1.0.7"
 RUN python3 -m pip install numpy
 RUN python3 -m pip install PyYAML
-RUN python3 -m pip install redis 
+RUN python3 -m pip install "redis==5.0.1" 
 RUN python3 -m pip install requests 
-RUN python3 -m pip install grpcio==1.47.0
-RUN python3 -m pip install grpcio-tools==1.47.0
+RUN python3 -m pip install "grpcio==1.47.0"
+RUN python3 -m pip install "grpcio-tools==1.47.0"
 
-RUN python3 -m pip install msgpack-numpy
+RUN python3 -m pip install "msgpack-numpy==0.4.8"
 
-RUN python3 -m pip install av
+RUN python3 -m pip install "av==11.0.0"
 
 RUN python3 -m pip install pytest
 
