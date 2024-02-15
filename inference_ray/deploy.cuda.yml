@@ -152,6 +152,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
+          num_gpus: 0.1
           runtime_env:
             pip:
               - "open-clip-torch==2.24.0"

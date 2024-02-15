@@ -62,7 +62,9 @@ class Whisper(
             )
             self.device = device
 
-        with inputs["audio"] as input_data, data_manager.create_data("AnnotationData") as output_data:
+        with inputs["audio"] as input_data, data_manager.create_data(
+            "AnnotationData"
+        ) as output_data:
             with input_data.open_audio("r") as f_audio:
                 y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
 
@@ -70,7 +72,7 @@ class Whisper(
                     y,
                     batch_size=8,
                     return_timestamps=True,
-                    generate_kwargs={"task": "transcribe"}
+                    generate_kwargs={"task": "transcribe"},
                 )["chunks"]
 
                 for chunk in prediction:
@@ -80,7 +82,9 @@ class Whisper(
                         start = 0.0
                     if end is None:
                         end = len(y) / sr
-                    output_data.annotations.append(Annotation(start=start, end=end, labels=[str(chunk["text"])]))
+                    output_data.annotations.append(
+                        Annotation(start=start, end=end, labels=[str(chunk["text"])])
+                    )
 
                 self.update_callbacks(callbacks, progress=1.0)
                 return {"annotations": output_data}

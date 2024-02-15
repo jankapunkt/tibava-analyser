@@ -149,11 +149,7 @@ class ClipImageEmbedding(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(
-            f"[ClipImageEmbedding] call device:{device} torch:{torch.__version__} open_clip:{open_clip.__version__}"
-        )
         if self.model is None:
-            logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
                 pretrained=self.pretrained,
@@ -164,7 +160,6 @@ class ClipImageEmbedding(
             self.model = model.visual
             self.preprocess = ImagePreprozessorWrapper(model, format=torch.float32)
 
-        logging.error(f"START {device}")
         with inputs["video"] as input_data, data_manager.create_data(
             "ImageEmbeddings"
         ) as output_data:
@@ -174,7 +169,6 @@ class ClipImageEmbedding(
                 )
                 num_frames = video_decoder.duration() * video_decoder.fps()
                 for i, frame in enumerate(video_decoder):
-                    logging.error(f"LOOP {device}")
                     self.update_callbacks(callbacks, progress=i / num_frames)
 
                     img = frame.get("frame")
@@ -238,9 +232,7 @@ class ClipTextEmbedding(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
                 pretrained=self.pretrained,
@@ -304,9 +296,7 @@ class ClipOntologyProbs(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
                 pretrained=self.pretrained,
@@ -415,9 +405,7 @@ class ClipProbs(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
                 self.model_name,
                 pretrained=self.pretrained,
