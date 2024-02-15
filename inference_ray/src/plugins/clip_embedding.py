@@ -149,7 +149,9 @@ class ClipImageEmbedding(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
+        logging.error(
+            f"[ClipImageEmbedding] call device:{device} torch:{torch.__version__} open_clip:{open_clip.__version__}"
+        )
         if self.model is None:
             logging.error(f"LOAD {device}")
             model, _, preprocess = open_clip.create_model_and_transforms(
