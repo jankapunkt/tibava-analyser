@@ -221,7 +221,7 @@ applications:
       model: insightface_video_detector_torch
       data_path: /data
       params: 
-        model_path: /models/insightface_detector_torch/scrfd_10g_bnkps_gpu.pth
+        model_path: /models/insightface_detector_torch/scrfd_10g_bnkps.pth
     deployments:
       - name: Deployment
         autoscaling_config:
@@ -241,7 +241,7 @@ applications:
       model: insightface_image_detector_torch
       data_path: /data
       params: 
-        model_path: /models/insightface_detector_torch/scrfd_10g_bnkps_gpu.pth
+        model_path: /models/insightface_detector_torch/scrfd_10g_bnkps.pth
     deployments:
       - name: Deployment
         autoscaling_config:
@@ -332,7 +332,7 @@ applications:
       model: places_classifier
       data_path: /data
       params: 
-        model_path: /models/places_classification/resnet50_places365_gpu.pt
+        model_path: /models/places_classification/resnet50_places365.pt
         classes_file: /models/places_classification/categories_places365.txt
         hierarchy_file: /models/places_classification/scene_hierarchy_places365.csv
     deployments:
@@ -408,7 +408,7 @@ applications:
       model: shot_type_classifier
       data_path: /data
       params: 
-        model_path: /models/shot_type_classification/shot_type_classifier_e9-s3199_gpu.pt
+        model_path: /models/shot_type_classification/shot_type_classifier_e9-s3199.pt
     deployments:
       - name: Deployment
         autoscaling_config:
