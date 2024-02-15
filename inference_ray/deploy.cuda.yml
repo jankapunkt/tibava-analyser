@@ -83,7 +83,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - "open-clip-torch==2.24.0"
@@ -106,7 +106,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - "open-clip-torch==2.24.0"
@@ -129,7 +129,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - "open-clip-torch==2.24.0"
@@ -206,7 +206,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -227,7 +227,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -247,7 +247,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -284,7 +284,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -305,7 +305,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -340,7 +340,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -414,7 +414,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - torch==2.2.0
@@ -446,7 +446,7 @@ applications:
           min_replicas: 4
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - torch==2.2.0
@@ -534,7 +534,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - librosa==0.10.1
@@ -557,7 +557,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -581,7 +581,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -606,7 +606,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scikit-learn==1.4.0
@@ -628,7 +628,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scipy==1.12.0  
@@ -644,7 +644,7 @@ applications:
           min_replicas: 1
           max_replicas: 20
         ray_actor_options:
-          num_gpus: 0.2
+          num_gpus: 0.1
           runtime_env:
             pip:
               - scipy==1.12.0  
@@ -694,55 +694,55 @@ applications:
           num_cpus: 2
                              
               
-  - name: blip_image_embedding
-    route_prefix: /blip_image_embedding
-    import_path: main:app_builder
-    args:
-      model: blip_image_embedding
-      data_path: /data
-      params: 
-        model: Salesforce/instructblip-flan-t5-xl
-    deployments:
-      - name: Deployment
-        autoscaling_config:
-          min_replicas: 1
-          max_replicas: 20
-        ray_actor_options:
-          # num_cpus: 2
-          num_gpus: 0.2
-          runtime_env:
-            pip:
-              - git+https://github.com/SpringsteinM/imageio.git
-              - torch==2.2.0
-              - pillow
-              - scikit-learn==1.4.0
-              - transformers==4.37.2   
-              - accelerate      
-              - bitsandbytes
-              - peft   
-  - name: blip_vqa
-    route_prefix: /blip_vqa
-    import_path: main:app_builder
-    args:
-      model: blip_vqa
-      data_path: /data
-      params: 
-        model: Salesforce/instructblip-flan-t5-xl
-    deployments:
-      - name: Deployment
-        autoscaling_config:
-          min_replicas: 1
-          max_replicas: 20
-        ray_actor_options:
-          # num_cpus: 2
-          num_gpus: 0.8
-          runtime_env:
-            pip:
-              - git+https://github.com/SpringsteinM/imageio.git
-              - torch==2.2.0
-              - pillow
-              - scikit-learn==1.4.0
-              - transformers==4.37.2   
-              - accelerate      
-              - bitsandbytes
-              - peft   
+  # - name: blip_image_embedding
+  #   route_prefix: /blip_image_embedding
+  #   import_path: main:app_builder
+  #   args:
+  #     model: blip_image_embedding
+  #     data_path: /data
+  #     params: 
+  #       model: Salesforce/instructblip-flan-t5-xl
+  #   deployments:
+  #     - name: Deployment
+  #       autoscaling_config:
+  #         min_replicas: 1
+  #         max_replicas: 20
+  #       ray_actor_options:
+  #         # num_cpus: 2
+  #         num_gpus: 0.1
+  #         runtime_env:
+  #           pip:
+  #             - git+https://github.com/SpringsteinM/imageio.git
+  #             - torch==2.2.0
+  #             - pillow
+  #             - scikit-learn==1.4.0
+  #             - transformers==4.37.2   
+  #             - accelerate      
+  #             - bitsandbytes
+  #             - peft   
+  # - name: blip_vqa
+  #   route_prefix: /blip_vqa
+  #   import_path: main:app_builder
+  #   args:
+  #     model: blip_vqa
+  #     data_path: /data
+  #     params: 
+  #       model: Salesforce/instructblip-flan-t5-xl
+  #   deployments:
+  #     - name: Deployment
+  #       autoscaling_config:
+  #         min_replicas: 1
+  #         max_replicas: 20
+  #       ray_actor_options:
+  #         # num_cpus: 2
+  #         num_gpus: 0.8
+  #         runtime_env:
+  #           pip:
+  #             - git+https://github.com/SpringsteinM/imageio.git
+  #             - torch==2.2.0
+  #             - pillow
+  #             - scikit-learn==1.4.0
+  #             - transformers==4.37.2   
+  #             - accelerate      
+  #             - bitsandbytes
+  #             - peft   
