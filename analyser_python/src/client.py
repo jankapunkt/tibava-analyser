@@ -49,7 +49,10 @@ class AnalyserClient:
     def __init__(self, host, port, manager=None):
         self.host = host
         self.port = port
-        self.manager = manager
+        if manager is None:
+            self.manager = DataManager()
+        else:
+            self.manager = manager
         self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
 
     def list_plugins(self):
@@ -63,15 +66,11 @@ class AnalyserClient:
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 
         def generate_requests(data, chunk_size=128 * 1024):
-            if self.manager is None:
-                data_manager = DataManager()
-            else:
-                data_manager = self.manager
             # data_manager.save(data)
             # data = data_manager.load(data.id)
             """Lazy function (generator) to read a file piece by piece.
             Default chunk size: 1k"""
-            for x in data_manager.dump_to_stream(data.id):
+            for x in self.manager.dump_to_stream(data.id):
                 yield analyser_pb2.UploadDataRequest(
                     id=data.id, data_encoded=x["data_encoded"]
                 )
@@ -164,6 +163,8 @@ class AnalyserClient:
                 x.type = analyser_pb2.INT_TYPE
             if isinstance(i.get("value"), str):
                 x.type = analyser_pb2.STRING_TYPE
+            if isinstance(i.get("value"), bool):
+                x.type = analyser_pb2.BOOL_TYPE
 
         stub = analyser_pb2_grpc.AnalyserStub(self.channel)
 

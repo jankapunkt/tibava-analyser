@@ -26,9 +26,15 @@ from analyser.utils.cache import CacheManager
 
 
 class AnalyserCacheWrapper:
-    def __init__(self, plugin, cache):
+    def __init__(self, plugin: AnalyserPluginManager, cache: CacheManager):
         self.plugin = plugin
         self.cache = cache
+
+    def plugin_status(self):
+        return self.plugin.plugin_status()
+
+    def plugins(self):
+        return self.plugin._plugins
 
     def __call__(self, plugin, inputs, parameters, data_manager, callbacks):
         cached = False
@@ -37,14 +43,20 @@ class AnalyserCacheWrapper:
 
             run_id = uuid.uuid4().hex[:4]
             if plugin not in plugins:
-                logging.error(f"[AnalyserCacheWrapper] {run_id} plugin: {plugin} not found")
+                logging.error(
+                    f"[AnalyserCacheWrapper] {run_id} plugin: {plugin} not found"
+                )
                 return None
 
             plugin_to_run = plugins[plugin]
             results = {}
-            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run}")
-            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run['provides']}")
-            logging.info(f"[AnalyserPluginManager] Cache {plugin_to_run['requires']}")
+            logging.info(f"[AnalyserPluginManager] {run_id} Cache {plugin_to_run}")
+            logging.info(
+                f"[AnalyserPluginManager] {run_id} Cache {plugin_to_run['provides']}"
+            )
+            logging.info(
+                f"[AnalyserPluginManager] {run_id} Cache {plugin_to_run['requires']}"
+            )
 
             cached = True
             for output in plugin_to_run["provides"]:
@@ -57,23 +69,33 @@ class AnalyserCacheWrapper:
                     config={},  # plugin_to_run.config, TODO
                 )
 
-                logging.info(f"[AnalyserPluginManager] Cache {result_hash}")
+                logging.info(f"[AnalyserPluginManager] {run_id} Cache {result_hash}")
                 cached_data = self.cache.get(result_hash)
                 if cached_data is None:
                     cached = False
                     break
 
-                logging.info(f"[AnalyserPluginManager] Cache get {result_hash} {cached_data}")
+                logging.info(
+                    f"[AnalyserPluginManager] {run_id} Cache get {result_hash} {cached_data}"
+                )
                 results[output] = cached_data.get("data_id")
 
         if not cached:
             logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
-            logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
+            logging.info(
+                f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}"
+            )
             logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
             results = self.plugin(
-                plugin=plugin, inputs=inputs, data_manager=data_manager, parameters=parameters, callbacks=callbacks
+                plugin=plugin,
+                inputs=inputs,
+                data_manager=data_manager,
+                parameters=parameters,
+                callbacks=callbacks,
             )
-            logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x} for k,x in results.items()]}")
+            logging.info(
+                f"[AnalyserPluginManager] {run_id} results: {[{k:x} for k,x in results.items()]}"
+            )
 
         if self.cache:
             for output, data in results.items():
@@ -88,9 +110,14 @@ class AnalyserCacheWrapper:
                     version=plugin_to_run["version"],
                     config={},  # plugin_to_run.config, TODO
                 )
-                logging.info(f"[AnalyserPluginManager] Cache set {result_hash} {data_id}")
+                logging.info(
+                    f"[AnalyserPluginManager] Cache set {result_hash} {data_id}"
+                )
 
-                self.cache.set(result_hash, {"data_id": data_id, "time": time.time(), "type": "plugin_result"})
+                self.cache.set(
+                    result_hash,
+                    {"data_id": data_id, "time": time.time(), "type": "plugin_result"},
+                )
         return results
 
 
@@ -111,14 +138,24 @@ def run_plugin(args):
         plugin_parameters = {}
         if "parameters" in params:
             for parameter in params.get("parameters"):
+                logging.error(f"WWWWWWWWWWWW {parameter.get('value')}")
                 if parameter.get("type") == "FLOAT_TYPE":
-                    plugin_parameters[parameter.get("name")] = float(parameter.get("value"))
+                    plugin_parameters[parameter.get("name")] = float(
+                        parameter.get("value")
+                    )
                 if parameter.get("type") == "INT_TYPE":
-                    plugin_parameters[parameter.get("name")] = int(parameter.get("value"))
+                    plugin_parameters[parameter.get("name")] = int(
+                        parameter.get("value")
+                    )
                 if parameter.get("type") == "STRING_TYPE":
-                    plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
+                    plugin_parameters[parameter.get("name")] = str(
+                        parameter.get("value")
+                    )
                 if parameter.get("type") == "BOOL_TYPE":
-                    plugin_parameters[parameter.get("name")] = str(parameter.get("value"))
+                    if parameter.get("value") == "False":
+                        plugin_parameters[parameter.get("name")] = False
+                    else:
+                        plugin_parameters[parameter.get("name")] = True
 
         callbacks = [AnalyserProgressCallback(shared)]
         results = plugin_manager(
@@ -157,13 +194,16 @@ def init_plugins(config):
 
     # building datamanager
     data_config = config.get("data", None)
-    if not data_config:
-        data_dir = None
-        cache = None
-    else:
+    data_dir = None
+    cache = None
+
+    if data_config is not None:
         data_dir = data_config.get("data_dir", None)
         cache_config = data_config.get("cache")
-        cache = CacheManager.build(name=cache_config["type"], config=cache_config["params"])
+        if cache_config is not None:
+            cache = CacheManager.build(
+                name=cache_config["type"], config=cache_config["params"]
+            )
 
     data_manager = DataManager(data_dir=data_dir, cache=cache)
     data_dict["data_manager"] = data_manager
@@ -183,7 +223,9 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
         self.config = config
         self.managers = init_plugins(config)
         self.process_pool = futures.ThreadPoolExecutor(
-            max_workers=self.config.get("num_worker", 1), initializer=init_process, initargs=(config,)
+            max_workers=self.config.get("num_worker", 1),
+            initializer=init_process,
+            initargs=(config,),
         )
         self.shared_manager = mp.Manager()
         self.futures = []
@@ -193,16 +235,18 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def list_plugins(self, request, context):
         reply = analyser_pb2.ListPluginsReply()
 
-        print(self.managers["plugin_manager"].plugin_status())
+        # print(self.managers["plugin_manager"].plugin_status())
 
-        # for _, plugin_class in self.managers["plugin_manager"].plugins().items():
-        #     reply.plugins.extend([plugin_class.serialize_class()])
+        for _, plugin_class in self.managers["plugin_manager"].plugins().items():
+            reply.plugins.extend([analyser_pb2.PluginInfo(name=plugin_class._name)])
 
         return reply
 
     def upload_data(self, request_iterator, context):
         try:
-            data, hash = self.managers["data_manager"].load_data_from_stream(request_iterator)
+            data, hash = self.managers["data_manager"].load_data_from_stream(
+                request_iterator
+            )
             data_id = None
             with data:
                 data_id = data.id
@@ -218,7 +262,9 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
 
     def upload_file(self, request_iterator, context):
         # try:
-        data, hash = self.managers["data_manager"].load_file_from_stream(request_iterator)
+        data, hash = self.managers["data_manager"].load_file_from_stream(
+            request_iterator
+        )
 
         # data, hash = self.managers["data_manager"].load_data_from_stream(request_iterator)
 
@@ -274,7 +320,9 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
             job_data = self.futures[futures_lut[request.id]]
             done = job_data["future"].done()
 
-            status = job_data["shared"].get("status", analyser_pb2.GetPluginStatusResponse.UNKNOWN)
+            status = job_data["shared"].get(
+                "status", analyser_pb2.GetPluginStatusResponse.UNKNOWN
+            )
             response.status = status
 
             progress = job_data["shared"].get("progress", 0.0)
@@ -310,7 +358,9 @@ class Commune(analyser_pb2_grpc.AnalyserServicer):
     def download_data(self, request, context):
         try:
             for x in self.managers["data_manager"].dump_to_stream(request.id):
-                yield analyser_pb2.DownloadDataResponse(id=x["id"], data_encoded=x["data_encoded"])
+                yield analyser_pb2.DownloadDataResponse(
+                    id=x["id"], data_encoded=x["data_encoded"]
+                )
 
         except Exception as e:
             logging.error(f"[Analyser] {repr(e)}")
@@ -352,7 +402,9 @@ class Server:
         try:
             while True:
                 num_jobs = len(self.commune.futures)
-                num_jobs_done = len([x for x in self.commune.futures if x["future"].done()])
+                num_jobs_done = len(
+                    [x for x in self.commune.futures if x["future"].done()]
+                )
                 time.sleep(10)
         except KeyboardInterrupt:
             self.server.stop(0)
@@ -370,7 +422,12 @@ def parse_args():
     parser.add_argument("-d", "--debug", action="store_true", help="debug output")
     parser.add_argument("-c", "--config", help="config path")
     parser.add_argument("--port", type=int, help="port")
+    parser.add_argument("--host", help="host")
+    parser.add_argument("--data_dir", help="data dir")
+    parser.add_argument("--no_cache", action="store_true", help="disable cache")
+
     args = parser.parse_args()
+
     return args
 
 
@@ -383,7 +440,11 @@ def main():
     elif args.verbose:
         level = logging.INFO
 
-    logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%d-%m-%Y %H:%M:%S", level=level)
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%d-%m-%Y %H:%M:%S",
+        level=level,
+    )
 
     if args.config is not None:
         config = read_config(args.config)
@@ -392,6 +453,15 @@ def main():
 
     if args.port:
         config["grpc"]["port"] = args.port
+
+    if args.host:
+        config["grpc"]["host"] = args.host
+
+    if args.data_dir:
+        config["data"]["data_dir"] = args.data_dir
+
+    if args.no_cache:
+        config["data"]["cache"] = None
 
     AnalyserPluginManager()
     # print(config, flush=True)

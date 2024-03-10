@@ -5,6 +5,7 @@ import numpy as np
 from analyser.data import DataManager, Data
 
 from typing import Callable, Optional, Dict
+import logging
 
 default_config = {"data_dir": "/data/"}
 
@@ -28,7 +29,7 @@ class ColorBrightnessAnalyser(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
-    version="0.1",
+    version="0.5",
     requires=requires,
     provides=provides,
 ):
@@ -44,7 +45,9 @@ class ColorBrightnessAnalyser(
     ) -> Dict[str, Data]:
         import cv2
 
-        with inputs["video"] as input_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
                     f_video,
@@ -59,15 +62,18 @@ class ColorBrightnessAnalyser(
                 for i, frame in enumerate(video_decoder):
                     self.update_callbacks(callbacks, progress=i / num_frames)
                     image = frame["frame"]
-                    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+                    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV) / 255
                     value = np.mean(hsv[:, :, 2])
                     values.append(value)
                     time.append(i / parameters.get("fps"))
 
             y = np.stack(values)
-
+            logging.error(f"####++++ {y}")
             if parameters.get("normalize"):
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
+                logging.error(f"####++++ normalize")
+
+            logging.error(f"# {y}")
             self.update_callbacks(callbacks, progress=1.0)
 
             output_data.y = y
