@@ -129,6 +129,7 @@ class AnalyserClient:
             response = stub.upload_file(generator())
 
             if response.hash == generator.hash() and response.success:
+                print(response.id)
                 return response.id
 
             logging.warning("Retry to upload the data again ...")

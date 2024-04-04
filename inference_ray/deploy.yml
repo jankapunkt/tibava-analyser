@@ -705,3 +705,15 @@ applications:
               - pillow
               - scikit-learn==1.4.0
               - transformers==4.37.2
+  - name: timeline_video_sampler
+    route_prefix: /timeline_video_sampler
+    import_path: main:app_builder
+    args:
+      model: timeline_video_sampler
+      data_path: /data
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 8

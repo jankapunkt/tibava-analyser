@@ -31,6 +31,9 @@ class ShotsData(Data):
 
         data = self.load_dict("shots_data.yml")
         self.shots = [Shot(**x) for x in data.get("shots")]
+        
+    def __iter__(self):
+        yield from self.shots
 
     def save(self) -> None:
         super().save()

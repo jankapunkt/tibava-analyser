@@ -5,6 +5,8 @@ from ..data import Data
 from analyser.proto import analyser_pb2
 from dataclasses import dataclass, field, fields
 from collections.abc import Iterable
+from analyser.utils import VideoDecoder
+
 
 
 @DataManager.export("VideoData", analyser_pb2.VIDEO_DATA)
@@ -37,6 +39,9 @@ class VideoData(Data):
             "filename": self.filename,
             "ext": self.ext,
         }
+    
+    def __call__(self, fps: float= None, **kwargs) -> "VideoIterator":
+        return VideoIterator(self, fps=fps)
 
     def open_video(self, mode="r"):
         assert self.check_fs(), "No fs register"
@@ -56,3 +61,23 @@ class VideoData(Data):
             f.write(first_pkg.data_encoded)
             for x in data_stream:
                 f.write(x.data_encoded)
+
+
+class VideoIterator():
+    def __init__(self, data: VideoData, fps:float=None):
+        self.data = data
+        self.fps = fps
+        self.video_file = None
+        self.video_decoder = None
+
+    def __enter__(self):
+        self.video_file = self.data.open_video("r")
+        
+        self.video_decoder = VideoDecoder(self.video_file, fps=self.fps, extension=f".{self.data.ext}")
+        return self.video_decoder
+    
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.video_file is not None:
+            self.video_file.close()
+

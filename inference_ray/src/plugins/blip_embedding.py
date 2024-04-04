@@ -26,7 +26,7 @@ default_config = {
 
 
 img_embd_parameters = {
-    "fps": 2,
+    "fps": None,
     "crop_size": [224, 224],
 }
 

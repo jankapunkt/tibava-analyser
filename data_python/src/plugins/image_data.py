@@ -62,6 +62,9 @@ class ImagesData(Data):
     def __iter__(self) -> Iterator:
         yield from self.images
 
+    def __call__(self, **kwargs) -> "ImagesIterator":
+        return ImagesIterator(self)
+
     def save_image(self, image: npt.ArrayLike, **kwargs) -> None:
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
@@ -103,3 +106,22 @@ class ImagesData(Data):
                         if not chunk:
                             break
                         f_out.write(chunk)
+
+
+
+class ImagesIterator():
+    def __init__(self, data: ImagesData):
+        self.data = data
+
+    def __enter__(self):
+        return self
+
+    def __iter__(self):
+        for i, image in enumerate(self.data):
+            image_data = self.data.load_image(image)
+            yield {"time": image.time, "index": i, "frame": image_data, "ref_id": image.ref_id, "delta_time": image.delta_time}
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.video_file is not None:
+            self.video_file.close()
+

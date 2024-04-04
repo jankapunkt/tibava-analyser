@@ -58,6 +58,7 @@ class AnalyserCacheWrapper:
                 f"[AnalyserPluginManager] {run_id} Cache {plugin_to_run['requires']}"
             )
 
+            print(inputs, flush=True)
             cached = True
             for output in plugin_to_run["provides"]:
                 result_hash = get_hash_for_plugin(
@@ -133,6 +134,9 @@ def run_plugin(args):
         if "inputs" in params:
             for data_in in params.get("inputs"):
                 data = data_manager.load(data_in.get("id"))
+                if data is None:
+                    logging.error(f"Data not found {data_in.get('id')}")
+                    return []
                 plugin_inputs[data_in.get("name")] = data
 
         plugin_parameters = {}
