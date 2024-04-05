@@ -716,4 +716,19 @@ applications:
         autoscaling_config:
           min_replicas: 0
         ray_actor_options:
-          num_cpus: 8
+          num_cpus: 1
+  - name: invert_scalar
+    route_prefix: /invert_scalar
+    import_path: main:app_builder
+    args:
+      model: invert_scalar
+      data_path: /data
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 1
+
+
+          
