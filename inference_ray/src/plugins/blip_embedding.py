@@ -9,10 +9,12 @@ from analyser.data import (
     AnnotationData,
     ImageEmbedding,
     ImageEmbeddings,
+    ImagesData,
+    ShotsData
 )
 from analyser.data import DataManager, Data
 
-from typing import Callable, Optional, Dict
+from typing import Callable, Optional, Dict, Union
 
 # from analyser.inference import InferenceServer
 from analyser.utils import VideoDecoder
@@ -32,7 +34,7 @@ img_embd_parameters = {
 
 
 img_embd_requires = {
-    "video": VideoData,
+    "input": Union[VideoData, ImagesData],
 }
 
 img_embd_provides = {
@@ -94,16 +96,13 @@ class BlipImageEmbedding(
             logging.error(f"LOAD {device}")
 
         logging.error(f"START {device}")
-        with inputs["video"] as input_data, data_manager.create_data("ImageEmbeddings") as output_data:
-            with input_data.open_video("r") as f_video:
-                video_decoder = VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}")
-                num_frames = video_decoder.duration() * video_decoder.fps()
-                for i, frame in enumerate(video_decoder):
+        with inputs["input"] as input_data, data_manager.create_data("ImageEmbeddings") as output_data:
+            with input_data() as input_iterator:
+                for i, frame in enumerate(input_iterator):
                     logging.error(f"LOOP {device}")
-                    self.update_callbacks(callbacks, progress=i / num_frames)
+                    self.update_callbacks(callbacks, progress=i / len(input_iterator))
 
                     img = frame.get("frame")
-                    logging.error(img)
                     img = self.processor(images=img, return_tensors="pt").to(device, dtype=self.dtype)
 
                     with torch.no_grad(), torch.cuda.amp.autocast():
@@ -111,11 +110,16 @@ class BlipImageEmbedding(
                         # embedding = self.model(img)
                         # embedding = torch.nn.functional.normalize(embedding, dim=-1)
                     embedding = embedding.cpu().detach()
+
+                    if frame.get("delta_time"):
+                        delta_time = frame.get("delta_time")
+                    elif parameters.get("fps"):
+                        delta_time = 1 / parameters.get("fps")
                     output_data.embeddings.append(
                         ImageEmbedding(
                             embedding=embedding,
                             time=frame.get("time"),
-                            delta_time=1 / parameters.get("fps"),
+                            delta_time=delta_time,
                         )
                     )
 
@@ -133,6 +137,7 @@ prob_parameters = {"query_term": ""}
 
 img_embd_requires = {
     "embeddings": ImageEmbeddings,
+    "shots": ShotsData,
 }
 
 img_embd_provides = {
@@ -145,7 +150,7 @@ class BlipVQA(
     AnalyserPlugin,
     config=default_config,
     parameters=prob_parameters,
-    version="0.1",
+    version="0.2",
     requires=img_embd_requires,
     provides=img_embd_provides,
 ):
@@ -276,7 +281,9 @@ class BlipVQA(
 
         query_term = parameters["query_term"]
         text_inputs = self.processor(text=query_term, return_tensors="pt").to(self.device, dtype=self.dtype)
-        with inputs["embeddings"] as input_data, data_manager.create_data("AnnotationData") as annotation_data:
+        with inputs["embeddings"] as input_data, inputs["shots"] as shots_data, data_manager.create_data("AnnotationData") as annotation_data:
+            generated_texts = []
+
             for i, embedding in enumerate(input_data.embeddings):
                 logging.error(f"LOOP {device}")
                 self.update_callbacks(callbacks, progress=i / len(input_data.embeddings))
@@ -294,11 +301,20 @@ class BlipVQA(
                     temperature=1,
                 )
                 generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+                generated_texts.append((embedding.time, generated_text))
                 # embedding = self.model(img)
                 # embedding = torch.nn.functional.normalize(embedding, dim=-1)
                 # embedding = embedding.cpu().detach()
+
+
+            for shot in shots_data:
+                shot_texts=[]
+                for time, generated_text in generated_texts:
+                    if shot.start <= time and time <= shot.end:
+                        shot_texts.append(generated_text)
+
                 annotation_data.annotations.append(
-                    Annotation(start=embedding.time, end=embedding.time + embedding.delta_time, labels=[generated_text])
+                    Annotation(start=shot.start, end=shot.end, labels=shot_texts)
                 )  # Maybe store max_mean_class_prob as well?
 
             self.update_callbacks(callbacks, progress=1.0)

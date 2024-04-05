@@ -116,12 +116,14 @@ class ImagesIterator():
     def __enter__(self):
         return self
 
+    def __len__(self):
+        return len(self.data)
+
     def __iter__(self):
         for i, image in enumerate(self.data):
             image_data = self.data.load_image(image)
             yield {"time": image.time, "index": i, "frame": image_data, "ref_id": image.ref_id, "delta_time": image.delta_time}
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.video_file is not None:
-            self.video_file.close()
+        pass
 

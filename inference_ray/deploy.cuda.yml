@@ -14,7 +14,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -30,7 +30,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -46,7 +46,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -62,7 +62,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -80,7 +80,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -103,7 +103,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -126,7 +126,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -149,7 +149,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -170,7 +170,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -186,7 +186,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -204,7 +204,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -225,7 +225,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -245,7 +245,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -264,7 +264,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_cpus: 2
@@ -282,7 +282,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -303,7 +303,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -323,7 +323,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
   - name: places_classifier
     route_prefix: /places_classifier
@@ -338,7 +338,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -358,7 +358,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
               
   - name: shot_annotator
@@ -371,7 +371,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
   - name: shot_density
     route_prefix: /shot_density
@@ -383,7 +383,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -399,7 +399,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
   - name: shot_type_classifier
     route_prefix: /shot_type_classifier
@@ -412,7 +412,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -429,7 +429,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
 
             
@@ -444,7 +444,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 4
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -462,7 +462,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
 
 
@@ -476,7 +476,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
 
   - name: aggregate_scalar
@@ -489,7 +489,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
 
   - name: cosine_similarity
@@ -502,7 +502,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           runtime_env:
@@ -519,7 +519,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
   - name: whisper
     route_prefix: /whisper
@@ -532,7 +532,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -555,7 +555,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -579,7 +579,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -604,7 +604,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -626,7 +626,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -642,7 +642,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_gpus: 0.1
@@ -659,7 +659,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_cpus: 2
@@ -675,7 +675,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_cpus: 2
@@ -689,7 +689,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           num_cpus: 2
@@ -706,7 +706,7 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           # num_cpus: 2
@@ -732,11 +732,11 @@ applications:
     deployments:
       - name: Deployment
         autoscaling_config:
-          min_replicas: 1
+          min_replicas: 0
           max_replicas: 20
         ray_actor_options:
           # num_cpus: 2
-          num_gpus: 0.8
+          num_gpus: 1.0
           runtime_env:
             pip:
               - git+https://github.com/SpringsteinM/imageio.git
