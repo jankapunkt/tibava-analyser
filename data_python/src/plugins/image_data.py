@@ -48,7 +48,9 @@ class ImagesData(Data):
         assert self.check_fs(), "No filesystem handler installed"
         assert self.fs.mode == "w", "Data packet is open read only"
 
-        self.save_dict("images_data.yml", {"images": [x.to_dict() for x in self.images]})
+        self.save_dict(
+            "images_data.yml", {"images": [x.to_dict() for x in self.images]}
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -89,7 +91,9 @@ class ImagesData(Data):
             with self.fs.open_file(f"{image_id}.{image_ext}", "r") as f:
                 return iio.imread(f.read(), extension=f".{image_ext}")
         except Exception as e:
-            logging.error(f"[ImagesData] Could not load a image with id {image_id} (Exception: {e})")
+            logging.error(
+                f"[ImagesData] Could not load a image with id {image_id} (Exception: {e})"
+            )
             return None
 
     def extract_all(self, data_manager: DataManager) -> None:
@@ -108,8 +112,7 @@ class ImagesData(Data):
                         f_out.write(chunk)
 
 
-
-class ImagesIterator():
+class ImagesIterator:
     def __init__(self, data: ImagesData):
         self.data = data
 
@@ -122,8 +125,14 @@ class ImagesIterator():
     def __iter__(self):
         for i, image in enumerate(self.data):
             image_data = self.data.load_image(image)
-            yield {"time": image.time, "index": i, "frame": image_data, "ref_id": image.ref_id, "delta_time": image.delta_time}
+            yield {
+                "time": image.time,
+                "index": i,
+                "frame": image_data,
+                "id": image.id,
+                "ref_id": image.ref_id,
+                "delta_time": image.delta_time,
+            }
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
-

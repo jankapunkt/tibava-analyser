@@ -1,6 +1,15 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder, image_pad
-from analyser.data import ListData, ImagesData, VideoData, ListData, ImageEmbedding, ImageEmbeddings, PlaceData, PlacesData
+from analyser.data import (
+    ListData,
+    ImagesData,
+    VideoData,
+    ListData,
+    ImageEmbedding,
+    ImageEmbeddings,
+    PlaceData,
+    PlacesData,
+)
 
 import logging
 
@@ -56,7 +65,9 @@ class PlacesClassifier(
         # self.server = InferenceServer.build(inference_config.get("type"), inference_config.get("params", {}))
         self.image_resolution = self.config["image_resolution"]
 
-        self.classes = self.read_classes(self.config["classes_file"], self.config["hierarchy_file"])
+        self.classes = self.read_classes(
+            self.config["classes_file"], self.config["hierarchy_file"]
+        )
         self.hierarchy = self.read_hierarchy(self.config["hierarchy_file"])
         self.model_path = self.config.get("model_path")
         self.model = None
@@ -96,7 +107,9 @@ class PlacesClassifier(
         hierarchy_places3 /= np.expand_dims(np.sum(hierarchy_places3, axis=1), axis=-1)
 
         hierarchy_places16 = np.asarray(hierarchy_places16, dtype=np.float32)
-        hierarchy_places16 /= np.expand_dims(np.sum(hierarchy_places16, axis=1), axis=-1)
+        hierarchy_places16 /= np.expand_dims(
+            np.sum(hierarchy_places16, axis=1), axis=-1
+        )
 
         return {"places3": hierarchy_places3, "places16": hierarchy_places16}
 
@@ -119,29 +132,30 @@ class PlacesClassifier(
         logging.error(f"DEVICE {device}")
         if self.model is None:
             logging.error(f"LOAD {device}")
-            self.model = torch.jit.load(self.model_path, map_location=torch.device(device))
+            self.model = torch.jit.load(
+                self.model_path, map_location=torch.device(device)
+            )
             self.device = device
 
-        with inputs["video"] as input_data,\
-             data_manager.create_data("ImageEmbeddings") as embeddings_data,\
-             data_manager.create_data("ImagesData") as images_data,\
-             data_manager.create_data("PlacesData") as places_data:
-            with input_data.open_video() as f_video:
-                video_decoder = VideoDecoder(
-                    f_video,
-                    max_dimension=self.image_resolution,
-                    fps=parameters.get("fps"),
-                    extension=f".{input_data.ext}", 
-                )
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ImageEmbeddings"
+        ) as embeddings_data, data_manager.create_data(
+            "ImagesData"
+        ) as images_data, data_manager.create_data(
+            "PlacesData"
+        ) as places_data:
 
+            with input_data(fps=parameters.get("fps")) as input_iterator:
                 probs = {"places365": [], "places16": [], "places3": []}
                 time = []
-                num_frames = video_decoder.duration() * video_decoder.fps()
+                num_frames = len(input_iterator)
                 places_data.places = []
 
-                for i, frame in enumerate(video_decoder):
+                for i, frame in enumerate(input_iterator):
                     with torch.no_grad(), torch.cuda.amp.autocast():
-                        raw_result = self.model(torch.from_numpy(frame["frame"]).to(self.device))
+                        raw_result = self.model(
+                            torch.from_numpy(frame["frame"]).to(self.device)
+                        )
                     embedding = raw_result[0].cpu().detach().numpy()
                     prob = raw_result[1].cpu().detach().numpy()
                     # result = self.server(
@@ -153,24 +167,34 @@ class PlacesClassifier(
                     probs["places365"].append(np.squeeze(np.asarray(prob)))
 
                     # store places16 probabilities
-                    probs["places16"].append(np.matmul(prob, self.hierarchy["places16"])[0])
+                    probs["places16"].append(
+                        np.matmul(prob, self.hierarchy["places16"])[0]
+                    )
 
                     # store places3 probabilities
-                    probs["places3"].append(np.matmul(prob, self.hierarchy["places3"])[0])
+                    probs["places3"].append(
+                        np.matmul(prob, self.hierarchy["places3"])[0]
+                    )
 
                     # store time
                     time.append(i / parameters.get("fps"))
-                    
+
                     place = PlaceData(
-                            ref_id=frame.get("ref_id", None),
-                            time=frame.get("time"),
-                            place365prob = np.squeeze(np.asarray(prob)),
-                            place365class = self.classes["places365"][np.argmax(np.squeeze(np.asarray(prob)))],
-                            place16prob = np.matmul(prob, self.hierarchy["places16"])[0],
-                            place16class = self.classes["places16"][np.argmax(np.matmul(prob, self.hierarchy["places16"])[0])],
-                            place3prob = np.matmul(prob, self.hierarchy["places3"])[0],
-                            place3class = self.classes["places3"][np.argmax(np.matmul(prob, self.hierarchy["places3"])[0])]
-                        )
+                        ref_id=frame.get("ref_id", None),
+                        time=frame.get("time"),
+                        place365prob=np.squeeze(np.asarray(prob)),
+                        place365class=self.classes["places365"][
+                            np.argmax(np.squeeze(np.asarray(prob)))
+                        ],
+                        place16prob=np.matmul(prob, self.hierarchy["places16"])[0],
+                        place16class=self.classes["places16"][
+                            np.argmax(np.matmul(prob, self.hierarchy["places16"])[0])
+                        ],
+                        place3prob=np.matmul(prob, self.hierarchy["places3"])[0],
+                        place3class=self.classes["places3"][
+                            np.argmax(np.matmul(prob, self.hierarchy["places3"])[0])
+                        ],
+                    )
 
                     places_data.places.append(place)
 
@@ -183,15 +207,15 @@ class PlacesClassifier(
                     )
 
                     embeddings_data.embeddings.append(
-                            ImageEmbedding(
-                                embedding=normalize(embedding).flatten(),
-                                time=frame.get("time"),
-                                delta_time=1 / parameters.get("fps"),
-                            )
+                        ImageEmbedding(
+                            embedding=normalize(embedding).flatten(),
+                            ref_id=frame.get("id"),
+                            time=frame.get("time"),
+                            delta_time=1 / parameters.get("fps"),
+                        )
                     )
 
                     self.update_callbacks(callbacks, progress=i / num_frames)
-
 
         probs_data = {}
         for level in probs.keys():
@@ -210,6 +234,6 @@ class PlacesClassifier(
             "places": places_data,
             "images": images_data,
             "probs_places365": probs_data["places365"],
-            "probs_places16": probs_data["places16"], 
+            "probs_places16": probs_data["places16"],
             "probs_places3": probs_data["places3"],
         }

@@ -163,13 +163,11 @@ class ClipImageEmbedding(
         with inputs["video"] as input_data, data_manager.create_data(
             "ImageEmbeddings"
         ) as output_data:
-            with input_data.open_video("r") as f_video:
-                video_decoder = VideoDecoder(
-                    f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}"
-                )
-                num_frames = video_decoder.duration() * video_decoder.fps()
-                for i, frame in enumerate(video_decoder):
-                    self.update_callbacks(callbacks, progress=i / num_frames)
+            with input_data(fps=parameters.get("fps")) as input_iterator:
+                for i, frame in enumerate(input_iterator):
+                    # self.update_callbacks(
+                    #     callbacks, progress=float(i / len(input_iterator))
+                    # )
 
                     img = frame.get("frame")
                     img = self.image_resize_crop(
@@ -185,6 +183,7 @@ class ClipImageEmbedding(
                         ImageEmbedding(
                             embedding=normalize(embedding),
                             time=frame.get("time"),
+                            ref_id=frame.get("id"),
                             delta_time=1 / parameters.get("fps"),
                         )
                     )

@@ -14,6 +14,7 @@ default_config = {
 
 default_parameters = {
     "cluster_threshold": 0.5,
+    "metric": "cosine",  # euclidean
     "max_samples_per_cluster": 30,
 }
 
@@ -26,8 +27,8 @@ provides = {
 }
 
 
-@AnalyserPluginManager.export("clustering")
-class Clustering(
+@AnalyserPluginManager.export("dbscanclustering")
+class DBScanClustering(
     AnalyserPlugin,
     config=default_config,
     parameters=default_parameters,
@@ -47,7 +48,7 @@ class Clustering(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        from scipy.cluster.hierarchy import fclusterdata
+        from sklearn.cluster import DBSCAN
 
         with inputs["embeddings"] as embeddings, data_manager.create_data(
             "ClusterData"
@@ -55,14 +56,17 @@ class Clustering(
             np_embeddings = np.squeeze(
                 np.asarray([em.embedding for em in embeddings.embeddings])
             )
+            logging.error(np_embeddings.shape)
+            db = DBSCAN(
+                eps=parameters.get("cluster_threshold"),
+                min_samples=1,
+                metric=parameters.get("metric"),
+            ).fit(np_embeddings)
 
-            metric = "cosine"
-            result = fclusterdata(
-                X=np_embeddings,
-                t=parameters.get("cluster_threshold"),
-                criterion="distance",
-                metric=metric,
-            )
+            result = db.labels_
+
+            # TODO remove noisy results with "cluster id=-1"
+
             # result format: list of cluster ids [1 2 1 3]
             clusters = []
             for x in np.unique(result):
