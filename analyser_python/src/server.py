@@ -429,6 +429,8 @@ def parse_args():
     parser.add_argument("--host", help="host")
     parser.add_argument("--data_dir", help="data dir")
     parser.add_argument("--no_cache", action="store_true", help="disable cache")
+    parser.add_argument("--cache_redis_host", help="redis cache host")
+    parser.add_argument("--cache_redis_port", type=int, help="redis cache port")
 
     args = parser.parse_args()
 
@@ -475,7 +477,19 @@ def main():
             config["data"] = {}
         config["data"]["cache"] = None
 
-    AnalyserPluginManager()
+    if args.cache_redis_host:
+        if "data" not in config:
+            config["data"] = {}
+        if "cache" not in config["data"]:
+            config["data"]["cache"] = {"type": "redis", "params": {}}
+        config["data"]["cache"]["params"]["host"] = args.cache_redis_host
+
+    if args.cache_redis_port:
+        if "data" not in config:
+            config["data"] = {}
+        if "cache" not in config["data"]:
+            config["data"]["cache"] = {"type": "redis", "params": {}}
+        config["data"]["cache"]["params"]["port"] = args.cache_redis_port
     # print(config, flush=True)
     server = Server(config)
     server.run()
