@@ -456,15 +456,23 @@ def main():
         config = {}
 
     if args.port:
+        if "grpc" not in config:
+            config["grpc"] = {}
         config["grpc"]["port"] = args.port
 
     if args.host:
+        if "grpc" not in config:
+            config["grpc"] = {}
         config["grpc"]["host"] = args.host
 
     if args.data_dir:
+        if "data" not in config:
+            config["data"] = {}
         config["data"]["data_dir"] = args.data_dir
 
     if args.no_cache:
+        if "data" not in config:
+            config["data"] = {}
         config["data"]["cache"] = None
 
     AnalyserPluginManager()
