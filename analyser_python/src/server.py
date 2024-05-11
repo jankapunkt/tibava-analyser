@@ -142,7 +142,6 @@ def run_plugin(args):
         plugin_parameters = {}
         if "parameters" in params:
             for parameter in params.get("parameters"):
-                logging.error(f"WWWWWWWWWWWW {parameter.get('value')}")
                 if parameter.get("type") == "FLOAT_TYPE":
                     plugin_parameters[parameter.get("name")] = float(
                         parameter.get("value")
@@ -212,7 +211,16 @@ def init_plugins(config):
     data_manager = DataManager(data_dir=data_dir, cache=cache)
     data_dict["data_manager"] = data_manager
 
-    manager = AnalyserCacheWrapper(AnalyserPluginManager(), cache=cache)
+    ray_config = config.get("inference", {})
+    if "type" not in ray_config:
+        ray_config["type"] = "ray"
+
+    if "params" not in ray_config:
+        ray_config["params"] = {"host": "inference_ray", "port": 52365}
+
+    manager = AnalyserCacheWrapper(
+        AnalyserPluginManager(ray_config["params"]), cache=cache
+    )
     data_dict["plugin_manager"] = manager
 
     return data_dict
@@ -431,6 +439,8 @@ def parse_args():
     parser.add_argument("--no_cache", action="store_true", help="disable cache")
     parser.add_argument("--cache_redis_host", help="redis cache host")
     parser.add_argument("--cache_redis_port", type=int, help="redis cache port")
+    parser.add_argument("--inference_ray_host", help="inference ray host")
+    parser.add_argument("--inference_ray_port", type=int, help="inference ray port")
 
     args = parser.parse_args()
 
@@ -490,6 +500,26 @@ def main():
         if "cache" not in config["data"]:
             config["data"]["cache"] = {"type": "redis", "params": {}}
         config["data"]["cache"]["params"]["port"] = args.cache_redis_port
+
+    if args.inference_ray_host:
+        if "inference" not in config:
+            config["inference"] = {
+                "type": "ray",
+                "params": {"host": "inference_ray", "port": 52365},
+            }
+        if "params" not in config["inference"]:
+            config["inference"]["params"] = {"host": "inference_ray", "port": 52365}
+        config["inference"]["params"]["host"] = args.inference_ray_host
+
+    if args.inference_ray_port:
+        if "inference" not in config:
+            config["inference"] = {
+                "type": "ray",
+                "params": {"host": "inference_ray", "port": 52365},
+            }
+        if "params" not in config["inference"]:
+            config["inference"]["params"] = {"host": "inference_ray", "port": 52365}
+        config["inference"]["params"]["port"] = args.inference_ray_port
     # print(config, flush=True)
     server = Server(config)
     server.run()

@@ -23,9 +23,12 @@ class Batcher:
 @CacheManager.export("redis")
 class RedisCache(Cache, config=default_config, version="0.1"):
     def __init__(self, config=None):
-        print(config)
         super().__init__(config)
-        self.r = redis.Redis(host=self.config.get("host"), port=self.config.get("port"), db=self.config.get("db"))
+        self.r = redis.Redis(
+            host=self.config.get("host"),
+            port=self.config.get("port"),
+            db=self.config.get("db"),
+        )
 
     def set(self, id: str, data: Any) -> bool:
         try:

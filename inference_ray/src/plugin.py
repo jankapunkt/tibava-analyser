@@ -94,10 +94,14 @@ class AnalyserPlugin(Plugin):
 class AnalyserPluginManager(Manager):
     _plugins = {}
 
-    def __init__(self, config: dict = None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, config: Dict = None, **kwargs):
+        super().__init__(config, **kwargs)
+        self.config = config
+        if not self.config:
+            self.config = {}
         self.find()
         self.plugin_list = []
+
         # logging.error(self.plugin_list)
 
     @classmethod
@@ -111,11 +115,16 @@ class AnalyserPluginManager(Manager):
     # TODO I am not sure if this is fine here
 
     def plugin_status(self):
+        print(
+            f"http://{self.config.get('host')}:{self.config.get('port')}/api/serve/applications/",
+            flush=True,
+        )
         try:
             status = requests.get(
-                "http://inference_ray:52365/api/serve/applications/"
+                f"http://{self.config.get('host')}:{self.config.get('port')}/api/serve/applications/"
             ).json()
         except:
+            logging.error("AnalyserPluginMananger: Can get status from ray server")
             return []
         # logging.error(f"status {json.dumps(status, indent=2)}")
 
@@ -202,7 +211,7 @@ class AnalyserPluginManager(Manager):
         print("##########", flush=True)
 
         results = requests.post(
-            f"http://inference_ray:8000{plugin_to_run['route']}",
+            f"http://{self.config.get('host')}:{self.config.get('port')}{plugin_to_run['route']}",
             json={
                 "inputs": {x: y.id for x, y in inputs.items()},
                 "parameters": parameters,

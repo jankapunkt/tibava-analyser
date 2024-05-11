@@ -7,3 +7,8 @@ data:
         host: backend_redis
         port: 6380
         tag: analyser
+inference:
+  type: ray
+  params: 
+    host: inference_ray
+    port: 52365
