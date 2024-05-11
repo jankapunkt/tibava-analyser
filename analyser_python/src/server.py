@@ -441,6 +441,9 @@ def parse_args():
     parser.add_argument("--cache_redis_port", type=int, help="redis cache port")
     parser.add_argument("--inference_ray_host", help="inference ray host")
     parser.add_argument("--inference_ray_port", type=int, help="inference ray port")
+    parser.add_argument(
+        "--inference_ray_status_port", type=int, help="inference ray port"
+    )
 
     args = parser.parse_args()
 
@@ -505,20 +508,42 @@ def main():
         if "inference" not in config:
             config["inference"] = {
                 "type": "ray",
-                "params": {"host": "inference_ray", "port": 52365},
+                "params": {"host": "inference_ray", "status_port": 52365, "port": 8000},
             }
         if "params" not in config["inference"]:
-            config["inference"]["params"] = {"host": "inference_ray", "port": 52365}
+            config["inference"]["params"] = {
+                "host": "inference_ray",
+                "status_port": 52365,
+                "port": 8000,
+            }
         config["inference"]["params"]["host"] = args.inference_ray_host
+
+    if args.inference_ray_status_port:
+        if "inference" not in config:
+            config["inference"] = {
+                "type": "ray",
+                "params": {"host": "inference_ray", "status_port": 52365, "port": 8000},
+            }
+        if "params" not in config["inference"]:
+            config["inference"]["params"] = {
+                "host": "inference_ray",
+                "status_port": 52365,
+                "port": 8000,
+            }
+        config["inference"]["params"]["status_port"] = args.inference_ray_status_port
 
     if args.inference_ray_port:
         if "inference" not in config:
             config["inference"] = {
                 "type": "ray",
-                "params": {"host": "inference_ray", "port": 52365},
+                "params": {"host": "inference_ray", "status_port": 52365, "port": 8000},
             }
         if "params" not in config["inference"]:
-            config["inference"]["params"] = {"host": "inference_ray", "port": 52365}
+            config["inference"]["params"] = {
+                "host": "inference_ray",
+                "status_port": 52365,
+                "port": 8000,
+            }
         config["inference"]["params"]["port"] = args.inference_ray_port
     # print(config, flush=True)
     server = Server(config)

@@ -116,12 +116,12 @@ class AnalyserPluginManager(Manager):
 
     def plugin_status(self):
         print(
-            f"http://{self.config.get('host')}:{self.config.get('port')}/api/serve/applications/",
+            f"http://{self.config.get('host')}:{self.config.get('status_port')}/api/serve/applications/",
             flush=True,
         )
         try:
             status = requests.get(
-                f"http://{self.config.get('host')}:{self.config.get('port')}/api/serve/applications/"
+                f"http://{self.config.get('host')}:{self.config.get('status_port')}/api/serve/applications/"
             ).json()
         except:
             logging.error("AnalyserPluginMananger: Can get status from ray server")
