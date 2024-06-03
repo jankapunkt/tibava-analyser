@@ -99,6 +99,23 @@ class AnalyserPluginManager(Manager):
         self.config = config
         if not self.config:
             self.config = {}
+
+        if (
+            self.config.get("status_port") is None
+            or self.config.get("status_port") == ""
+        ):
+            self.status_base_url = f"http://{self.config.get('host')}"
+        else:
+            self.status_base_url = (
+                f"http://{self.config.get('host')}:{self.config.get('status_port')}"
+            )
+
+        if self.config.get("port") is None or self.config.get("port") == "":
+            self.base_url = f"http://{self.config.get('host')}"
+        else:
+            self.base_url = (
+                f"http://{self.config.get('host')}:{self.config.get('port')}"
+            )
         self.find()
         self.plugin_list = []
 
@@ -115,18 +132,14 @@ class AnalyserPluginManager(Manager):
     # TODO I am not sure if this is fine here
 
     def plugin_status(self):
-        print(
-            f"http://{self.config.get('host')}:{self.config.get('status_port')}/api/serve/applications/",
-            flush=True,
-        )
+        print(f"{self.status_base_url}/api/serve/applications/", flush=True)
         try:
             status = requests.get(
-                f"http://{self.config.get('host')}:{self.config.get('status_port')}/api/serve/applications/"
+                f"{self.status_base_url}/api/serve/applications/"
             ).json()
         except:
             logging.error("AnalyserPluginMananger: Can get status from ray server")
             return []
-        # logging.error(f"status {json.dumps(status, indent=2)}")
 
         running_model_map = {}
         for _, app in status.get("applications", {}).items():
@@ -144,10 +157,6 @@ class AnalyserPluginManager(Manager):
                 "route": route,
                 "is_running": is_running,
             }
-            # print(app.get("deployed_app_config", {}))
-            # print(model_name)
-            # print(route)
-            # print(is_running)
 
         for name, plugin_cls in self._plugins.items():
             if name not in running_model_map:
@@ -160,8 +169,6 @@ class AnalyserPluginManager(Manager):
                     "version": plugin_cls.version,
                 }
             )
-            # print(f"{name} {plugin_cls.requires} {plugin_cls.provides}")
-        # print(json.dumps(status, indent=2))
 
         return list(running_model_map.values())
 
@@ -208,22 +215,25 @@ class AnalyserPluginManager(Manager):
             return None
 
         plugin_to_run = plugins[plugin]
-        print("##########", flush=True)
 
-        results = requests.post(
-            f"http://{self.config.get('host')}:{self.config.get('port')}{plugin_to_run['route']}",
-            json={
-                "inputs": {x: y.id for x, y in inputs.items()},
-                "parameters": parameters,
-            },
-        ).json()
+        print(f"{self.base_url}{plugin_to_run['route']}", flush=True)
+        try:
+            results = requests.post(
+                f"{self.base_url}{plugin_to_run['route']}",
+                json={
+                    "inputs": {x: y.id for x, y in inputs.items()},
+                    "parameters": parameters,
+                },
+            )
+        except:
+            logging.error("AnalyserPluginMananger: Can start plugin on ray server")
+            return []
 
-        print("##########", flush=True)
+        try:
+            data = results.json()
+        except:
+            logging.error(f"AnalyserPluginMananger: {results}")
+            logging.error("AnalyserPluginMananger: Can decode response from ray server")
+            return []
 
-        # logging.info(f"[AnalyserPluginManager] {run_id} plugin: {plugin_to_run}")
-        # logging.info(f"[AnalyserPluginManager] {run_id} data: {[{k:x.id} for k,x in inputs.items()]}")
-        # logging.info(f"[AnalyserPluginManager] {run_id} parameters: {parameters}")
-        # results = plugin_to_run(inputs, data_manager, parameters, callbacks)
-        # logging.info(f"[AnalyserPluginManager] {run_id} results: {[{k:x.id} for k,x in results.items()]}")
-
-        return results
+        return data
