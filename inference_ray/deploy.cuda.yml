@@ -771,3 +771,20 @@ applications:
           min_replicas: 0
         ray_actor_options:
           num_cpus: 1
+
+  - name: dbscanclustering
+    route_prefix: /dbscanclustering
+    import_path: main:app_builder
+    args:
+      model: dbscanclustering
+      data_path: /data
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 1
+          runtime_env:
+            pip:
+              - scipy==1.12.0
+              - scikit-learn==1.4.0
