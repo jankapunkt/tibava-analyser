@@ -788,3 +788,29 @@ applications:
             pip:
               - scipy==1.12.0
               - scikit-learn==1.4.0
+  - name: ocr_video_detector_onnx
+    route_prefix: /ocr_video_detector_onnx
+    import_path: main:app_builder
+    runtime_env:
+      pip:
+        - "--extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
+        - scikit-learn
+        - opencv-python-headless
+        - onnxruntime-gpu==1.17.0
+        - onnx
+        - torch
+        - torchvision
+        - pytorch_lightning
+        - timm
+        - nltk
+    args:
+      model: ocr_video_detector_onnx
+      data_path: /data
+      params: 
+        model_path: /models/ocr/yolov7_text_det_dyn_input.onnx
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 1
+        ray_actor_options:
+          num_gpus: 0.2
