@@ -47,7 +47,9 @@ class AudioAmpAnalysis(
     ) -> Dict[str, Data]:
         import librosa
 
-        with inputs["audio"] as input_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["audio"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
             with input_data.open_audio("r") as f_audio:
                 y, sr = librosa.load(f_audio, sr=parameters.get("sr"))
 
@@ -57,7 +59,7 @@ class AudioAmpAnalysis(
                     y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
                     sr = target_sr
                 except Exception as e:
-                    logging.warning("Resampling failed. Try numpy.")
+                    logging.warning("[AudioAmpAnalysis] Resampling failed. Try numpy.")
                     t = np.arange(y.shape[0]) / sr
                     t_target = np.arange(int(y.shape[0] / sr * target_sr)) / target_sr
 

@@ -37,7 +37,6 @@ class InvertScalar(
     def __init__(self, config=None, **kwargs):
         super().__init__(config, **kwargs)
 
-
     def call(
         self,
         inputs: Dict[str, Data],
@@ -45,13 +44,13 @@ class InvertScalar(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["input"] as input_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["input"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
             y = input_data.y
-        
+
             if np.max(y) > 1.0 or np.min(y) < 0.0:
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
-                logging.warning(f"InvertScalar: normalize")
-        
 
             output_data.y = 1 - y
             output_data.time = input_data.time

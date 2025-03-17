@@ -1,7 +1,14 @@
 from typing import Iterator
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import KpssData, FacesData, ImagesData, ImageEmbedding, ImageEmbeddings, VideoData
+from analyser.data import (
+    KpssData,
+    FacesData,
+    ImagesData,
+    ImageEmbedding,
+    ImageEmbeddings,
+    VideoData,
+)
 import logging
 import numpy as np
 from analyser.data import DataManager, Data
@@ -12,33 +19,74 @@ from typing import Callable, Optional, Dict
 # from analyser.inference import InferenceServer
 
 src1 = np.array(
-    [[51.642, 50.115], [57.617, 49.990], [35.740, 69.007], [51.157, 89.050], [57.025, 89.702]], dtype=np.float32
+    [
+        [51.642, 50.115],
+        [57.617, 49.990],
+        [35.740, 69.007],
+        [51.157, 89.050],
+        [57.025, 89.702],
+    ],
+    dtype=np.float32,
 )
 # <--left
 src2 = np.array(
-    [[45.031, 50.118], [65.568, 50.872], [39.677, 68.111], [45.177, 86.190], [64.246, 86.758]], dtype=np.float32
+    [
+        [45.031, 50.118],
+        [65.568, 50.872],
+        [39.677, 68.111],
+        [45.177, 86.190],
+        [64.246, 86.758],
+    ],
+    dtype=np.float32,
 )
 
 # ---frontal
 src3 = np.array(
-    [[39.730, 51.138], [72.270, 51.138], [56.000, 68.493], [42.463, 87.010], [69.537, 87.010]], dtype=np.float32
+    [
+        [39.730, 51.138],
+        [72.270, 51.138],
+        [56.000, 68.493],
+        [42.463, 87.010],
+        [69.537, 87.010],
+    ],
+    dtype=np.float32,
 )
 
 # -->right
 src4 = np.array(
-    [[46.845, 50.872], [67.382, 50.118], [72.737, 68.111], [48.167, 86.758], [67.236, 86.190]], dtype=np.float32
+    [
+        [46.845, 50.872],
+        [67.382, 50.118],
+        [72.737, 68.111],
+        [48.167, 86.758],
+        [67.236, 86.190],
+    ],
+    dtype=np.float32,
 )
 
 # -->right profile
 src5 = np.array(
-    [[54.796, 49.990], [60.771, 50.115], [76.673, 69.007], [55.388, 89.702], [61.257, 89.050]], dtype=np.float32
+    [
+        [54.796, 49.990],
+        [60.771, 50.115],
+        [76.673, 69.007],
+        [55.388, 89.702],
+        [61.257, 89.050],
+    ],
+    dtype=np.float32,
 )
 
 src = np.array([src1, src2, src3, src4, src5])
 src_map = {112: src, 224: src * 2}
 
 arcface_src = np.array(
-    [[38.2946, 51.6963], [73.5318, 51.5014], [56.0252, 71.7366], [41.5493, 92.3655], [70.7299, 92.2041]],
+    [
+        [38.2946, 51.6963],
+        [73.5318, 51.5014],
+        [56.0252, 71.7366],
+        [41.5493, 92.3655],
+        [70.7299, 92.2041],
+    ],
     dtype=np.float32,
 )
 
@@ -99,13 +147,12 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
         import onnx
         import onnxruntime
 
-        logging.error(f"DEVICE")
         if self.model is None:
-            logging.error(f"LOAD")
 
             self.model = onnx.load(self.model_path)
             self.session = onnxruntime.InferenceSession(
-                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
@@ -115,13 +162,19 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
         input_size = self.input_size
 
         blob = cv2.dnn.blobFromImages(
-            imgs, 1.0 / self.input_std, input_size, (self.input_mean, self.input_mean, self.input_mean), swapRB=True
+            imgs,
+            1.0 / self.input_std,
+            input_size,
+            (self.input_mean, self.input_mean, self.input_mean),
+            swapRB=True,
         )
 
         result = self.session.run([self.output_name], {self.input_name: blob})[0]
         return result
 
-    def get_facial_features(self, iterator, num_faces, parameters, data_manager, callbacks):
+    def get_facial_features(
+        self, iterator, num_faces, parameters, data_manager, callbacks
+    ):
         with data_manager.create_data("ImageEmbeddings") as image_embeddings_data:
             # iterate through images to get face_images and bboxes
             for i, face in enumerate(iterator):
@@ -129,7 +182,10 @@ class InsightfaceFeatureExtractor(AnalyserPlugin):
                 frame = face.get("frame")
                 h, w = frame.shape[0:2]
                 landmark = np.column_stack([kps.x, kps.y])
-                landmark *= (w, h)  # revert normalization done in insightface_detector.py
+                landmark *= (
+                    w,
+                    h,
+                )  # revert normalization done in insightface_detector.py
 
                 aimg = self.norm_crop(face.get("frame"), landmark=landmark)
 
@@ -215,8 +271,14 @@ class InsightfaceVideoFeatureExtractor(
                         t = frame["time"]
                         if t in kps_dict:
                             for kps in kps_dict[t]:
-                                face_id = faceid_lut[kps.id] if kps.id in faceid_lut else None
-                                yield {"frame": frame["frame"], "kps": kps, "face_id": face_id}
+                                face_id = (
+                                    faceid_lut[kps.id] if kps.id in faceid_lut else None
+                                )
+                                yield {
+                                    "frame": frame["frame"],
+                                    "kps": kps,
+                                    "face_id": face_id,
+                                }
 
                 iterator = get_iterator(video_decoder, kps_dict)
                 return self.get_facial_features(
@@ -263,7 +325,9 @@ class InsightfaceImageFeatureExtractor(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["images"] as images_data, inputs["kpss"] as kpss_data, inputs["faces"] as faces_data:
+        with inputs["images"] as images_data, inputs["kpss"] as kpss_data, inputs[
+            "faces"
+        ] as faces_data:
             kpss = kpss_data.kpss
             faces = faces_data.faces
             assert len(kpss) > 0

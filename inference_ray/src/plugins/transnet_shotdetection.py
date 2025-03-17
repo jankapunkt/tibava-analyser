@@ -56,12 +56,17 @@ class TransnetShotdetection(
             # return windows of size 100 where the first/last 25 frames are from the previous/next batch
             # the first and last window must be padded by copies of the first and last frame of the video
             no_padded_frames_start = 25
-            no_padded_frames_end = 25 + 50 - (len(frames) % 50 if len(frames) % 50 != 0 else 50)  # 25 - 74
+            no_padded_frames_end = (
+                25 + 50 - (len(frames) % 50 if len(frames) % 50 != 0 else 50)
+            )  # 25 - 74
 
             start_frame = np.expand_dims(frames[0], 0)
             end_frame = np.expand_dims(frames[-1], 0)
             padded_inputs = np.concatenate(
-                [start_frame] * no_padded_frames_start + [frames] + [end_frame] * no_padded_frames_end, 0
+                [start_frame] * no_padded_frames_start
+                + [frames]
+                + [end_frame] * no_padded_frames_end,
+                0,
             )
 
             ptr = 0
@@ -87,12 +92,17 @@ class TransnetShotdetection(
             #     single_frame_pred = result.get(f"single_frame_pred")
             #     all_frames_pred = result.get(f"all_frames_pred")
 
-            predictions.append((single_frame_pred[0, 25:75, 0], all_frames_pred[0, 25:75, 0]))
+            predictions.append(
+                (single_frame_pred[0, 25:75, 0], all_frames_pred[0, 25:75, 0])
+            )
 
         single_frame_pred = np.concatenate([single_ for single_, all_ in predictions])
         all_frames_pred = np.concatenate([all_ for single_, all_ in predictions])
 
-        return single_frame_pred[: len(frames)], all_frames_pred[: len(frames)]  # remove extra padded frames
+        return (
+            single_frame_pred[: len(frames)],
+            all_frames_pred[: len(frames)],
+        )  # remove extra padded frames
 
     def predictions_to_scenes(self, predictions: np.ndarray, threshold: float = 0.5):
         predictions = (predictions > threshold).astype(np.uint8)
@@ -125,14 +135,16 @@ class TransnetShotdetection(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
-            self.model = torch.jit.load(self.model_path, map_location=torch.device(device))
+            self.model = torch.jit.load(
+                self.model_path, map_location=torch.device(device)
+            )
             self.device = device
 
         self.update_callbacks(callbacks, progress=0.0)
-        with inputs["video"] as input_data, data_manager.create_data("ShotsData") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ShotsData"
+        ) as output_data:
             frames = []
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
@@ -151,10 +163,15 @@ class TransnetShotdetection(
 
                 prediction, _ = self.predict_frames(video, callbacks)
 
-                shot_list = self.predictions_to_scenes(prediction, parameters.get("threshold"))
+                shot_list = self.predictions_to_scenes(
+                    prediction, parameters.get("threshold")
+                )
 
                 output_data.shots = [
-                    Shot(start=x[0].item() / video_decoder.fps(), end=x[1].item() / video_decoder.fps())
+                    Shot(
+                        start=x[0].item() / video_decoder.fps(),
+                        end=x[1].item() / video_decoder.fps(),
+                    )
                     for x in shot_list
                 ]
 

@@ -56,7 +56,6 @@ class DBScanClustering(
             np_embeddings = np.squeeze(
                 np.asarray([em.embedding for em in embeddings.embeddings])
             )
-            logging.error(np_embeddings.shape)
             db = DBSCAN(
                 eps=parameters.get("cluster_threshold"),
                 min_samples=1,
@@ -74,19 +73,14 @@ class DBScanClustering(
 
                 cluster_size = len(ids)
 
-                logging.error(f"{cluster_size} {ids}")
                 ids_ids = np.linspace(
                     0,
                     cluster_size - 1,
                     min(cluster_size, parameters.get("max_samples_per_cluster")),
                 )
-                logging.error(f"a {ids_ids}")
                 ids_ids = [round(idx) for idx in ids_ids]
-                logging.error(f"b {ids_ids}")
 
-                logging.error(f"old {ids}")
                 sample_ids = ids[ids_ids]
-                logging.error(f"new {ids}")
 
                 clusters.append(
                     (

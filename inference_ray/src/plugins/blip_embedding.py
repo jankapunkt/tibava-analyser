@@ -10,7 +10,7 @@ from analyser.data import (
     ImageEmbedding,
     ImageEmbeddings,
     ImagesData,
-    ShotsData
+    ShotsData,
 )
 from analyser.data import DataManager, Data
 
@@ -60,7 +60,10 @@ class BlipImageEmbedding(
 
     def model_init(self):
         import torch
-        from transformers import InstructBlipProcessor, InstructBlipForConditionalGeneration
+        from transformers import (
+            InstructBlipProcessor,
+            InstructBlipForConditionalGeneration,
+        )
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.device == "cuda":
@@ -73,7 +76,9 @@ class BlipImageEmbedding(
             ).vision_model
         else:
             self.dtype = torch.float32
-            self.model = InstructBlipForConditionalGeneration.from_pretrained(self.model_name).vision_model
+            self.model = InstructBlipForConditionalGeneration.from_pretrained(
+                self.model_name
+            ).vision_model
         self.processor = InstructBlipProcessor.from_pretrained(self.model_name)
         # self.model.to(self.device)
 
@@ -90,23 +95,25 @@ class BlipImageEmbedding(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
             self.model_init()
-            logging.error(f"LOAD {device}")
 
-        logging.error(f"START {device}")
-        with inputs["input"] as input_data, data_manager.create_data("ImageEmbeddings") as output_data:
+        with inputs["input"] as input_data, data_manager.create_data(
+            "ImageEmbeddings"
+        ) as output_data:
             with input_data() as input_iterator:
                 for i, frame in enumerate(input_iterator):
-                    logging.error(f"LOOP {device}")
                     self.update_callbacks(callbacks, progress=i / len(input_iterator))
 
                     img = frame.get("frame")
-                    img = self.processor(images=img, return_tensors="pt").to(device, dtype=self.dtype)
+                    img = self.processor(images=img, return_tensors="pt").to(
+                        device, dtype=self.dtype
+                    )
 
                     with torch.no_grad(), torch.cuda.amp.autocast():
-                        embedding = self.model(img["pixel_values"], return_dict=True).last_hidden_state
+                        embedding = self.model(
+                            img["pixel_values"], return_dict=True
+                        ).last_hidden_state
                         # embedding = self.model(img)
                         # embedding = torch.nn.functional.normalize(embedding, dim=-1)
                     embedding = embedding.cpu().detach()
@@ -163,7 +170,10 @@ class BlipVQA(
 
     def model_init(self):
         import torch
-        from transformers import InstructBlipProcessor, InstructBlipForConditionalGeneration
+        from transformers import (
+            InstructBlipProcessor,
+            InstructBlipForConditionalGeneration,
+        )
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -176,7 +186,9 @@ class BlipVQA(
                 torch_dtype=self.dtype,
             )
         else:
-            self.model = InstructBlipForConditionalGeneration.from_pretrained(self.model_name)
+            self.model = InstructBlipForConditionalGeneration.from_pretrained(
+                self.model_name
+            )
             self.dtype = torch.float32
 
         self.processor = InstructBlipProcessor.from_pretrained(self.model_name)
@@ -201,13 +213,19 @@ class BlipVQA(
             batch_size = image_embeds.shape[0]
             # image_embeds = self.model.vision_model(pixel_values, return_dict=True).last_hidden_state
 
-            image_attention_mask = torch.ones(image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device)
+            image_attention_mask = torch.ones(
+                image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
 
             query_tokens = self.model.query_tokens.expand(image_embeds.shape[0], -1, -1)
-            query_attention_mask = torch.ones(query_tokens.size()[:-1], dtype=torch.long, device=image_embeds.device)
+            query_attention_mask = torch.ones(
+                query_tokens.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
             if qformer_attention_mask is None:
                 qformer_attention_mask = torch.ones_like(qformer_input_ids)
-            qformer_attention_mask = torch.cat([query_attention_mask, qformer_attention_mask], dim=1)
+            qformer_attention_mask = torch.cat(
+                [query_attention_mask, qformer_attention_mask], dim=1
+            )
             query_outputs = self.model.qformer(
                 input_ids=qformer_input_ids,
                 attention_mask=qformer_attention_mask,
@@ -220,7 +238,9 @@ class BlipVQA(
 
             language_model_inputs = self.model.language_projection(query_output)
             language_attention_mask = torch.ones(
-                language_model_inputs.size()[:-1], dtype=torch.long, device=language_model_inputs.device
+                language_model_inputs.size()[:-1],
+                dtype=torch.long,
+                device=language_model_inputs.device,
             )
 
             if input_ids is None:
@@ -232,13 +252,21 @@ class BlipVQA(
             if attention_mask is None:
                 attention_mask = torch.ones_like(input_ids)
             attention_mask = torch.cat(
-                [language_attention_mask, attention_mask.to(language_attention_mask.device, dtype=self.dtype)], dim=1
+                [
+                    language_attention_mask,
+                    attention_mask.to(language_attention_mask.device, dtype=self.dtype),
+                ],
+                dim=1,
             )
 
             # concatenate query embeddings with prompt embeddings
             inputs_embeds = self.model.get_input_embeddings()(input_ids)
             inputs_embeds = torch.cat(
-                [language_model_inputs, inputs_embeds.to(language_model_inputs.device, dtype=self.dtype)], dim=1
+                [
+                    language_model_inputs,
+                    inputs_embeds.to(language_model_inputs.device, dtype=self.dtype),
+                ],
+                dim=1,
             )
 
             outputs = self.model.language_model.generate(
@@ -269,25 +297,27 @@ class BlipVQA(
         import imageio
         import torch
 
-        logging.error(inputs)
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
             self.model_init()
-            logging.error(f"LOAD {device}")
-
-        logging.error(f"START {device}")
 
         query_term = parameters["query_term"]
-        text_inputs = self.processor(text=query_term, return_tensors="pt").to(self.device, dtype=self.dtype)
-        with inputs["embeddings"] as input_data, inputs["shots"] as shots_data, data_manager.create_data("AnnotationData") as annotation_data:
+        text_inputs = self.processor(text=query_term, return_tensors="pt").to(
+            self.device, dtype=self.dtype
+        )
+        with inputs["embeddings"] as input_data, inputs[
+            "shots"
+        ] as shots_data, data_manager.create_data("AnnotationData") as annotation_data:
             generated_texts = []
 
             for i, embedding in enumerate(input_data.embeddings):
-                logging.error(f"LOOP {device}")
-                self.update_callbacks(callbacks, progress=i / len(input_data.embeddings))
-                torch_embedding = torch.from_numpy(embedding.embedding).to(self.device, dtype=self.dtype)
+                self.update_callbacks(
+                    callbacks, progress=i / len(input_data.embeddings)
+                )
+                torch_embedding = torch.from_numpy(embedding.embedding).to(
+                    self.device, dtype=self.dtype
+                )
                 outputs = self.generate(
                     **text_inputs,
                     image_embeds=torch_embedding,
@@ -300,15 +330,16 @@ class BlipVQA(
                     length_penalty=1.0,
                     temperature=1,
                 )
-                generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+                generated_text = self.processor.batch_decode(
+                    outputs, skip_special_tokens=True
+                )[0].strip()
                 generated_texts.append((embedding.time, generated_text))
                 # embedding = self.model(img)
                 # embedding = torch.nn.functional.normalize(embedding, dim=-1)
                 # embedding = embedding.cpu().detach()
 
-
             for shot in shots_data:
-                shot_texts=[]
+                shot_texts = []
                 for time, generated_text in generated_texts:
                     if shot.start <= time and time <= shot.end:
                         shot_texts.append(generated_text)
@@ -356,10 +387,15 @@ class BlipProb(
 
     def model_init(self):
         import torch
-        from transformers import InstructBlipProcessor, InstructBlipForConditionalGeneration
+        from transformers import (
+            InstructBlipProcessor,
+            InstructBlipForConditionalGeneration,
+        )
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = InstructBlipForConditionalGeneration.from_pretrained(self.model_name)
+        self.model = InstructBlipForConditionalGeneration.from_pretrained(
+            self.model_name
+        )
         self.processor = InstructBlipProcessor.from_pretrained(self.model_name)
 
     def generate(
@@ -381,13 +417,19 @@ class BlipProb(
             batch_size = image_embeds.shape[0]
             # image_embeds = self.model.vision_model(pixel_values, return_dict=True).last_hidden_state
 
-            image_attention_mask = torch.ones(image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device)
+            image_attention_mask = torch.ones(
+                image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
 
             query_tokens = self.model.query_tokens.expand(image_embeds.shape[0], -1, -1)
-            query_attention_mask = torch.ones(query_tokens.size()[:-1], dtype=torch.long, device=image_embeds.device)
+            query_attention_mask = torch.ones(
+                query_tokens.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
             if qformer_attention_mask is None:
                 qformer_attention_mask = torch.ones_like(qformer_input_ids)
-            qformer_attention_mask = torch.cat([query_attention_mask, qformer_attention_mask], dim=1)
+            qformer_attention_mask = torch.cat(
+                [query_attention_mask, qformer_attention_mask], dim=1
+            )
             query_outputs = self.model.qformer(
                 input_ids=qformer_input_ids,
                 attention_mask=qformer_attention_mask,
@@ -400,7 +442,9 @@ class BlipProb(
 
             language_model_inputs = self.model.language_projection(query_output)
             language_attention_mask = torch.ones(
-                language_model_inputs.size()[:-1], dtype=torch.long, device=language_model_inputs.device
+                language_model_inputs.size()[:-1],
+                dtype=torch.long,
+                device=language_model_inputs.device,
             )
 
             if input_ids is None:
@@ -412,12 +456,19 @@ class BlipProb(
             if attention_mask is None:
                 attention_mask = torch.ones_like(input_ids)
             attention_mask = torch.cat(
-                [language_attention_mask, attention_mask.to(language_attention_mask.device)], dim=1
+                [
+                    language_attention_mask,
+                    attention_mask.to(language_attention_mask.device),
+                ],
+                dim=1,
             )
 
             # concatenate query embeddings with prompt embeddings
             inputs_embeds = self.model.get_input_embeddings()(input_ids)
-            inputs_embeds = torch.cat([language_model_inputs, inputs_embeds.to(language_model_inputs.device)], dim=1)
+            inputs_embeds = torch.cat(
+                [language_model_inputs, inputs_embeds.to(language_model_inputs.device)],
+                dim=1,
+            )
 
             outputs = self.model.language_model.generate(
                 inputs_embeds=inputs_embeds,
@@ -447,22 +498,20 @@ class BlipProb(
         import imageio
         import torch
 
-        logging.error(inputs)
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
             self.model_init()
-            logging.error(f"LOAD {device}")
-
-        logging.error(f"START {device}")
 
         query_term = parameters["query_term"]
         text_inputs = self.processor(text=query_term, return_tensors="pt").to(device)
-        with inputs["embeddings"] as input_data, data_manager.create_data("AnnotationData") as annotation_data:
+        with inputs["embeddings"] as input_data, data_manager.create_data(
+            "AnnotationData"
+        ) as annotation_data:
             for i, embedding in enumerate(input_data.embeddings):
-                logging.error(f"LOOP {device}")
-                self.update_callbacks(callbacks, progress=i / len(input_data.embeddings))
+                self.update_callbacks(
+                    callbacks, progress=i / len(input_data.embeddings)
+                )
                 torch_embedding = torch.from_numpy(embedding.embedding).to(self.device)
                 outputs = self.generate(
                     **text_inputs,
@@ -476,12 +525,18 @@ class BlipProb(
                     length_penalty=1.0,
                     temperature=1,
                 )
-                generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+                generated_text = self.processor.batch_decode(
+                    outputs, skip_special_tokens=True
+                )[0].strip()
                 # embedding = self.model(img)
                 # embedding = torch.nn.functional.normalize(embedding, dim=-1)
                 # embedding = embedding.cpu().detach()
                 annotation_data.annotations.append(
-                    Annotation(start=embedding.time, end=embedding.time + embedding.delta_time, labels=[generated_text])
+                    Annotation(
+                        start=embedding.time,
+                        end=embedding.time + embedding.delta_time,
+                        labels=[generated_text],
+                    )
                 )  # Maybe store max_mean_class_prob as well?
 
             self.update_callbacks(callbacks, progress=1.0)

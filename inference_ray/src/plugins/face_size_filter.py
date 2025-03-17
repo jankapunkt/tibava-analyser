@@ -99,9 +99,6 @@ class FaceSizeFilter(
                             np_image = images_data.load_image(image)
                             images_output_data.save_image(np_image, **image.to_dict())
 
-                    logging.error(
-                        f"IMAGES {len(images_data.images)} {len(images_output_data.images)}"
-                    )
                     output_dict["images"] = images_output_data
 
         if "kpss" in inputs:
@@ -110,9 +107,6 @@ class FaceSizeFilter(
                     for kps in kpss_data.kpss:
                         if kps.ref_id in selected_ref_ids:
                             kpss_output_data.kpss.append(kps)
-                    logging.error(
-                        f"KPSS {len(kpss_data.kpss)} {len(kpss_output_data.kpss)}"
-                    )
 
                     output_dict["kpss"] = kpss_output_data
         return output_dict
