@@ -520,6 +520,20 @@ applications:
               - torch==2.2.0
               - scikit-learn==1.4.0
               - transformers==4.37.2
+  - name: whisper_surf
+    route_prefix: /whisper_surf
+    import_path: main:app_builder
+    args:
+      model: whisper_surf
+      data_path: /data
+      params:
+        model: openai/whisper-medium
+    deployments:
+      - name: Deployment
+        autoscaling_config:
+          min_replicas: 0
+        ray_actor_options:
+          num_cpus: 2
 
   - name: x_clip_video_embedding
     route_prefix: /x_clip_video_embedding
