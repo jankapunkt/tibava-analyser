@@ -83,7 +83,9 @@ class CosineSimilarity(
             if parameters.get("aggregation") == "max":
                 cossim = np.max(cossim, axis=-1)
             else:
-                logging.error("Unknown aggregation method. Using max instead ...")
+                logging.error(
+                    "[CosineSimilarity] Unknown aggregation method. Using max instead ..."
+                )
                 cossim = np.max(cossim, axis=-1)
 
             # aggregation over time using max

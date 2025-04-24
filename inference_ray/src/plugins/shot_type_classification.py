@@ -59,13 +59,15 @@ class ShotTypeClassifier(
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
-            self.model = torch.jit.load(self.model_path, map_location=torch.device(device))
+            self.model = torch.jit.load(
+                self.model_path, map_location=torch.device(device)
+            )
             self.device = device
 
-        with inputs["video"] as input_data, data_manager.create_data("ListData") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ListData"
+        ) as output_data:
             with input_data.open_video() as f_video:
                 video_decoder = VideoDecoder(
                     path=f_video,

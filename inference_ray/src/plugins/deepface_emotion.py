@@ -73,18 +73,31 @@ class DeepfaceEmotion(
             if self.grayscale == False:
                 # Put the base image in the middle of the padded image
                 img = np.pad(
-                    img, ((diff_0 // 2, diff_0 - diff_0 // 2), (diff_1 // 2, diff_1 - diff_1 // 2), (0, 0)), "constant"
+                    img,
+                    (
+                        (diff_0 // 2, diff_0 - diff_0 // 2),
+                        (diff_1 // 2, diff_1 - diff_1 // 2),
+                        (0, 0),
+                    ),
+                    "constant",
                 )
             else:
                 img = np.pad(
-                    img, ((diff_0 // 2, diff_0 - diff_0 // 2), (diff_1 // 2, diff_1 - diff_1 // 2)), "constant"
+                    img,
+                    (
+                        (diff_0 // 2, diff_0 - diff_0 // 2),
+                        (diff_1 // 2, diff_1 - diff_1 // 2),
+                    ),
+                    "constant",
                 )
 
         if img.shape[0:2] != self.target_size:
             img = cv2.resize(img, self.target_size)
 
         # normalizing the image pixels
-        img_pixels = np.asarray(img, np.float32)  # TODO same as: keras.preprocessing.image.img_to_array(img)?
+        img_pixels = np.asarray(
+            img, np.float32
+        )  # TODO same as: keras.preprocessing.image.img_to_array(img)?
         img_pixels = np.expand_dims(img_pixels, axis=0)
         img_pixels /= 255  # normalize input in [0, 1]
 
@@ -103,20 +116,21 @@ class DeepfaceEmotion(
         import onnx
         import onnxruntime
 
-        logging.error(f"DEVICE")
         if self.model is None:
-            logging.error(f"LOAD")
 
             self.model = onnx.load(self.model_path)
             self.session = onnxruntime.InferenceSession(
-                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
         # print(input_name)
         # print(output_name)
 
-        with inputs["images"] as input_data, data_manager.create_data("ListData") as output_data:
+        with inputs["images"] as input_data, data_manager.create_data(
+            "ListData"
+        ) as output_data:
             time = []
             ref_ids = []
             predictions = []
@@ -131,7 +145,6 @@ class DeepfaceEmotion(
                 image = input_data.load_image(entry)
                 image = self.preprocess(image)
                 result = self.session.run([self.output_name], {self.input_name: image})
-                logging.error(f"######## {result}")
                 prediction = result[0][0] if result else None
                 face_id = faceid_lut[entry.id] if entry.id in faceid_lut else None
 
@@ -142,7 +155,15 @@ class DeepfaceEmotion(
 
             self.update_callbacks(callbacks, progress=1.0)
 
-            index = ["p_angry", "p_disgust", "p_fear", "p_happy", "p_sad", "p_surprise", "p_neutral"]
+            index = [
+                "p_angry",
+                "p_disgust",
+                "p_fear",
+                "p_happy",
+                "p_sad",
+                "p_surprise",
+                "p_neutral",
+            ]
             for i, y in zip(index, zip(*predictions)):
                 with output_data.create_data("ScalarData", i) as data:
                     data.y = np.asarray(y)

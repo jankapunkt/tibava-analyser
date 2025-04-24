@@ -50,7 +50,11 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
+    bs = (
+        list(range(ord("!"), ord("~") + 1))
+        + list(range(ord("¡"), ord("¬") + 1))
+        + list(range(ord("®"), ord("ÿ") + 1))
+    )
     cs = bs[:]
     n = 0
     for b in range(2**8):
@@ -114,7 +118,10 @@ class SimpleTokenizer(object):
         self.encoder = dict(zip(vocab, range(len(vocab))))
         self.decoder = {v: k for k, v in self.encoder.items()}
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
-        self.cache = {"<|startoftext|>": "<|startoftext|>", "<|endoftext|>": "<|endoftext|>"}
+        self.cache = {
+            "<|startoftext|>": "<|startoftext|>",
+            "<|endoftext|>": "<|endoftext|>",
+        }
         self.pat = re.compile(
             r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""",
             re.IGNORECASE,
@@ -170,12 +177,18 @@ class SimpleTokenizer(object):
         text = whitespace_clean(basic_clean(text)).lower()
         for token in re.findall(self.pat, text):
             token = "".join(self.byte_encoder[b] for b in token.encode("utf-8"))
-            bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" "))
+            bpe_tokens.extend(
+                self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" ")
+            )
         return bpe_tokens
 
     def decode(self, tokens):
         text = "".join([self.decoder[token] for token in tokens])
-        text = bytearray([self.byte_decoder[c] for c in text]).decode("utf-8", errors="replace").replace("</w>", " ")
+        text = (
+            bytearray([self.byte_decoder[c] for c in text])
+            .decode("utf-8", errors="replace")
+            .replace("</w>", " ")
+        )
         return text
 
     def tokenize(self, texts: Union[str, List[str]]):
@@ -194,7 +207,9 @@ class SimpleTokenizer(object):
                     tokens = tokens[: self.context_length]
                     tokens[-1] = eot_token
                 else:
-                    raise RuntimeError(f"Input {texts[i]} is too long for context length {self.context_length}")
+                    raise RuntimeError(
+                        f"Input {texts[i]} is too long for context length {self.context_length}"
+                    )
             result[i, : len(tokens)] = np.array(tokens, dtype=int)
 
         return result
@@ -231,7 +246,9 @@ class XClipVideoEmbedding(
 
     def preprocess(self, img, resize_size, crop_size):
         converted = image_resize(image_pad(img), size=crop_size)
-        converted = (converted - np.asarray([123.675, 116.28, 103.53])) / np.asarray([58.395, 57.12, 57.375])
+        converted = (converted - np.asarray([123.675, 116.28, 103.53])) / np.asarray(
+            [58.395, 57.12, 57.375]
+        )
         converted = converted.astype(np.float32)
         converted = np.transpose(converted, [2, 0, 1])
         return converted
@@ -250,38 +267,49 @@ class XClipVideoEmbedding(
         import onnx
         import onnxruntime
 
-        logging.error(f"DEVICE")
         if self.model is None:
-            logging.error(f"LOAD")
-            logging.error(self.model_path)
 
             self.model = onnx.load(self.model_path)
             self.session = onnxruntime.InferenceSession(
-                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.input_name = self.session.get_inputs()[0].name
             self.output_names = [x.name for x in self.session.get_outputs()]
-            logging.error(self.output_names)
 
         with inputs["video"] as input_data, data_manager.create_data(
             "ImageEmbeddings"
-        ) as image_data, data_manager.create_data("VideoTemporalEmbeddings") as video_data:
+        ) as image_data, data_manager.create_data(
+            "VideoTemporalEmbeddings"
+        ) as video_data:
             with input_data.open_video("r") as f_video:
                 video_decoder = VideoBatcher(
-                    VideoDecoder(f_video, fps=parameters.get("fps"), extension=f".{input_data.ext}"),
+                    VideoDecoder(
+                        f_video,
+                        fps=parameters.get("fps"),
+                        extension=f".{input_data.ext}",
+                    ),
                     batch_size=parameters.get("batch_size"),
                 )
-                num_frames = (video_decoder.duration() * video_decoder.fps()) // parameters.get("batch_size")
+                num_frames = (
+                    video_decoder.duration() * video_decoder.fps()
+                ) // parameters.get("batch_size")
                 for i, frame in enumerate(video_decoder):
                     self.update_callbacks(callbacks, progress=i / num_frames)
                     imgs = frame.get("frame")
                     preprocessed_imgs = []
                     for img in imgs:
-                        img = self.preprocess(img, parameters.get("resize_size"), parameters.get("crop_size"))
+                        img = self.preprocess(
+                            img,
+                            parameters.get("resize_size"),
+                            parameters.get("crop_size"),
+                        )
                         preprocessed_imgs.append(img)
                     preprocessed_imgs = np.expand_dims(np.stack(preprocessed_imgs), 0)
                     # imageio.imwrite(os.path.join(self.config.get("data_dir"), f"test_{i}.jpg"), img)
-                    result = self.session.run(self.output_names, {self.input_name: preprocessed_imgs})
+                    result = self.session.run(
+                        self.output_names, {self.input_name: preprocessed_imgs}
+                    )
                     video_features = result[0]
                     image_features = result[1]
                     # result = self.server({"data": preprocessed_imgs}, ["video_features", "image_features"])
@@ -290,7 +318,8 @@ class XClipVideoEmbedding(
                         ImageEmbedding(
                             embedding=image_features,
                             time=np.mean(frame.get("time")).item(),
-                            delta_time=parameters.get("batch_size") / parameters.get("fps"),
+                            delta_time=parameters.get("batch_size")
+                            / parameters.get("fps"),
                         )
                     )
 
@@ -298,7 +327,8 @@ class XClipVideoEmbedding(
                         VideoTemporalEmbedding(
                             embedding=video_features,
                             time=np.mean(frame.get("time")).item(),
-                            delta_time=parameters.get("batch_size") / parameters.get("fps"),
+                            delta_time=parameters.get("batch_size")
+                            / parameters.get("fps"),
                         )
                     )
 
@@ -351,32 +381,36 @@ class XClipTextEmbedding(
         import onnx
         import onnxruntime
 
-        logging.error(f"DEVICE")
         if self.model is None:
-            logging.error(f"LOAD")
-            logging.error(self.model_path)
 
             self.tokenizer = SimpleTokenizer(self.bpe_path)
             self.model = onnx.load(self.model_path)
             self.session = onnxruntime.InferenceSession(
-                self.model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.input_name = self.session.get_inputs()[0].name
             self.output_names = [x.name for x in self.session.get_outputs()]
-            logging.error(self.output_names)
 
         with data_manager.create_data("TextEmbeddings") as text_data:
             text = self.preprocess(parameters["search_term"])
 
             # result = self.server({"text": text}, ["text_features"])
             result = self.session.run(self.output_names, {self.input_name: text})
-            text_data.embeddings.append(TextEmbedding(text=parameters["search_term"], embedding=result[0]))
+            text_data.embeddings.append(
+                TextEmbedding(text=parameters["search_term"], embedding=result[0])
+            )
 
             self.update_callbacks(callbacks, progress=1.0)
             return {"embeddings": text_data}
 
 
-prob_parameters = {"search_term": "", "normalize": True, "softmax": False, "threshold": 0.2}
+prob_parameters = {
+    "search_term": "",
+    "normalize": True,
+    "softmax": False,
+    "threshold": 0.2,
+}
 
 prob_requires = {
     "image_features": ImageEmbeddings,
@@ -426,33 +460,29 @@ class XClipProbs(
         import onnx
         import onnxruntime
 
-        logging.error(f"DEVICE")
         if self.text_model is None:
-            logging.error(f"LOAD")
-            # logging.error(self.model_path)
 
             self.tokenizer = SimpleTokenizer(self.bpe_path)
 
             self.text_model = onnx.load(self.text_model_path)
             self.text_session = onnxruntime.InferenceSession(
-                self.text_model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.text_model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.text_input_name = self.text_session.get_inputs()[0].name
             self.text_output_names = [x.name for x in self.text_session.get_outputs()]
-            logging.error(self.text_output_names)
 
             self.sim_model = onnx.load(self.sim_model_path)
             self.sim_session = onnxruntime.InferenceSession(
-                self.sim_model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+                self.sim_model_path,
+                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
             )
             self.sim_input_names = [x.name for x in self.sim_session.get_inputs()]
             self.sim_output_names = [x.name for x in self.sim_session.get_outputs()]
-            logging.error(self.sim_input_names)
-            logging.error(self.sim_output_names)
 
-        with inputs["image_features"] as image_data, inputs["video_features"] as video_data, data_manager.create_data(
-            "ScalarData"
-        ) as scalar_data:
+        with inputs["image_features"] as image_data, inputs[
+            "video_features"
+        ] as video_data, data_manager.create_data("ScalarData") as scalar_data:
             probs = []
             time = []
             delta_time = None
@@ -460,17 +490,25 @@ class XClipProbs(
             video_features = video_data
 
             text = self.preprocess(parameters["search_term"])
-            result = self.text_session.run(self.text_output_names, {self.text_input_name: text})
+            result = self.text_session.run(
+                self.text_output_names, {self.text_input_name: text}
+            )
 
             text_embedding = normalize(result[0])
 
             neg_text = self.preprocess("Not " + parameters["search_term"])
-            neg_result = self.text_session.run(self.text_output_names, {self.text_input_name: neg_text})
+            neg_result = self.text_session.run(
+                self.text_output_names, {self.text_input_name: neg_text}
+            )
 
             neg_text_embedding = normalize(neg_result[0])
 
-            text_embedding = np.concatenate([text_embedding, neg_text_embedding], axis=0)
-            for image_feature, video_feature in zip(image_features.embeddings, video_features.embeddings):
+            text_embedding = np.concatenate(
+                [text_embedding, neg_text_embedding], axis=0
+            )
+            for image_feature, video_feature in zip(
+                image_features.embeddings, video_features.embeddings
+            ):
                 result = self.sim_session.run(
                     self.sim_output_names,
                     {

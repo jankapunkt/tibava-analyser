@@ -26,45 +26,46 @@ import logging
 
 
 def merge_lines(
+    preds,
+    merge_max_x_dist=100,
+    merge_min_x_overlap=0.5,
+    merge_max_y_dist=10,
+    merge_min_y_overlap=0.5,
+):
+    # merge into lines
+    stitched = stitch_boxes_into_lines(
         preds,
-        merge_max_x_dist = 100,
-        merge_min_x_overlap = .5,
-        merge_max_y_dist = 10,
-        merge_min_y_overlap = .5,
-    ):
-        # merge into lines
-        stitched = stitch_boxes_into_lines(
-            preds,
-            max_dist=merge_max_x_dist,
-            min_overlap_ratio=merge_min_y_overlap,
-        )
-        
-        # flip x,y and stitch based on y (merge longer lines/paragraphs)
-        for s in stitched:
-            x_max = max(s['box'][::2])
-            x_min = min(s['box'][::2])
-            y_max = max(s['box'][1::2])
-            y_min = min(s['box'][1::2])
-            s['box'] = [y_min, x_min, y_max, x_min, y_max, x_max, y_min, x_max]
-        stitched = stitch_boxes_into_lines(
-            stitched,
-            max_dist=merge_max_y_dist,
-            min_overlap_ratio=merge_min_x_overlap,
-        )
-        
-        # flip back
-        for s in stitched:
-            x_max = max(s['box'][1::2])
-            x_min = min(s['box'][1::2])
-            y_max = max(s['box'][::2])
-            y_min = min(s['box'][::2])
-            s['box'] = [x_min, y_min, x_max, y_min, x_max, y_max, x_min, y_max]
-            
-        return stitched
-    
+        max_dist=merge_max_x_dist,
+        min_overlap_ratio=merge_min_y_overlap,
+    )
+
+    # flip x,y and stitch based on y (merge longer lines/paragraphs)
+    for s in stitched:
+        x_max = max(s["box"][::2])
+        x_min = min(s["box"][::2])
+        y_max = max(s["box"][1::2])
+        y_min = min(s["box"][1::2])
+        s["box"] = [y_min, x_min, y_max, x_min, y_max, x_max, y_min, x_max]
+    stitched = stitch_boxes_into_lines(
+        stitched,
+        max_dist=merge_max_y_dist,
+        min_overlap_ratio=merge_min_x_overlap,
+    )
+
+    # flip back
+    for s in stitched:
+        x_max = max(s["box"][1::2])
+        x_min = min(s["box"][1::2])
+        y_max = max(s["box"][::2])
+        y_min = min(s["box"][::2])
+        s["box"] = [x_min, y_min, x_max, y_min, x_max, y_max, x_min, y_max]
+
+    return stitched
+
+
 def is_on_same_line(box_a, box_b, min_y_overlap_ratio=0.8):
     """https://github.com/open-mmlab/mmocr/blob/2caab0a4e7dff2929ee6113927098384af6072bf/mmocr/utils/bbox_utils.py#L92
-    
+
     Check if two boxes are on the same line by their y-axis coordinates.
 
     Two boxes are on the same line if they overlap vertically, and the length
@@ -95,12 +96,12 @@ def is_on_same_line(box_a, box_b, min_y_overlap_ratio=0.8):
             overlap = sorted_y[1] - sorted_y[0]
             min_a_overlap = (a_y_max - a_y_min) * min_y_overlap_ratio
             min_b_overlap = (b_y_max - b_y_min) * min_y_overlap_ratio
-            return overlap >= min_a_overlap or \
-                overlap >= min_b_overlap
+            return overlap >= min_a_overlap or overlap >= min_b_overlap
         else:
             return True
     return False
-        
+
+
 def stitch_boxes_into_lines(
     boxes,
     max_dist=10,
@@ -126,9 +127,8 @@ def stitch_boxes_into_lines(
 
     merged_boxes = []
 
-    
     # sort groups based on the x_min coordinate of boxes
-    x_sorted_boxes = sorted(boxes, key=lambda x: np.min(x['box'][::2]))
+    x_sorted_boxes = sorted(boxes, key=lambda x: np.min(x["box"][::2]))
     # store indexes of boxes which are already parts of other lines
     skip_idxs = set()
 
@@ -143,12 +143,15 @@ def stitch_boxes_into_lines(
         for j in range(i + 1, len(x_sorted_boxes)):
             if j in skip_idxs:
                 continue
-            if is_on_same_line(x_sorted_boxes[rightmost_box_idx]['box'],
-                            x_sorted_boxes[j]['box'], min_overlap_ratio):
+            if is_on_same_line(
+                x_sorted_boxes[rightmost_box_idx]["box"],
+                x_sorted_boxes[j]["box"],
+                min_overlap_ratio,
+            ):
                 line.append(j)
                 skip_idxs.add(j)
                 rightmost_box_idx = j
-        
+
         # split line into lines if the distance between two neighboring
         # sub-lines' is greater than max_x_dist
         lines = []
@@ -157,7 +160,7 @@ def stitch_boxes_into_lines(
         for k in range(1, len(line)):
             curr_box = x_sorted_boxes[line[k]]
             prev_box = x_sorted_boxes[line[k - 1]]
-            dist = np.min(curr_box['box'][::2]) - np.max(prev_box['box'][::2])
+            dist = np.min(curr_box["box"][::2]) - np.max(prev_box["box"][::2])
             # current_line = ' '.join([x_sorted_boxes[i]['text'] for i in lines[line_idx]])
             # current_word = x_sorted_boxes[line[k]]['text']
             if dist > max_dist:
@@ -168,18 +171,17 @@ def stitch_boxes_into_lines(
         # Get merged boxes
         for box_group in lines:
             merged_box = {}
-            merged_box['text'] = ' '.join(
-                [x_sorted_boxes[idx]['text'] for idx in box_group])
-            x_min, y_min = float('inf'), float('inf')
-            x_max, y_max = float('-inf'), float('-inf')
+            merged_box["text"] = " ".join(
+                [x_sorted_boxes[idx]["text"] for idx in box_group]
+            )
+            x_min, y_min = float("inf"), float("inf")
+            x_max, y_max = float("-inf"), float("-inf")
             for idx in box_group:
-                x_max = max(np.max(x_sorted_boxes[idx]['box'][::2]), x_max)
-                x_min = min(np.min(x_sorted_boxes[idx]['box'][::2]), x_min)
-                y_max = max(np.max(x_sorted_boxes[idx]['box'][1::2]), y_max)
-                y_min = min(np.min(x_sorted_boxes[idx]['box'][1::2]), y_min)
-            merged_box['box'] = [
-                x_min, y_min, x_max, y_min, x_max, y_max, x_min, y_max
-            ]
+                x_max = max(np.max(x_sorted_boxes[idx]["box"][::2]), x_max)
+                x_min = min(np.min(x_sorted_boxes[idx]["box"][::2]), x_min)
+                y_max = max(np.max(x_sorted_boxes[idx]["box"][1::2]), y_max)
+                y_min = min(np.min(x_sorted_boxes[idx]["box"][1::2]), y_min)
+            merged_box["box"] = [x_min, y_min, x_max, y_min, x_max, y_max, x_min, y_max]
             merged_boxes.append(merged_box)
         # print(f'Merges process {multiprocessing.current_process().ident} released lock on Bert process num {bert_processs_id}')
 
@@ -348,7 +350,6 @@ class OCRTextDetectorONNX(AnalyserPlugin):
         import cv2
 
         if self.textdet_model is None:
-            logging.error(f"Loading model")
 
             self.textdet_model = onnx.load(self.textdet_model_path)
             self.session = onnxruntime.InferenceSession(
@@ -357,7 +358,7 @@ class OCRTextDetectorONNX(AnalyserPlugin):
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
 
-            torch.hub.set_dir('/models/ocr')
+            torch.hub.set_dir("/models/ocr")
             self.textrec_model = torch.hub.load(
                 "baudm/parseq", "parseq", pretrained=True, device="cuda"
             ).eval()
@@ -417,8 +418,6 @@ class OCRTextDetectorONNX(AnalyserPlugin):
         ) as strings_data, data_manager.create_data(
             "AnnotationData"
         ) as annotations_data:
-            
-            logging.info('OCR plugin is running...')
 
             # iterate through images to get strings and bboxes
             for fidx, frame in enumerate(iterator):
@@ -476,8 +475,9 @@ class OCRTextDetectorONNX(AnalyserPlugin):
                         ref_id=text.id,
                     )
 
-                if not cropped_images: continue
-                
+                if not cropped_images:
+                    continue
+
                 # predict strings
                 cropped_images: torch.Tensor = torch.stack(cropped_images).type(
                     torch.float32
@@ -494,7 +494,7 @@ class OCRTextDetectorONNX(AnalyserPlugin):
 
                     # for i in range(len(frame_bboxes)):
                     #     strings_data.strings[fidx + i].text = labels[i]
-                        
+
                     # end_time = frame.get("time") + 1 / parameters.get("fps")
 
                     # annotations_data.annotations.append(
@@ -502,26 +502,28 @@ class OCRTextDetectorONNX(AnalyserPlugin):
                     #         start=frame.get("time"), end=end_time, labels=labels
                     #     )
                     # )
-                        
+
                 # merge words into lines
                 bbox_list: list[dict] = []
                 for i in range(len(frame_bboxes)):
                     box = {}
-                    box["box"] = np.array([
-                        frame_bboxes[i]["x"],
-                        frame_bboxes[i]["y"],
-                        frame_bboxes[i]["x"] + frame_bboxes[i]["w"],
-                        frame_bboxes[i]["y"],
-                        frame_bboxes[i]["x"] + frame_bboxes[i]["w"],
-                        frame_bboxes[i]["y"] + frame_bboxes[i]["h"],
-                        frame_bboxes[i]["x"],
-                        frame_bboxes[i]["y"] + frame_bboxes[i]["h"],
-                    ])
+                    box["box"] = np.array(
+                        [
+                            frame_bboxes[i]["x"],
+                            frame_bboxes[i]["y"],
+                            frame_bboxes[i]["x"] + frame_bboxes[i]["w"],
+                            frame_bboxes[i]["y"],
+                            frame_bboxes[i]["x"] + frame_bboxes[i]["w"],
+                            frame_bboxes[i]["y"] + frame_bboxes[i]["h"],
+                            frame_bboxes[i]["x"],
+                            frame_bboxes[i]["y"] + frame_bboxes[i]["h"],
+                        ]
+                    )
                     box["text"] = strings[i]
                     bbox_list.append(box)
-                
+
                 stitched = merge_lines(bbox_list)
-                
+
                 # add the merged boxes to bbox_data and strings_data
                 for i in range(len(stitched)):
                     box = stitched[i]
@@ -535,25 +537,23 @@ class OCRTextDetectorONNX(AnalyserPlugin):
                         delta_time=1 / parameters.get("fps"),
                     )
                     # bboxes_data.bboxes.append(bbox)
-                    
+
                     text = StringData(ref_id=bbox.id)
                     text.text = box["text"]
                     strings_data.strings.append(text)
-                    
+
                     end_time = frame.get("time") + 1 / parameters.get("fps")
                     annotations_data.annotations.append(
                         Annotation(
                             start=frame.get("time"), end=end_time, labels=[box["text"]]
                         )
                     )
-                    
 
                 # if fidx % 10 == 0:
                 #     print(f"Processed {fidx} frames")
-                
 
             self.update_callbacks(callbacks, progress=1.0)
-            
+
             return {
                 "images": images_data,
                 "bboxes": bboxes_data,
@@ -582,7 +582,12 @@ requires = {
     "images": ImagesData,
 }
 
-provides = {"images": ImagesData, "bboxes": BboxesData, "strings": StringsData, "annotations": AnnotationData}
+provides = {
+    "images": ImagesData,
+    "bboxes": BboxesData,
+    "strings": StringsData,
+    "annotations": AnnotationData,
+}
 
 
 @AnalyserPluginManager.export("ocr_video_detector_onnx")

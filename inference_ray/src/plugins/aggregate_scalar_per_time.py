@@ -50,13 +50,22 @@ class AggregateListScalarPerTime(
         def aggregate_and(y: list) -> np.array:
             return np.prod(y, axis=0)
 
-        aggregation_f = {"mean": aggregate_mean, "prod": aggregate_prod, "or": aggregate_or, "and": aggregate_and}
+        aggregation_f = {
+            "mean": aggregate_mean,
+            "prod": aggregate_prod,
+            "or": aggregate_or,
+            "and": aggregate_and,
+        }
 
         if aggregation not in aggregation_f:
-            logging.error("Unknown aggregation method. Using <mean> instead.")
+            logging.error(
+                "[AggregateScalarPerTime] Unknown aggregation method. Using <mean> instead."
+            )
             aggregation = "mean"
 
-        return [aggregation_f[aggregation](np.stack(y, axis=0)) for y in y_per_t.values()]
+        return [
+            aggregation_f[aggregation](np.stack(y, axis=0)) for y in y_per_t.values()
+        ]
 
     def call(
         self,
@@ -65,7 +74,9 @@ class AggregateListScalarPerTime(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["scalars"] as input_data, data_manager.create_data("ListData") as output_data:
+        with inputs["scalars"] as input_data, data_manager.create_data(
+            "ListData"
+        ) as output_data:
             aggregated_y = []
 
             for i, (index, data) in enumerate(input_data):
@@ -77,7 +88,11 @@ class AggregateListScalarPerTime(
 
                         y_per_t[data.time[n]].append(data.y[n])
 
-                    aggregated_y.append(self.aggregate_probs(y_per_t, aggregation=parameters.get("aggregation")))
+                    aggregated_y.append(
+                        self.aggregate_probs(
+                            y_per_t, aggregation=parameters.get("aggregation")
+                        )
+                    )
                     self.update_callbacks(callbacks, progress=i / len(input_data))
 
             self.update_callbacks(callbacks, progress=1.0)
@@ -132,13 +147,22 @@ class AggregateScalarPerTime(
         def aggregate_and(y: list) -> np.array:
             return np.prod(y, axis=0)
 
-        aggregation_f = {"mean": aggregate_mean, "prod": aggregate_prod, "or": aggregate_or, "and": aggregate_and}
+        aggregation_f = {
+            "mean": aggregate_mean,
+            "prod": aggregate_prod,
+            "or": aggregate_or,
+            "and": aggregate_and,
+        }
 
         if aggregation not in aggregation_f:
-            logging.error("Unknown aggregation method. Using <mean> instead.")
+            logging.error(
+                "[AggregateScalarPerTime] Unknown aggregation method. Using <mean> instead."
+            )
             aggregation = "mean"
 
-        return [aggregation_f[aggregation](np.stack(y, axis=0)) for y in y_per_t.values()]
+        return [
+            aggregation_f[aggregation](np.stack(y, axis=0)) for y in y_per_t.values()
+        ]
 
     def call(
         self,
@@ -147,7 +171,9 @@ class AggregateScalarPerTime(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["scalar"] as input_data, data_manager.create_data("ScalarData") as scalar_data:
+        with inputs["scalar"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as scalar_data:
             with input_data as data:
                 y_per_t = {}
                 for n in range(len(data.time)):
@@ -156,7 +182,9 @@ class AggregateScalarPerTime(
 
                     y_per_t[data.time[n]].append(data.y[n])
 
-                y = self.aggregate_probs(y_per_t, aggregation=parameters.get("aggregation"))
+                y = self.aggregate_probs(
+                    y_per_t, aggregation=parameters.get("aggregation")
+                )
 
             self.update_callbacks(callbacks, progress=1.0)
 

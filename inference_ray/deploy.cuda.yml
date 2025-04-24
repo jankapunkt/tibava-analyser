@@ -18,7 +18,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - requests==2.26.0
   - name: audio_amp_analysis
     route_prefix: /audio_amp_analysis
@@ -34,7 +34,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - librosa==0.10.1
   - name: audio_freq_analysis
     route_prefix: /audio_freq_analysis
@@ -50,7 +50,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - librosa==0.10.1
   - name: audio_rms_analysis
     route_prefix: /audio_rms_analysis
@@ -66,7 +66,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - librosa==0.10.1
   - name: clip_image_embedding
     route_prefix: /clip_image_embedding
@@ -85,7 +85,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - "open-clip-torch==2.24.0"
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
@@ -108,7 +108,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - "open-clip-torch==2.24.0"
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
@@ -131,7 +131,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - "open-clip-torch==2.24.0"
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
@@ -154,7 +154,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - "open-clip-torch==2.24.0"
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
@@ -174,7 +174,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
   - name: color_brightness_analyser
     route_prefix: /color_brightness_analyser
@@ -190,7 +190,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
   - name: deepface_emotion
@@ -209,7 +209,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -230,7 +230,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - torch==2.2.0
@@ -250,7 +250,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - torch==2.2.0
@@ -269,7 +269,7 @@ applications:
         ray_actor_options:
           num_cpus: 2
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
   - name: insightface_video_feature_extractor
     route_prefix: /insightface_video_feature_extractor
@@ -287,7 +287,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -308,7 +308,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -343,7 +343,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - torch==2.2.0
@@ -387,7 +387,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip: 
+            uv: 
               - scikit-learn==1.4.0
   - name: shot_scalar_annotator
     route_prefix: /shot_scalar_annotator
@@ -417,7 +417,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - torch==2.2.0
   - name: thumbnail_generator
     route_prefix: /thumbnail_generator
@@ -449,7 +449,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - torch==2.2.0
 
   - name: video_to_video
@@ -506,7 +506,7 @@ applications:
           max_replicas: 20
         ray_actor_options:
           runtime_env:
-            pip:
+            uv:
               - scipy==1.12.0
   
   - name: aggregate_scalar_per_time
@@ -537,7 +537,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - librosa==0.10.1
               - torch==2.2.0
               - scikit-learn==1.4.0
@@ -573,7 +573,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -597,7 +597,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -622,7 +622,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scikit-learn==1.4.0
               - opencv-python-headless==4.9.0.80
               - onnxruntime-gpu==1.17.0
@@ -644,7 +644,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scipy==1.12.0  
   - name: place_clustering
     route_prefix: /place_clustering
@@ -660,7 +660,7 @@ applications:
         ray_actor_options:
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - scipy==1.12.0  
 
   - name: clustering
@@ -677,7 +677,7 @@ applications:
         ray_actor_options:
           num_cpus: 2
           runtime_env:
-            pip:
+            uv:
               - scipy==1.12.0  
   - name: cluster_size_filter
     route_prefix: /cluster_size_filter
@@ -725,7 +725,7 @@ applications:
           # num_cpus: 2
           num_gpus: 0.1
           runtime_env:
-            pip:
+            uv:
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
               - pillow
@@ -751,7 +751,7 @@ applications:
           # num_cpus: 2
           num_gpus: 1.0
           runtime_env:
-            pip:
+            uv:
               - git+https://github.com/SpringsteinM/imageio.git
               - torch==2.2.0
               - pillow
@@ -798,14 +798,14 @@ applications:
         ray_actor_options:
           num_cpus: 1
           runtime_env:
-            pip:
+            uv:
               - scipy==1.12.0
               - scikit-learn==1.4.0
   - name: ocr_video_detector_onnx
     route_prefix: /ocr_video_detector_onnx
     import_path: main:app_builder
     runtime_env:
-      pip:
+      uv:
         - "--extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
         - scikit-learn
         - opencv-python-headless

@@ -47,7 +47,9 @@ class ColorAnalyser(
     ) -> Dict[str, Data]:
         from sklearn.cluster import KMeans
 
-        with inputs["video"] as input_data, data_manager.create_data("ListData") as output_data:
+        with inputs["video"] as input_data, data_manager.create_data(
+            "ListData"
+        ) as output_data:
             kcolors = []
             time = []
             with input_data.open_video() as f_video:
@@ -63,14 +65,18 @@ class ColorAnalyser(
                     self.update_callbacks(callbacks, progress=i / num_frames)
                     image = frame["frame"]
                     image = image.reshape((image.shape[0] * image.shape[1], 3))
-                    cls = KMeans(n_clusters=parameters.get("k"), max_iter=parameters.get("max_iter"))
+                    cls = KMeans(
+                        n_clusters=parameters.get("k"),
+                        max_iter=parameters.get("max_iter"),
+                    )
                     labels = cls.fit_predict(image)
                     colors = cls.cluster_centers_.tolist()
-                    kcolors.append(np.asarray([colors[x] for x in np.argsort(np.bincount(labels))]))
+                    kcolors.append(
+                        np.asarray([colors[x] for x in np.argsort(np.bincount(labels))])
+                    )
                     time.append(i / parameters.get("fps"))
 
             kcolors = np.stack(kcolors, axis=0)
-            logging.info("Video reading done")
             for colors in zip(*kcolors):
                 with output_data.create_data("RGBData") as color_data:
                     color_data.colors = np.asarray(colors) / 255

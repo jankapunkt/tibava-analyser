@@ -1,6 +1,13 @@
 from analyser.inference.plugin import AnalyserPlugin, AnalyserPluginManager
 from analyser.utils import VideoDecoder
-from analyser.data import ImagesData, ScalarData, ListData, BboxesData, FacesData, VideoData
+from analyser.data import (
+    ImagesData,
+    ScalarData,
+    ListData,
+    BboxesData,
+    FacesData,
+    VideoData,
+)
 import logging
 import numpy as np
 from analyser.data import DataManager, Data
@@ -65,7 +72,11 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
         input_size = self.input_size
 
         blob = cv2.dnn.blobFromImages(
-            imgs, 1.0 / self.input_std, input_size, (self.input_mean, self.input_mean, self.input_mean), swapRB=True
+            imgs,
+            1.0 / self.input_std,
+            input_size,
+            (self.input_mean, self.input_mean, self.input_mean),
+            swapRB=True,
         )
 
         return self.server({"data": blob}, ["gender", "age"])
@@ -83,7 +94,9 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
                 x, y, w, h = bbox.x, bbox.y, bbox.w, bbox.h
                 center = (x + w) / 2, (y + h) / 2
                 scale = self.input_size[0] / (max(w, h) * 1.5)
-                aimg = self.transform(face.get("frame"), center, self.input_size[0], scale)
+                aimg = self.transform(
+                    face.get("frame"), center, self.input_size[0], scale
+                )
 
                 # calculate gender and age of face
                 gender_age = self.get_feat(aimg)
@@ -92,8 +105,15 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
                 ref_ids.append(face.get("face_id"))
                 ages.append(gender_age["age"].flatten())  # float: age / 100
                 genders.append(
-                    np.exp(gender_age["gender"].flatten() / parameters.get("softmax_temp"))
-                    / sum(np.exp(gender_age["gender"].flatten() / parameters.get("softmax_temp")))
+                    np.exp(
+                        gender_age["gender"].flatten() / parameters.get("softmax_temp")
+                    )
+                    / sum(
+                        np.exp(
+                            gender_age["gender"].flatten()
+                            / parameters.get("softmax_temp")
+                        )
+                    )
                 )  # 0 female; 1 male
 
                 self.update_callbacks(callbacks, progress=i / num_faces)
@@ -126,7 +146,7 @@ class InsightfaceGenderAgeCalculator(AnalyserPlugin):
             }
 
         except Exception as e:
-            logging.error(f"InsightfaceDetector: {repr(e)}")
+            logging.error(f"[InsightfaceGenderAgeCalculator] {repr(e)}")
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             traceback.print_exception(
@@ -205,7 +225,11 @@ class InsightfaceVideoGenderAgeCalculator(
                         t = frame["time"]
                         if t in bbox_dict:
                             for bbox in bbox_dict[t]:
-                                yield {"frame": frame["frame"], "bbox": bbox, "face_id": bbox.ref_id}
+                                yield {
+                                    "frame": frame["frame"],
+                                    "bbox": bbox,
+                                    "face_id": bbox.ref_id,
+                                }
 
                 iterator = get_iterator(video_decoder, bbox_dict)
                 return self.get_genderage(

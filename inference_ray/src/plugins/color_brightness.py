@@ -68,12 +68,9 @@ class ColorBrightnessAnalyser(
                     time.append(i / parameters.get("fps"))
 
             y = np.stack(values)
-            logging.error(f"####++++ {y}")
             if parameters.get("normalize"):
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
-                logging.error(f"####++++ normalize")
 
-            logging.error(f"# {y}")
             self.update_callbacks(callbacks, progress=1.0)
 
             output_data.y = y

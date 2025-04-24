@@ -208,9 +208,7 @@ class InsightfaceDetectorTorch(AnalyserPlugin):
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        logging.error(f"DEVICE {device}")
         if self.model is None:
-            logging.error(f"LOAD {device}")
             self.model = torch.jit.load(
                 self.model_path, map_location=torch.device(device)
             )

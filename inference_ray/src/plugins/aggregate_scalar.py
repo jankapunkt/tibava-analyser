@@ -54,7 +54,9 @@ class AggregateScalar(
         if aggregation == "and":
             return np.prod(probs_interp, axis=0)
         else:
-            logging.error("Unknown aggregation method. Using <mean> instead.")
+            logging.error(
+                "[AggregateScalar] Unknown aggregation method. Using <mean> instead."
+            )
 
         return np.mean(probs_interp, axis=0)
 
@@ -65,7 +67,9 @@ class AggregateScalar(
         parameters: Dict = None,
         callbacks: Callable = None,
     ) -> Dict[str, Data]:
-        with inputs["timelines"] as input_data, data_manager.create_data("ScalarData") as output_data:
+        with inputs["timelines"] as input_data, data_manager.create_data(
+            "ScalarData"
+        ) as output_data:
             probs = []
             times = []
             longest_timeline = 0
